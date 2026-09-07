@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>City Details</title>
+  <style>
+    :root { color-scheme: dark; --bg: #050816; --panel: #0e1428; --line: #24304f; --cyan: #00f0ff; --text: #f5f7ff; --muted: #7d8ca8; }
+    body { margin: 0; font-family: Arial, sans-serif; background: var(--bg); color: var(--text); }
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 24px; }
+    .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 20px; box-shadow: 0 0 20px rgba(0,240,255,0.1); }
+    h1 { margin: 0 0 12px; color: var(--cyan); }
+    .meta { color: var(--muted); margin-bottom: 16px; }
+    .profit { color: #4ade80; font-weight: 700; margin-top: 6px; font-size: 0.85rem; }
+    .stat-line { display: block; color: #f5f7ff; font-size: 0.85rem; line-height: 1.4; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+    .box { background: rgba(255,255,255,0.03); border: 1px solid var(--line); border-radius: 10px; padding: 12px; }
+    .label { color: var(--muted); font-size: 0.78rem; text-transform: uppercase; margin-bottom: 6px; }
+    .value { font-size: 1rem; color: var(--text); }
+    .back { display: inline-block; margin-bottom: 16px; color: var(--cyan); text-decoration: none; }
+    .war-shell { display: flex; flex-direction: column; gap: 14px; }
+    .war-titlebar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; }
+    .war-badge { display: inline-flex; align-items: center; width: fit-content; padding: 4px 8px; border-radius: 999px; background: rgba(0,240,255,0.12); color: var(--cyan); font-size: 0.7rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 8px; border: 1px solid rgba(0,240,255,0.22); }
+    .war-tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+    .war-tab { border: 1px solid rgba(94,234,212,0.2); background: rgba(255,255,255,0.03); color: var(--text); padding: 7px 12px; border-radius: 999px; cursor: pointer; font-weight: 600; }
+    .war-tab.active { background: rgba(0,240,255,0.14); color: var(--cyan); border-color: rgba(0,240,255,0.3); }
+    .war-pane.hidden { display: none; }
+    .breakdown-wrap { overflow-x: auto; }
+    .breakdown-table { width: 100%; min-width: 980px; border-collapse: collapse; font-size: 0.82rem; }
+    .breakdown-table th, .breakdown-table td { border-bottom: 1px solid var(--line); padding: 9px 8px; text-align: left; vertical-align: top; }
+    .breakdown-table th { color: var(--cyan); font-size: 0.72rem; text-transform: uppercase; white-space: nowrap; }
+    .breakdown-table td:not(:first-child) { white-space: nowrap; }
+    .breakdown-note { color: var(--muted); font-size: 0.75rem; margin-top: 8px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <a class="back" href="cities-hud.html">← Back to Cities HUD</a>
+    <div class="panel">
+      <div class="war-shell">
+        <div class="war-titlebar">
+          <div>
+            <div class="war-badge">WAR EXTRACT</div>
+            <h1 id="city-title">City Details</h1>
+          </div>
+          <div class="war-tabs">
+            <button class="war-tab active" data-war-tab="overview" type="button">Overview</button>
+            <button class="war-tab" data-war-tab="details" type="button">Facilities</button>
+          </div>
+        </div>
+        <div class="meta" id="meta">Loading city data...</div>
+        <div class="box" id="profitRecorderBox" style="margin-top:12px;">
+          <div class="label">Profitability History (samples every 2 hours)</div>
+          <canvas id="profitChart" width="900" height="220" style="width:100%;height:220px;background:transparent;border-radius:6px"></canvas>
+          <div style="margin-top:8px">
+            <button id="recordNowBtn" type="button" style="padding:6px 10px;margin-right:8px">Record Now</button>
+            <button id="clearHistoryBtn" type="button" style="padding:6px 10px">Clear History</button>
+          </div>
+        </div>
+        <div class="war-pane active" id="warOverviewPane">
+          <div class="grid" id="content"></div>
+        </div>
+        <div class="war-pane hidden" id="warDetailsPane">
+          <div class="grid" id="detailsContent"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="common.js"></script>
+  <script>
+    const API_KEY = '5bc5a81f4c67e52b148c';
+    function getParam(name) {
+      const params = new URLSearchParams(window.location.search);
+      return params.get(name) || '';
+    }
+    const NATION_ID = Number(getParam('nationId')) || 768640;
+    function formatNumber(value) {
+      const num = Number(value);
+      return Number.isFinite(num) ? num.toLocaleString() : '—';
+    }
+
+    function formatMoney(value) {
+      const num = Number(value);
+      return Number.isFinite(num) ? `$${num.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '—';
+    }
+
+    function getCappedBonusMultiplier(count, maxCount, maxBonus = 0.5) {
+      const safeCount = Math.min(Math.max(Number(count) || 0, 0), maxCount);
+      if (!Number.isFinite(safeCount) || maxCount <= 0) return 1;
+      return 1 + (safeCount / maxCount) * maxBonus;
+    }
+
+    function getCappedBonusOutput(baseOutput, count, maxCount, maxBonus = 0.5) {
+      return Number(baseOutput) * getCappedBonusMultiplier(count, maxCount, maxBonus);
+    }
+
+    function getDailyOutput(baseOutput, count, maxCount, maxBonus = 0.5) {
+      return getCappedBonusOutput(baseOutput, count, maxCount, maxBonus) * 12;
+    }
+
+    function getSupermarketDailyProfit(population, count = 1) {
+      const referencePopulation = 169454;
+      const referenceRevenue = 19656.63;
+      const safePopulation = Math.max(Number(population) || 0, 0);
+      const revenuePerBuilding = referenceRevenue * (safePopulation / referencePopulation);
+      const profitPerBuilding = revenuePerBuilding - 600;
+      return Number(count || 0) * profitPerBuilding;
+    }
+
+    function getBankDailyProfit(population, count = 1) {
+      const referencePopulation = 169454;
+      const referenceRevenue = 29485;
+      const safePopulation = Math.max(Number(population) || 0, 0);
+      const revenuePerBuilding = referenceRevenue * (safePopulation / referencePopulation);
+      const profitPerBuilding = revenuePerBuilding - 1800;
+      return Number(count || 0) * profitPerBuilding;
+    }
+
+    function getShoppingMallDailyProfit(population, count = 1) {
+      const referencePopulation = 169454;
+      const referenceRevenue = 39313;
+      const safePopulation = Math.max(Number(population) || 0, 0);
+      const revenuePerBuilding = referenceRevenue * (safePopulation / referencePopulation);
+      const profitPerBuilding = revenuePerBuilding - 5400;
+      return Number(count || 0) * profitPerBuilding;
+    }
+
+    function getStadiumDailyProfit(population, count = 1) {
+      const referencePopulation = 169454;
+      const referenceRevenue = 49142;
+      const safePopulation = Math.max(Number(population) || 0, 0);
+      const revenuePerBuilding = referenceRevenue * (safePopulation / referencePopulation);
+      const profitPerBuilding = revenuePerBuilding - 12150;
+      return Number(count || 0) * profitPerBuilding;
+    }
+
+    function getManufacturingUpkeep(city, priceMap) {
+      const entries = [];
+      const addEntry = (label, count, resource, unitsPerBuilding, pricePerUnit) => {
+        if (!count || !resource) return;
+        const totalUnits = Number(count) * Number(unitsPerBuilding || 0);
+        if (!Number.isFinite(totalUnits) || totalUnits <= 0) return;
+        const cost = totalUnits * (Number(pricePerUnit) || 0);
+        entries.push({ label, resource, totalUnits, cost });
+      };
+
+      addEntry('Steel Mill', Number(city.steel_mill || 0), 'iron', 1, Number(priceMap.iron) || 0);
+      addEntry('Steel Mill', Number(city.steel_mill || 0), 'coal', 1, Number(priceMap.coal) || 0);
+      addEntry('Oil Refinery', Number(city.oil_refinery || 0), 'oil', 1, Number(priceMap.oil) || 0);
+      addEntry('Aluminum Refinery', Number(city.aluminum_refinery || 0), 'bauxite', 1, Number(priceMap.bauxite) || 0);
+      addEntry('Munitions Factory', Number(city.munitions_factory || 0), 'lead', 1, Number(priceMap.lead) || 0);
+
+      const totalCost = entries.reduce((sum, entry) => sum + entry.cost, 0);
+      return { entries, totalCost };
+    }
+
+    function getManufacturingInputs(key, priceMap) {
+      const inputs = {
+        steel_mill: [['Iron', 1, priceMap.iron], ['Coal', 1, priceMap.coal]],
+        oil_refinery: [['Oil', 1, priceMap.oil]],
+        aluminum_refinery: [['Bauxite', 1, priceMap.bauxite]],
+        munitions_factory: [['Lead', 1, priceMap.lead]]
+      }[key] || [];
+      return inputs.map(([resource, units, price]) => ({ resource, units, price: Number(price) || 0 }));
+    }
+
+    function getCommerceIncome(population, buildingCommerce, baseIncome = 1.0, commerceMultiplier = 0.05, crimePenalty = 0) {
+      const safePopulation = Math.max(Number(population) || 0, 0);
+      const safeBuildingCommerce = Number(buildingCommerce || 0);
+      return safePopulation > 0 ? safePopulation * (baseIncome + safeBuildingCommerce * commerceMultiplier) * (1 - crimePenalty) : 0;
+    }
+
+    function getEffectiveOutput(city, profile) {
+      return typeof profile.dynamicOutput === 'function' ? profile.dynamicOutput(city) : profile.output;
+    }
+
+    function getKingslandingBackground(city) {
+      const name = (city?.name || city?.city_name || '').toLowerCase();
+      if (!name.includes('kingslanding') && !name.includes('kings landing') && !name.includes("king's landing")) return '';
+      return "url('images/KINGSLANDING.jpg')";
+    }
+
+    function normalizeText(value) {
+      return String(value || '')
+        .normalize('NFKD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/\s*\d+\s*days?/gi, '')
+        .replace(/[^a-z0-9 ]+/gi, ' ')
+        .trim()
+        .toLowerCase();
+    }
+
+    function getSheetRows(data) {
+      const cols = data?.table?.cols || [];
+      return (data?.table?.rows || []).map((row) => ({
+        cells: (row?.c || []).map((cell) => {
+          if (!cell) return '';
+          if (typeof cell.v === 'number' || typeof cell.v === 'boolean') return cell.v;
+          return String(cell.v || '').trim();
+        }),
+        headers: cols.map((col) => String(col.label || '').trim())
+      }));
+    }
+
+    function getCityPopulationFromSheet(cityName, sheetRows) {
+      const normalizedCity = normalizeText(cityName || '');
+      const populationRow = sheetRows.find((row) => normalizeText(row.cells[1]) === 'population');
+      const headerRow = sheetRows.length > 0 ? sheetRows[0].headers : [];
+      if (!populationRow || !headerRow.length) return null;
+      const columnIndex = headerRow.findIndex((label, index) => index > 1 && normalizeText(label).includes(normalizedCity));
+      if (columnIndex < 0) {
+        const fallbackIndex = headerRow.findIndex((label, index) => index > 1 && normalizeText(label) === normalizedCity);
+        if (fallbackIndex >= 0) return Number(populationRow.cells[fallbackIndex]) || null;
+        return null;
+      }
+      return Number(populationRow.cells[columnIndex]) || null;
+    }
+
+    function getCityMetricFromSheet(cityName, metric, sheetRows) {
+      const normalizedCity = normalizeText(cityName || '');
+      const row = sheetRows.find((entry) => normalizeText(entry.cells[1]) === metric);
+      const headerRow = sheetRows.length > 0 ? sheetRows[0].headers : [];
+      if (!row || !headerRow.length) return null;
+      const columnIndex = headerRow.findIndex((label, index) => index > 1 && normalizeText(label).includes(normalizedCity));
+      return columnIndex >= 0 ? Number(row.cells[columnIndex]) || 0 : null;
+    }
+
+    const SHEET_CITY_FIELDS = {
+      infrastructure: 'infrastructure', land: 'land', population: 'city_population', disease: 'disease', crime: 'crime', commerce: 'sheetCommerce', powered: 'powered',
+      'coal power plant': 'coal_power', 'oil power plant': 'oil_power', 'nuclear power plant': 'nuclear_power', 'wind power plant': 'wind_power',
+      'iron mine': 'iron_mine', 'oil well': 'oil_well', 'coal mine': 'coal_mine', 'bauxite mine': 'bauxite_mine', 'lead mine': 'lead_mine', 'uranium mine': 'uranium_mine', farm: 'farm',
+      'oil refinery': 'oil_refinery', 'steel mill': 'steel_mill', 'aluminum refinery': 'aluminum_refinery', 'munitions factory': 'munitions_factory',
+      'police station': 'police_station', hospital: 'hospital', 'recycling center': 'recycling_center', subway: 'subway', supermarket: 'supermarket', bank: 'bank', 'shopping mall': 'shopping_mall', stadium: 'stadium',
+      barracks: 'barracks', factory: 'factory', hangar: 'hangar', drydock: 'drydock'
+    };
+
+    function getCitySheetStats(cityName, sheetRows) {
+      const normalizedCity = normalizeText(cityName || '');
+      const headers = sheetRows.length > 0 ? sheetRows[0].headers : [];
+      const columnIndex = headers.findIndex((label, index) => index > 1 && normalizeText(label).includes(normalizedCity));
+      if (columnIndex < 0) return {};
+      return sheetRows.reduce((stats, row) => {
+        const field = SHEET_CITY_FIELDS[normalizeText(row.cells[1])];
+        if (field) stats[field] = Number(row.cells[columnIndex]) || 0;
+        return stats;
+      }, {});
+    }
+
+    async function fetchCitySheetMetrics(cityName) {
+      const SHEET_ID = '1KlXsnU_OEzTpefr3bPHqs8YAT3MlqaT3X-ITxrIE6ys';
+      const SHEET_GID = '1972996458';
+      const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?gid=${SHEET_GID}&tqx=out:json&range=A1:Z50`;
+      const response = await fetch(url);
+      const text = await response.text();
+      const match = text.match(/google\.visualization\.Query\.setResponse\(([^]+)\);?/);
+      if (!match) return null;
+      const data = JSON.parse(match[1]);
+      const rows = getSheetRows(data);
+      return getCitySheetStats(cityName, rows);
+    }
+
+    async function loadData() {
+      try {
+        const cityId = getParam('cityId');
+        const cityName = getParam('cityName');
+        if (cityName) document.getElementById('city-title').textContent = cityName;
+        const query = `query { nations(id: [${NATION_ID}], first: 1) { data { cities { id name infrastructure land powered barracks farm police_station hospital recycling_center subway supermarket bank shopping_mall stadium lead_mine iron_mine bauxite_mine oil_refinery aluminum_refinery steel_mill munitions_factory factory hangar drydock coal_mine oil_well uranium_mine oil_power wind_power coal_power nuclear_power nation { population } } } } }`;
+        const response = await fetch(`https://api.politicsandwar.com/graphql?api_key=${API_KEY}`, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({query})});
+        const json = await response.json();
+        if (json.errors) throw new Error(json.errors[0]?.message || 'GraphQL errors');
+
+        const marketQuery = `query { tradeprices(first: 10) { data { date food coal oil uranium iron bauxite lead gasoline munitions steel aluminum } } }`;
+        const marketResponse = await fetch(`https://api.politicsandwar.com/graphql?api_key=${API_KEY}`, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ query: marketQuery })});
+        const marketJson = await marketResponse.json();
+        const priceRows = sortMarketRowsNewestFirst(marketJson?.data?.tradeprices?.data);
+        const latestPrices = getLatestMarketRow(priceRows);
+        const priceMap = {
+          iron: Number(latestPrices.iron) || 0,
+          bauxite: Number(latestPrices.bauxite) || 0,
+          lead: Number(latestPrices.lead) || 0,
+          coal: Number(latestPrices.coal) || 0,
+          oil: Number(latestPrices.oil) || 0,
+          uranium: Number(latestPrices.uranium) || 0,
+          steel: Number(latestPrices.steel) || 0,
+          aluminum: Number(latestPrices.aluminum) || 0,
+          munitions: Number(latestPrices.munitions) || 0,
+          gasoline: Number(latestPrices.gasoline) || 0,
+          food: Number(latestPrices.food) || 0
+        };
+
+        const cities = Array.isArray(json.data?.nations?.data?.[0]?.cities) ? json.data.nations.data[0].cities : [];
+        let city = cities.find(item => String(item.id || item.city_id || '') === String(cityId)) || cities.find(item => (item.name || item.city_name) === cityName) || cities[0];
+        if (!city) throw new Error('No city match found.');
+        const sheetMetrics = await fetchCitySheetMetrics(city.name || city.city_name || '');
+        city = { ...city, ...sheetMetrics };
+        const bg = getKingslandingBackground(city);
+        if (bg) {
+          document.body.style.backgroundImage = bg;
+          document.body.style.backgroundSize = 'cover';
+          document.body.style.backgroundPosition = 'center';
+          document.body.style.backgroundRepeat = 'no-repeat';
+        }
+        const population = Number(sheetMetrics.city_population || city.nation?.population || 0);
+        const facilityProfiles = {
+          farm: { label: 'Farm', output: 0, upkeep: 300, resource: 'food', dynamicOutput: city => getCappedBonusOutput(Number(city.land || 0) / 500, Number(city.farm || 0), 20), operatingCost: 300, revenueType: 'Food Sales', description: 'Farms produce food equal to land / 500 per farm (about 4.98 food/turn at current land) and can be built up to 20 per city. Output increases via a capped bonus that reaches +50% at 20 farms.' },
+          supermarket: { label: 'Supermarket', output: 0, upkeep: 0, resource: null, benefit: 'Increases commerce by 4%', operatingCost: 600, description: 'Supermarkets increase commerce by 4% per building and can be built up to 4 per city. They do not affect the pollution index.' },
+          bank: { label: 'Bank', output: 0, upkeep: 0, resource: null, benefit: 'Increases commerce by 6%', operatingCost: 1800, description: 'Banks support financial income rather than raw materials.' },
+          stadium: { label: 'Stadium', output: 0, upkeep: 0, resource: null, benefit: 'Increases commerce by 10%', operatingCost: 12150, description: 'Stadiums drive event and ticket revenue.' },
+          shopping_mall: { label: 'Shopping Mall', output: 0, upkeep: 0, resource: null, benefit: 'Increases commerce by 8%', operatingCost: 5400, description: 'Shopping malls boost retail economy.' },
+          lead_mine: { label: 'Lead Mine', output: 0.25, upkeep: 0, resource: 'lead', dynamicOutput: city => getCappedBonusOutput(0.25, Number(city.lead_mine || 0), 10), operatingCost: 0, description: 'Produces about 0.25 tons of lead per turn (3 tons/day), with a capped production bonus that reaches +50% at 10 mines.' },
+          iron_mine: { label: 'Iron Mine', output: 0.25, upkeep: 0, resource: 'iron', dynamicOutput: city => getCappedBonusOutput(0.25, Number(city.iron_mine || 0), 10), operatingCost: 1600, description: 'Iron mines produce 0.25 tons of iron per turn (3 tons/day) and can be built up to 10 per city. Output increases via a capped bonus that reaches +50% at 10 mines.' },
+          bauxite_mine: { label: 'Bauxite Mine', output: 0.25, upkeep: 0, resource: 'bauxite', dynamicOutput: city => getCappedBonusOutput(0.25, Number(city.bauxite_mine || 0), 10), operatingCost: 0, description: 'Produces about 0.25 tons of bauxite per turn (3 tons/day), with a capped production bonus that reaches +50% at 10 mines.' },
+          coal_mine: { label: 'Coal Mine', output: 0.25, upkeep: 0, resource: 'coal', dynamicOutput: city => getCappedBonusOutput(0.25, Number(city.coal_mine || 0), 10), operatingCost: 400, description: 'Produces about 0.25 tons of coal per turn (3 tons/day), with a capped production bonus that reaches +50% at 10 mines.' },
+          oil_well: { label: 'Oil Well', output: 0.25, upkeep: 0, resource: 'oil', dynamicOutput: city => getCappedBonusOutput(0.25, Number(city.oil_well || 0), 10), operatingCost: 0, description: 'Produces about 0.25 tons of oil per turn (3 tons/day), with a capped production bonus that reaches +50% at 10 wells.' },
+          uranium_mine: { label: 'Uranium Mine', output: 0.25, upkeep: 0, resource: 'uranium', dynamicOutput: city => getCappedBonusOutput(0.25, Number(city.uranium_mine || 0), 5), operatingCost: 5000, description: 'Uranium mines produce 0.25 tons of uranium per turn (3 tons/day) and can be built up to 5 per city. Output increases via a capped bonus that reaches +50% at 5 mines.' },
+          steel_mill: { label: 'Steel Mill', output: 0.75, upkeep: 0, resource: 'steel', operatingCost: 4000, description: 'Steel mills convert iron and coal into steel at 0.75 per turn (9 per day) and can be built up to 5 per city. Each mill adds 40 pollution points.' },
+          oil_refinery: { label: 'Oil Refinery', output: 0.5, upkeep: 0.25, resource: 'gasoline', operatingCost: 4000, description: 'Oil refineries convert oil into gasoline at 0.5 per turn (6 per day) and can be built up to 5 per city. Each refinery adds 32 pollution points.' },
+          aluminum_refinery: { label: 'Aluminum Refinery', output: 0.75, upkeep: 0, resource: 'aluminum', operatingCost: 2500, description: 'Aluminum refineries convert bauxite into aluminum at 0.75 per turn (9 per day) and can be built up to 5 per city. Each refinery adds 40 pollution points.' },
+          munitions_factory: { label: 'Munitions Factory', output: 1.5, upkeep: 0, resource: 'munitions', operatingCost: 3500, description: 'Munitions factories convert lead into munitions at 1.5 per turn (18 per day) and can be built up to 5 per city. Each factory adds 32 pollution points.' },
+          factory: { label: 'Factory', output: 0, upkeep: 0, resource: null, benefit: 'Manages tank production capacity', description: 'Produces military equipment instead of a directly tradable resource.' },
+          hangar: { label: 'Hangar', output: 0, upkeep: 0, resource: null, benefit: 'Supports airfield capacity', description: 'Allows aircraft construction and storage.' },
+          drydock: { label: 'Drydock', output: 0, upkeep: 0, resource: null, benefit: 'Supports naval capacity', description: 'Allows shipbuilding and naval repair.' },
+          barracks: { label: 'Barracks', output: 0, upkeep: 0, resource: null, benefit: 'Supports soldier capacity', description: 'Allows enlistment and military training.' },
+          police_station: { label: 'Police Station', output: 0, upkeep: 0, resource: null, benefit: 'Reduces crime and unrest', operatingCost: 750, description: 'Police stations reduce crime by 2.5% per building and can be built up to 5 per city. Each station adds 1 pollution point.' },
+          hospital: { label: 'Hospital', output: 0, upkeep: 0, resource: null, benefit: 'Reduces disease and increases recovery', operatingCost: 1000, description: 'Hospitals reduce disease by 2.5% per building and can be built up to 5 per city. Each hospital adds 4 pollution points.' },
+          recycling_center: { label: 'Recycling Center', output: 0, upkeep: 0, resource: null, benefit: 'Reduces pollution and waste', operatingCost: 2500, description: 'Recycling centers reduce the pollution index by 70 per building in this city and can be built up to 3 per city. Each center removes 70 pollution points.' },
+          subway: { label: 'Subway', output: 0, upkeep: 0, resource: null, benefit: 'Reduces pollution and transit strain', description: 'Subways improve commerce and reduce pollution by about 45 points.' },
+          oil_power: { label: 'Oil Power Plant', output: 500, upkeep: 0, resource: null, benefit: 'Provides power to the city', description: 'Each oil power plant can support up to 500 infrastructure.' },
+          wind_power: { label: 'Wind Power Plant', output: 250, upkeep: 0, resource: null, benefit: 'Provides renewable power', description: 'Each wind power plant can support up to 250 infrastructure.' },
+          coal_power: { label: 'Coal Power Plant', output: 500, upkeep: 0, resource: null, benefit: 'Provides power generation', description: 'Each coal power plant can support up to 500 infrastructure.' },
+          nuclear_power: { label: 'Nuclear Power Plant', output: 2000, upkeep: 0, resource: null, benefit: 'Provides up to 2000 infrastructure power', description: 'Each nuclear plant can support up to 2,000 infrastructure and is clean relative to fossil plants.' }
+        };
+        const definitions = `<div class="box"><div class="label">Output & Upkeep Units</div><div class="value">Output units represent estimated per-turn production or service capacity for the building. Upkeep units represent estimated per-turn maintenance burden, resource consumption, or operating cost needed to sustain that output. For civic and power buildings, we show the main gameplay benefit instead of raw trade value.</div></div>`;
+          const operatingUpkeep = Object.entries(facilityProfiles).reduce((sum, [key, profile]) => sum + Number(city[key] || 0) * (Number(profile.operatingCost ?? profile.upkeep ?? 0)), 0);
+        const manufacturingUpkeep = getManufacturingUpkeep(city, priceMap);
+        const totalUpkeepValue = operatingUpkeep + manufacturingUpkeep.totalCost;
+        const upkeepBreakdownBox = `<div class="box"><div class="label">Upkeep Breakdown</div><div class="value">Operating Cost (negative): ${formatMoney(-operatingUpkeep)}<br>Manufacturing Upkeep (negative): ${formatMoney(-manufacturingUpkeep.totalCost)}<br><strong>Total Upkeep (negative): ${formatMoney(-totalUpkeepValue)}</strong></div></div>`;
+        const manufacturingUpkeepRows = manufacturingUpkeep.entries.length ? manufacturingUpkeep.entries.map((entry) => {
+          const resourceLabel = entry.resource.charAt(0).toUpperCase() + entry.resource.slice(1);
+          const costLabel = formatMoney(entry.cost);
+          return `<div class="box"><div class="label">${entry.label} Manufacturing Input</div><div class="value">Uses ${formatNumber(entry.totalUnits)} ${resourceLabel} per turn • Market value: ${costLabel} • Added as negative upkeep</div></div>`;
+        }).join('') : '<div class="box"><div class="label">Manufacturing Upkeep</div><div class="value">No input-resource upkeep to display.</div></div>';
+        const trackedResources = ['food', 'coal', 'oil', 'uranium', 'iron', 'bauxite', 'lead', 'gasoline', 'munitions', 'steel', 'aluminum'];
+        // Compute per-resource production (units/day) from facilityProfiles
+        const resourceUnits = {};
+        const resourceProducers = {};
+        Object.entries(facilityProfiles).forEach(([key, profile]) => {
+          const count = Number(city[key] || 0);
+          if (!count || !profile.resource) return;
+          const perTurn = typeof profile.dynamicOutput === 'function' ? profile.dynamicOutput(city) : profile.output;
+          const unitsPerDay = count * (Number(perTurn) || 0) * 12;
+          resourceUnits[profile.resource] = (resourceUnits[profile.resource] || 0) + unitsPerDay;
+          resourceProducers[profile.resource] = resourceProducers[profile.resource] || [];
+          resourceProducers[profile.resource].push(`${profile.label} x${formatNumber(count)}`);
+        });
+        // Compute consumption from manufacturing upkeep entries (assume entries.totalUnits are per-turn units)
+        const resourceConsumed = {};
+        const resourceConsumers = {};
+        manufacturingUpkeep.entries.forEach((e) => {
+          if (!e.resource) return;
+          const unitsPerDay = Number(e.totalUnits || 0) * 12;
+          resourceConsumed[e.resource] = (resourceConsumed[e.resource] || 0) + unitsPerDay;
+          resourceConsumers[e.resource] = resourceConsumers[e.resource] || [];
+          resourceConsumers[e.resource].push(`${e.label} x${formatNumber(Number(e.totalUnits || 0) / Math.max(1, Number(city[e.label.toLowerCase().replace(/ /g, '_')] || 1)))} units/building/turn`);
+        });
+        // Build resources table markup with market values
+        const resourceRows = trackedResources.map((res) => {
+          const produced = Number(resourceUnits[res] || 0);
+          const consumed = Number(resourceConsumed[res] || 0);
+          const net = produced - consumed;
+          const price = Number(priceMap[res] || 0);
+          const producedValue = produced * price;
+          const consumedValue = consumed * price;
+          const netValue = net * price;
+          const producers = (resourceProducers[res] || []).join(', ') || 'None';
+          const consumers = (resourceConsumers[res] || []).join(', ') || 'None';
+          return `<tr><td>${res}</td><td>${formatNumber(produced)}</td><td>${formatNumber(consumed)}</td><td>${formatNumber(net)}</td><td>${formatMoney(price)}</td><td>${formatMoney(producedValue)}</td><td>${formatMoney(consumedValue)}</td><td>${formatMoney(netValue)}</td><td>${producers}</td><td>${consumers}</td></tr>`;
+        }).join('');
+        const resourcesBox = `<div class="box"><div class="label">Resources (per day)</div><div class="value"><div class="breakdown-wrap"><table class="breakdown-table"><thead><tr><th>Resource</th><th>Produced</th><th>Consumed</th><th>Net</th><th>Price</th><th>Value Produced</th><th>Value Consumed</th><th>Net Value</th><th>Produced By</th><th>Consumed By</th></tr></thead><tbody>${resourceRows}</tbody></table></div><div class="breakdown-note">All tracked market resources are listed, including resources with zero current production or consumption. Values use the latest market prices and the 12 turns/day model.</div></div></div>`;
+        const crimePenalty = Math.min(1, Math.max(0, Number(sheetMetrics.crime) || 0));
+        const diseasePenalty = Math.min(1, Math.max(0, Number(sheetMetrics.disease) || 0));
+        const buildingCommerce =
+          Number(city.bank || 0) * 6 +
+          Number(city.shopping_mall || 0) * 8 +
+          Number(city.stadium || 0) * 10;
+        const commerceRate = Math.min(100, buildingCommerce + Number(city.subway || 0) * 8);
+        const cityCommerceIncome = population * (commerceRate / 100) * (1 - crimePenalty) * (1 - diseasePenalty) * 12;
+
+        // Commerce breakdown per building
+        const commerceBreakdownRows = [];
+        if (Number(city.supermarket || 0)) commerceBreakdownRows.push(`<div class="box"><div class="label">Supermarkets</div><div class="value">Count: ${formatNumber(city.supermarket || 0)} • Est. Daily Profit: ${formatMoney(getSupermarketDailyProfit(population, Number(city.supermarket || 0)))}</div></div>`);
+        if (Number(city.bank || 0)) commerceBreakdownRows.push(`<div class="box"><div class="label">Banks</div><div class="value">Count: ${formatNumber(city.bank || 0)} • Est. Daily Profit: ${formatMoney(getBankDailyProfit(population, Number(city.bank || 0)))}</div></div>`);
+        if (Number(city.shopping_mall || 0)) commerceBreakdownRows.push(`<div class="box"><div class="label">Shopping Malls</div><div class="value">Count: ${formatNumber(city.shopping_mall || 0)} • Est. Daily Profit: ${formatMoney(getShoppingMallDailyProfit(population, Number(city.shopping_mall || 0)))}</div></div>`);
+        if (Number(city.stadium || 0)) commerceBreakdownRows.push(`<div class="box"><div class="label">Stadiums</div><div class="value">Count: ${formatNumber(city.stadium || 0)} • Est. Daily Profit: ${formatMoney(getStadiumDailyProfit(population, Number(city.stadium || 0)))}</div></div>`);
+        const commerceBox = `<div class="box"><div class="label">Commerce Income Breakdown</div><div class="value">Total Commerce Income: ${formatMoney(cityCommerceIncome)}${commerceBreakdownRows.join('')}</div></div>`;
+        const facilityRows = Object.entries(facilityProfiles).map(([key, profile]) => {
+          const count = Number(city[key] || 0);
+          if (!count) return null;
+          const effectiveOutput = typeof profile.dynamicOutput === 'function' ? profile.dynamicOutput(city) : profile.output;
+          const unitsPerBuildingTurn = Number(effectiveOutput) || 0;
+          const totalDailyUnits = count * unitsPerBuildingTurn * 12;
+          const operatingCostPerBuilding = Number(profile.operatingCost ?? profile.upkeep ?? 0);
+          const dailyOperatingCost = count * operatingCostPerBuilding;
+          const inputRows = getManufacturingInputs(key, priceMap);
+          const inputCostPerBuilding = inputRows.reduce((sum, input) => sum + input.units * input.price * 12, 0);
+          const totalInputCost = count * inputCostPerBuilding;
+          const totalCost = dailyOperatingCost + totalInputCost;
+          const estimatedProfit = key === 'supermarket' ? getSupermarketDailyProfit(population, count) : key === 'bank' ? getBankDailyProfit(population, count) : key === 'shopping_mall' ? getShoppingMallDailyProfit(population, count) : key === 'stadium' ? getStadiumDailyProfit(population, count) : null;
+          const resourceLabel = profile.resource ? profile.resource.charAt(0).toUpperCase() + profile.resource.slice(1) : (profile.benefit || 'Service / capacity');
+          const pricePerUnit = profile.resource ? Number(priceMap[profile.resource]) || 0 : 0;
+          const productionValue = totalDailyUnits * pricePerUnit;
+          const inputLabel = inputRows.length ? inputRows.map(input => `${formatNumber(input.units * 12)} ${input.resource}/day`).join(', ') : 'None';
+          const profitLabel = estimatedProfit !== null ? formatMoney(estimatedProfit) : '—';
+          const outputLabel = profile.resource ? `${formatNumber(unitsPerBuildingTurn)} ${resourceLabel}/turn` : profile.output ? `${formatNumber(unitsPerBuildingTurn)} capacity/building` : '—';
+          const totalOutputLabel = profile.resource ? `${formatNumber(totalDailyUnits)} ${resourceLabel}/day` : profile.output ? `${formatNumber(count * unitsPerBuildingTurn)} capacity` : '—';
+          return `<tr><td><strong>${profile.label}</strong><div class="breakdown-note">${profile.description || ''}</div></td><td>${formatNumber(count)}</td><td>${resourceLabel}</td><td>${outputLabel}</td><td>${totalOutputLabel}</td><td>${profile.resource ? formatMoney(pricePerUnit) : '—'}</td><td>${profile.resource ? formatMoney(productionValue) : profitLabel}</td><td>${formatMoney(operatingCostPerBuilding)}</td><td>${formatMoney(dailyOperatingCost)}</td><td>${inputLabel}<br>${formatMoney(inputCostPerBuilding)} / building</td><td>${formatMoney(totalCost)}</td></tr>`;
+        }).filter(Boolean).join('');
+        const facilityBreakdown = `<div class="box"><div class="label">Complete Building Production & Cost Breakdown</div><div class="breakdown-wrap"><table class="breakdown-table"><thead><tr><th>Building</th><th>Count</th><th>Produces / Benefit</th><th>Per Building / Turn</th><th>Total / Day</th><th>Price</th><th>Value / Day</th><th>Operating Cost / Building / Day</th><th>Operating Cost / Day</th><th>Inputs / Building / Day</th><th>Total Cost / Day</th></tr></thead><tbody>${facilityRows}</tbody></table></div><div class="breakdown-note">Production uses the current market price and the page's 12 turns/day model. Input costs include the resources consumed by manufacturing buildings; operating costs are shown separately.</div></div>`;
+        const totalProduction = Object.entries(facilityProfiles).reduce((sum, [key, profile]) => {
+          const count = Number(city[key] || 0);
+          const effectiveOutput = getEffectiveOutput(city, profile);
+          return sum + count * effectiveOutput * 12 * (Number(priceMap[profile.resource]) || 0);
+        }, 0);
+        const supermarketProfit = getSupermarketDailyProfit(population, Number(city.supermarket || 0));
+        const bankProfit = getBankDailyProfit(population, Number(city.bank || 0));
+        const shoppingMallProfit = getShoppingMallDailyProfit(population, Number(city.shopping_mall || 0));
+        const stadiumProfit = getStadiumDailyProfit(population, Number(city.stadium || 0));
+        const netProfit = totalProduction - totalUpkeepValue + supermarketProfit + bankProfit + shoppingMallProfit + stadiumProfit;
+        const grossProfit = netProfit + cityCommerceIncome;
+        const totalUpkeep = totalUpkeepValue;
+
+        document.getElementById('meta').innerHTML = `${city.name || 'Unknown City'} • City manager detail view<br><span class="profit"><span class="stat-line">Est. Net Profit: ${formatMoney(netProfit)}</span><span class="stat-line">Commerce Income: ${formatMoney(cityCommerceIncome)}</span><span class="stat-line">Gross Profit: ${formatMoney(grossProfit)}</span><span class="stat-line">Total Upkeep: ${formatMoney(-totalUpkeep)}</span></span>`;
+
+        const fields = [
+          ['Population', formatNumber(population)],
+          ['Commerce Income', formatMoney(cityCommerceIncome)],
+          ['Infrastructure', formatNumber(city.infrastructure || 0)],
+          ['Land', formatNumber(city.land || 0)],
+          ['Power', city.powered ? 'Online' : 'Offline'],
+          ['Oil Power', formatNumber(city.oil_power || 0)],
+          ['Wind Power', formatNumber(city.wind_power || 0)],
+          ['Coal Power', formatNumber(city.coal_power || 0)],
+          ['Nuclear Power', formatNumber(city.nuclear_power || 0)],
+          ['Barracks', formatNumber(city.barracks || 0)],
+          ['Farm', formatNumber(city.farm || 0)],
+          ['Police Station', formatNumber(city.police_station || 0)],
+          ['Hospital', formatNumber(city.hospital || 0)],
+          ['Recycling Center', formatNumber(city.recycling_center || 0)],
+          ['Subway', formatNumber(city.subway || 0)],
+          ['Supermarket', formatNumber(city.supermarket || 0)],
+          ['Bank', formatNumber(city.bank || 0)],
+          ['Stadium', formatNumber(city.stadium || 0)],
+          ['Lead Mine', formatNumber(city.lead_mine || 0)],
+          ['Iron Mine', formatNumber(city.iron_mine || 0)],
+          ['Bauxite Mine', formatNumber(city.bauxite_mine || 0)],
+          ['Oil Refinery', formatNumber(city.oil_refinery || 0)],
+          ['Aluminum Refinery', formatNumber(city.aluminum_refinery || 0)],
+          ['Steel Mill', formatNumber(city.steel_mill || 0)],
+          ['Munitions Factory', formatNumber(city.munitions_factory || 0)],
+          ['Factory', formatNumber(city.factory || 0)],
+          ['Hangar', formatNumber(city.hangar || 0)],
+          ['Drydock', formatNumber(city.drydock || 0)],
+          ['Coal Mine', formatNumber(city.coal_mine || 0)],
+          ['Oil Well', formatNumber(city.oil_well || 0)],
+          ['Uranium Mine', formatNumber(city.uranium_mine || 0)]
+        ];
+        const overviewCards = [
+          ['Population', formatNumber(population)],
+          ['Commerce Income', formatMoney(cityCommerceIncome)],
+          ['Net Profit', formatMoney(netProfit)],
+          ['Upkeep', formatMoney(-totalUpkeep)]
+        ].map(([label, value]) => `<div class="box"><div class="label">${label}</div><div class="value">${value}</div></div>`).join('');
+        document.getElementById('content').innerHTML = `${overviewCards}${fields.slice(0, 8).map(([label, value]) => `<div class="box"><div class="label">${label}</div><div class="value">${value}</div></div>`).join('')}`;
+        document.getElementById('detailsContent').innerHTML = `${definitions}${upkeepBreakdownBox}${manufacturingUpkeepRows}${resourcesBox}${commerceBox}${facilityBreakdown}${fields.slice(8).map(([label, value]) => `<div class="box"><div class="label">${label}</div><div class="value">${value}</div></div>`).join('')}`;
+      } catch (error) {
+        document.getElementById('content').innerHTML = `<div class="box"><div class="label">Error</div><div class="value">${error.message}</div></div>`;
+      }
+    }
+    function activateWarTab(tabName) {
+      document.querySelectorAll('.war-tab').forEach((button) => {
+        const isActive = button.dataset.warTab === tabName;
+        button.classList.toggle('active', isActive);
+      });
+      document.querySelectorAll('.war-pane').forEach((pane) => {
+        pane.classList.toggle('hidden', pane.id !== `${tabName === 'details' ? 'warDetailsPane' : 'warOverviewPane'}`);
+      });
+    }
+    document.querySelectorAll('.war-tab').forEach((button) => {
+      button.addEventListener('click', () => activateWarTab(button.dataset.warTab));
+    });
+    // --- IndexedDB: city profit recorder (2hr sampling, 10000 entries circular)
+    function openProfitDB(){
+      return new Promise((resolve, reject)=>{
+        const req = indexedDB.open('cityProfitDB', 1);
+        req.onupgradeneeded = (e)=>{ const db = e.target.result; if(!db.objectStoreNames.contains('samples')) db.createObjectStore('samples',{keyPath:'id',autoIncrement:true}); };
+        req.onsuccess = ()=> resolve(req.result);
+        req.onerror = ()=> reject(req.error);
+      });
+    }
+    async function addProfitSample(cityKey, sample){
+      const db = await openProfitDB();
+      return new Promise((resolve,reject)=>{
+        const tx = db.transaction('samples','readwrite');
+        const store = tx.objectStore('samples');
+        store.add({ city: cityKey, ts: Date.now(), value: Number(sample) || 0 });
+        tx.oncomplete = async ()=>{
+          // enforce per-city cap
+          try{
+            const cap = 10000;
+            const all = await getAllSamplesForCity(cityKey);
+            if(all.length > cap){
+              const toRemove = all.slice(0, all.length - cap);
+              const delTx = db.transaction('samples','readwrite');
+              const delStore = delTx.objectStore('samples');
+              toRemove.forEach(row => delStore.delete(row.id));
+            }
+          }catch(e){/*ignore*/}
+          resolve(true);
+        };
+        tx.onerror = ()=> reject(tx.error);
+      });
+    }
+    function getAllSamplesForCity(cityKey){
+      return new Promise(async (resolve,reject)=>{
+        try{
+          const db = await openProfitDB();
+          const tx = db.transaction('samples','readonly');
+          const store = tx.objectStore('samples');
+          const req = store.openCursor();
+          const out = [];
+          req.onsuccess = (e)=>{
+            const cur = e.target.result;
+            if(cur){ if(cur.value && cur.value.city === cityKey) out.push(cur.value); cur.continue(); } else resolve(out.sort((a,b)=>a.ts-b.ts));
+          };
+          req.onerror = ()=> reject(req.error);
+        }catch(e){reject(e)}
+      });
+    }
+    async function clearCityHistory(cityKey){
+      const db = await openProfitDB();
+      return new Promise((resolve,reject)=>{
+        const tx = db.transaction('samples','readwrite');
+        const store = tx.objectStore('samples');
+        const req = store.openCursor();
+        req.onsuccess = (e)=>{
+          const cur = e.target.result;
+          if(cur){ if(cur.value && cur.value.city === cityKey) store.delete(cur.primaryKey); cur.continue(); } else resolve(true);
+        };
+        req.onerror = ()=> reject(req.error);
+      });
+    }
+    function renderProfitChart(samples){
+      try{
+        const canvas = document.getElementById('profitChart');
+        if(!canvas) return; const ctx = canvas.getContext('2d');
+        const w = canvas.width = canvas.clientWidth * devicePixelRatio;
+        const h = canvas.height = canvas.clientHeight * devicePixelRatio;
+        ctx.clearRect(0,0,w,h);
+        if(!Array.isArray(samples) || samples.length < 1) return;
+        const values = samples.map(s => Number(s.value||0));
+        const min = Math.min(...values); const max = Math.max(...values); const range = Math.max(1, max - min);
+        ctx.lineWidth = Math.max(1, 1.5 * devicePixelRatio);
+        ctx.strokeStyle = '#4ade80'; ctx.beginPath();
+        values.forEach((v,i)=>{
+          const x = (i/(values.length-1))*(w-20*devicePixelRatio) + 10*devicePixelRatio;
+          const y = h - ((v - min)/range)*(h-20*devicePixelRatio) - 10*devicePixelRatio;
+          if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+        });
+        ctx.stroke();
+      }catch(e){console.warn('render chart',e)}
+    }
+    // wire buttons after page load
+    document.getElementById('recordNowBtn').addEventListener('click', async ()=>{
+      const cityId = new URLSearchParams(window.location.search).get('cityId') || (document.getElementById('city-title')?.textContent||'unknown');
+      // fetch immediate net estimate by reusing visible meta values if present
+      try{
+        // attempt to read net profit displayed in meta
+        const meta = document.getElementById('meta').textContent || '';
+        const m = meta.match(/Est\. Net Profit: \$?([0-9,\.\-]+)/);
+        let value = 0;
+        if(m){ value = Number(m[1].replace(/,/g,'')); }
+        await addProfitSample(cityId, value);
+        const all = await getAllSamplesForCity(cityId);
+        renderProfitChart(all);
+      }catch(e){console.warn(e)}
+    });
+    document.getElementById('clearHistoryBtn').addEventListener('click', async ()=>{
+      const cityId = new URLSearchParams(window.location.search).get('cityId') || (document.getElementById('city-title')?.textContent||'unknown');
+      await clearCityHistory(cityId);
+      renderProfitChart([]);
+    });
+    // periodic auto-record: every 2 hours (7200000 ms)
+    const SAMPLE_INTERVAL_MS = 2 * 60 * 60 * 1000;
+    setInterval(async ()=>{
+      try{
+        const cityId = new URLSearchParams(window.location.search).get('cityId') || (document.getElementById('city-title')?.textContent||'unknown');
+        // attempt to parse current displayed net profit
+        const meta = document.getElementById('meta').textContent || '';
+        const m = meta.match(/Est\. Net Profit: \$?([0-9,\.\-]+)/);
+        let value = 0; if(m) value = Number(m[1].replace(/,/g,''));
+        await addProfitSample(cityId, value);
+        const all = await getAllSamplesForCity(cityId);
+        renderProfitChart(all);
+      }catch(e){console.warn('auto sample failed',e)}
+    }, SAMPLE_INTERVAL_MS);
+
+    // initial render of stored points on page load
+    (async function(){
+      try{
+        const cityId = new URLSearchParams(window.location.search).get('cityId') || (document.getElementById('city-title')?.textContent||'unknown');
+        const all = await getAllSamplesForCity(cityId);
+        renderProfitChart(all);
+      }catch(e){/*ignore*/}
+    })();
+
+    loadData();
+  </script>
+</body>
+</html>

@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Market Resource Detail</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg: #030712;
+            --panel: rgba(10, 15, 28, 0.95);
+            --panel-alt: rgba(15, 22, 35, 0.94);
+            --border: rgba(34, 211, 238, 0.16);
+            --cyan: #22d3ee;
+            --text: #f8fafc;
+            --muted: #94a3b8;
+            --green: #34d399;
+            --red: #fb7185;
+            --amber: #fbbf24;
+        }
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: radial-gradient(circle at top, #13233c 0%, var(--bg) 45%, #02040a 100%);
+            color: var(--text);
+        }
+        a { color: inherit; text-decoration: none; }
+        .page { max-width: 1280px; margin: 0 auto; padding: 24px; }
+        .hero { background: var(--panel); border: 1px solid var(--border); border-radius: 24px; padding: 24px; box-shadow: 0 20px 45px rgba(0,0,0,0.3); }
+        .hero-top { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 18px; }
+        .hero h1 { margin: 0; font-size: 1.7rem; letter-spacing: 0.08em; text-transform: uppercase; }
+        .hero .sub { color: var(--muted); margin-top: 7px; }
+        .back-link { border: 1px solid var(--border); border-radius: 999px; padding: 10px 14px; color: var(--cyan); }
+        .grid { display: grid; grid-template-columns: 1.15fr 0.8fr; gap: 16px; margin-top: 18px; }
+        .card { background: var(--panel-alt); border: 1px solid var(--border); border-radius: 18px; padding: 16px; }
+        .kpi-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 12px; }
+        .kpi { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 14px; padding: 12px; }
+        .kpi .label { color: var(--muted); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.08em; }
+        .kpi .value { font-size: 1.08rem; font-weight: 800; margin-top: 6px; }
+        .chart-wrap { height: 280px; margin-top: 10px; }
+        .table-wrap { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid rgba(255,255,255,0.08); font-size: 0.92rem; }
+        th { color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.75rem; }
+        .pill { display: inline-block; padding: 6px 10px; border-radius: 999px; font-size: 0.82rem; font-weight: 700; }
+        .pill.good { color: var(--green); background: rgba(52, 211, 153, 0.14); }
+        .pill.warn { color: var(--amber); background: rgba(251, 191, 36, 0.14); }
+        .pill.bad { color: var(--red); background: rgba(251, 113, 133, 0.14); }
+        .metric-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+        .metric-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 14px; min-height: 92px; }
+        .metric-card .label { color: var(--muted); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; }
+        .metric-card .value { margin-top: 10px; font-size: 0.98rem; font-weight: 800; line-height: 1.3; }
+        .metric-card .small { font-size: 0.82rem; color: var(--muted); margin-top: 6px; display:block; }
+        .wide-card { grid-column: span 2; }
+        @media (max-width: 1200px) { .metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+        @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } .kpi-grid, .metric-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <div class="hero">
+            <div class="hero-top">
+                <div>
+                    <h1 id="resource-title">RESOURCE DETAIL</h1>
+                    <div class="sub" id="resource-sub">Loading live market intelligence...</div>
+                </div>
+                <a class="back-link" href="MarketAi.html">← Back to Market</a>
+            </div>
+            <div class="kpi-grid" id="kpi-grid"></div>
+        </div>
+
+        <div class="grid">
+            <div class="card">
+                <h3 style="margin-top:0;">Price trajectory</h3>
+                <div class="chart-wrap"><canvas id="resource-chart"></canvas></div>
+            </div>
+            <div class="card">
+                <h3 style="margin-top:0;">Action posture</h3>
+                <div id="action-panel" style="color: var(--muted); line-height: 1.7;"></div>
+            </div>
+        </div>
+
+        <div class="card" style="margin-top: 16px;">
+            <h3 style="margin-top:0;">Recent price history</h3>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr><th>Timestamp</th><th>Price</th><th>Signal</th></tr>
+                    </thead>
+                    <tbody id="history-body"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="grid" style="margin-top: 18px;">
+            <div class="card wide-card">
+                <h3 style="margin-top:0;">Resource market summary</h3>
+                <div class="kpi-grid" id="resource-summary-grid"></div>
+            </div>
+            <div class="card wide-card">
+                <h3 style="margin-top:0;">Forecast & valuation</h3>
+                <div class="kpi-grid" id="resource-forecast-grid"></div>
+            </div>
+        </div>
+
+        <div class="card" style="margin-top: 18px;">
+            <h3 style="margin-top:0;">City production and consumption</h3>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>City</th>
+                            <th>Infrastructure</th>
+                            <th>Population / Land</th>
+                            <th>Prod/day</th>
+                            <th>Prod value/day</th>
+                            <th>Cons/day</th>
+                            <th>Cons value/day</th>
+                            <th>Net/day</th>
+                            <th>Net value/day</th>
+                            <th>Stockpile share</th>
+                            <th>Forecast 30d</th>
+                        </tr>
+                    </thead>
+                    <tbody id="city-stats-body"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card" style="margin-top: 18px;">
+            <h3 style="margin-top:0;">Detailed resource metrics</h3>
+            <div class="metric-grid" id="resource-metric-grid"></div>
+        </div>
+    </div>
+
+    <script src="common.js"></script>
+    <script>
+        const resourceName = new URLSearchParams(window.location.search).get('resource') || 'OIL';
+        const resourceKey = resourceName.toLowerCase();
+        let chart;
+
+        function getResourceDisplayName(name) {
+            return String(name || 'RESOURCE').toUpperCase();
+        }
+
+        function formatCurrency(value) {
+            return `$${Number(value || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+        }
+
+        function formatNumber(value, digits = 0) {
+            const num = Number(value);
+            if (!Number.isFinite(num)) return '—';
+            return num.toLocaleString(undefined, { maximumFractionDigits: digits });
+        }
+
+        function formatPercent(value) {
+            const num = Number(value);
+            if (!Number.isFinite(num)) return '—';
+            const sign = num > 0 ? '+' : '';
+            return `${sign}${num.toFixed(2)}%`;
+        }
+
+        function buildActionPosture(changeDay) {
+            if (changeDay >= 5) {
+                return `<div class="pill good">Momentum bullish</div><br/>Price is accelerating higher. Trend strength favors accumulation and capture of the supply squeeze.`;
+            }
+            if (changeDay <= -5) {
+                return `<div class="pill bad">Momentum bearish</div><br/>Price is fading. Trend pressure points to profit taking and cautious inventory management.`;
+            }
+            return `<div class="pill warn">Trend neutral</div><br/>The resource is trading in a stable corridor. Maintain liquidity and monitor for breakout signals.`;
+        }
+
+        function getFacilityProfiles() {
+            return {
+                farm: { label: 'Farm', resource: 'food', output: 0, dynamicOutput: city => Number(city.farm || 0) * (Number(city.land || 0) / 500), inputs: {} },
+                coal_mine: { label: 'Coal Mine', resource: 'coal', output: 0.25, inputs: {} },
+                oil_well: { label: 'Oil Well', resource: 'oil', output: 0.25, inputs: {} },
+                uranium_mine: { label: 'Uranium Mine', resource: 'uranium', output: 0.25, inputs: {} },
+                iron_mine: { label: 'Iron Mine', resource: 'iron', output: 0.25, inputs: {} },
+                bauxite_mine: { label: 'Bauxite Mine', resource: 'bauxite', output: 0.25, inputs: {} },
+                lead_mine: { label: 'Lead Mine', resource: 'lead', output: 0.25, inputs: {} },
+                oil_refinery: { label: 'Oil Refinery', resource: 'gasoline', output: 0.5, inputs: { oil: 0.5 } },
+                aluminum_refinery: { label: 'Aluminum Refinery', resource: 'aluminum', output: 0.75, inputs: { bauxite: 0.75 } },
+                steel_mill: { label: 'Steel Mill', resource: 'steel', output: 0.75, inputs: { iron: 0.75, coal: 0.75 } },
+                munitions_factory: { label: 'Munitions Factory', resource: 'munitions', output: 1.5, inputs: { lead: 1.5 } }
+            };
+        }
+
+        function getResourcePriceMap(latestPrices) {
+            return {
+                food: Number(latestPrices.food) || 0,
+                coal: Number(latestPrices.coal) || 0,
+                oil: Number(latestPrices.oil) || 0,
+                uranium: Number(latestPrices.uranium) || 0,
+                iron: Number(latestPrices.iron) || 0,
+                bauxite: Number(latestPrices.bauxite) || 0,
+                lead: Number(latestPrices.lead) || 0,
+                gasoline: Number(latestPrices.gasoline) || 0,
+                munitions: Number(latestPrices.munitions) || 0,
+                steel: Number(latestPrices.steel) || 0,
+                aluminum: Number(latestPrices.aluminum) || 0,
+                credits: Number(latestPrices.credits) || 0
+            };
+        }
+
+        function getPriceHistory(tradeRows, key) {
+            return tradeRows
+                .map(row => ({ date: row.date, price: Number(row[key] || 0) }))
+                .filter(item => Number.isFinite(item.price));
+        }
+
+        function getAverage(values) {
+            if (!values.length) return 0;
+            return values.reduce((sum, value) => sum + value, 0) / values.length;
+        }
+
+        function getPeriodChange(history, lookback) {
+            if (history.length <= lookback) return 0;
+            const current = history[history.length - 1].price;
+            const prior = history[history.length - 1 - lookback].price;
+            if (!prior) return 0;
+            return ((current - prior) / prior) * 100;
+        }
+
+        function computeCityResourceProfile(city, resourceKey, priceMap) {
+            const profiles = getFacilityProfiles();
+            let productionUnits = 0;
+            let consumptionUnits = 0;
+            let productionValue = 0;
+            let consumptionValue = 0;
+
+            Object.entries(profiles).forEach(([key, profile]) => {
+                const count = Number(city[key] || 0);
+                if (!count) return;
+                const outputRate = typeof profile.dynamicOutput === 'function' ? profile.dynamicOutput(city) : profile.output;
+                const producedUnits = count * outputRate * 12;
+                if (profile.resource === resourceKey) {
+                    productionUnits += producedUnits;
+                    productionValue += producedUnits * (priceMap[resourceKey] || 0);
+                }
+                const inputRate = Number(profile.inputs?.[resourceKey] || 0);
+                if (inputRate > 0) {
+                    const consumedUnits = count * inputRate * 12;
+                    consumptionUnits += consumedUnits;
+                    consumptionValue += consumedUnits * (priceMap[resourceKey] || 0);
+                }
+            });
+
+            return {
+                name: city.name || city.city_name || 'Unknown City',
+                infrastructure: Number(city.infrastructure || 0),
+                population: Number(city.city_population || city.population || city.land || 0),
+                productionUnits,
+                productionValue,
+                consumptionUnits,
+                consumptionValue,
+                netUnits: productionUnits - consumptionUnits,
+                netValue: productionValue - consumptionValue
+            };
+        }
+
+        function makeMetricCard(label, value, note = '') {
+            return `<div class="metric-card"><div class="label">${label}</div><div class="value">${value}</div>${note ? `<span class="small">${note}</span>` : ''}</div>`;
+        }
+
+        function renderSummaryCards(stats) {
+            const container = document.getElementById('resource-summary-grid');
+            if (!container) return;
+            container.innerHTML = `
+                <div class="kpi"><div class="label">Stockpile units</div><div class="value">${formatNumber(stats.holdings)}</div></div>
+                <div class="kpi"><div class="label">Stockpile market value</div><div class="value">${formatCurrency(stats.stockpileValue)}</div></div>
+                <div class="kpi"><div class="label">Price spot</div><div class="value">${formatCurrency(stats.spot)}</div></div>
+                <div class="kpi"><div class="label">24h price change</div><div class="value">${formatPercent(stats.change24h)}</div></div>
+                <div class="kpi"><div class="label">7d price change</div><div class="value">${formatPercent(stats.change7d)}</div></div>
+                <div class="kpi"><div class="label">30d price change</div><div class="value">${formatPercent(stats.change30d)}</div></div>
+                <div class="kpi"><div class="label">30d average price</div><div class="value">${formatCurrency(stats.avg30d)}</div></div>
+                <div class="kpi"><div class="label">90d average price</div><div class="value">${formatCurrency(stats.avg90d)}</div></div>
+                <div class="kpi"><div class="label">Price high</div><div class="value">${formatCurrency(stats.high)}</div></div>
+                <div class="kpi"><div class="label">Price low</div><div class="value">${formatCurrency(stats.low)}</div></div>
+                <div class="kpi"><div class="label">Daily value</div><div class="value">${formatCurrency(stats.stockpileValue)}</div></div>
+                <div class="kpi"><div class="label">Weekly value</div><div class="value">${formatCurrency(stats.stockpileValue * 7)}</div></div>
+                <div class="kpi"><div class="label">Monthly value</div><div class="value">${formatCurrency(stats.stockpileValue * 30)}</div></div>
+                <div class="kpi"><div class="label">Net nation holdings</div><div class="value">${formatCurrency(stats.stockpileValue + (stats.cashValue || 0))}</div></div>
+                <div class="kpi"><div class="label">Cash on hand</div><div class="value">${formatCurrency(stats.cashValue)}</div></div>
+                <div class="kpi"><div class="label">Net position</div><div class="value">${formatCurrency(stats.stockpileValue + (stats.cashValue || 0))}</div></div>
+            `;
+        }
+
+        function renderForecastCards(stats) {
+            const container = document.getElementById('resource-forecast-grid');
+            if (!container) return;
+            container.innerHTML = `
+                <div class="kpi"><div class="label">Projected 7d value</div><div class="value">${formatCurrency(stats.stockpileValue * Math.pow(1 + stats.change7d / 100, 7))}</div></div>
+                <div class="kpi"><div class="label">Projected 30d value</div><div class="value">${formatCurrency(stats.stockpileValue * Math.pow(1 + stats.change30d / 100, 30))}</div></div>
+                <div class="kpi"><div class="label">Forecast volatility</div><div class="value">${formatPercent(stats.volatility)}</div></div>
+                <div class="kpi"><div class="label">Price trend</div><div class="value">${stats.trendLabel}</div></div>
+                <div class="kpi"><div class="label">Daily value movement</div><div class="value">${formatCurrency(stats.stockpileValue * (stats.change24h / 100))}</div></div>
+                <div class="kpi"><div class="label">Top city producer</div><div class="value">${stats.topProducer || 'N/A'}</div></div>
+                <div class="kpi"><div class="label">Top city consumer</div><div class="value">${stats.topConsumer || 'N/A'}</div></div>
+                <div class="kpi"><div class="label">Resource share of inventory</div><div class="value">${formatPercent(stats.inventoryShare)}</div></div>
+                <div class="kpi"><div class="label">Projected 90d value</div><div class="value">${formatCurrency(stats.stockpileValue * Math.pow(1 + stats.change30d / 100, 90))}</div></div>
+                <div class="kpi"><div class="label">Adjusted cash + stockpile</div><div class="value">${formatCurrency(stats.stockpileValue + stats.cashValue)}</div></div>
+                <div class="kpi"><div class="label">Inventory velocity</div><div class="value">${formatNumber(stats.velocity)}</div></div>
+                <div class="kpi"><div class="label">Live snapshot</div><div class="value">${new Date().toLocaleString()}</div></div>
+            `;
+        }
+
+        function renderCityStats(cityProfiles, stats) {
+            const body = document.getElementById('city-stats-body');
+            if (!body) return;
+            body.innerHTML = cityProfiles.map((city) => {
+                return `<tr>
+                    <td>${city.name}</td>
+                    <td>${formatNumber(city.infrastructure)}</td>
+                    <td>${formatNumber(city.population)}</td>
+                    <td>${formatNumber(city.productionUnits, 2)}</td>
+                    <td>${formatCurrency(city.productionValue)}</td>
+                    <td>${formatNumber(city.consumptionUnits, 2)}</td>
+                    <td>${formatCurrency(city.consumptionValue)}</td>
+                    <td>${formatNumber(city.netUnits, 2)}</td>
+                    <td>${formatCurrency(city.netValue)}</td>
+                    <td>${formatPercent(stats.stockpileValue > 0 ? (city.productionValue / stats.stockpileValue) * 100 : 0)}</td>
+                    <td>${formatCurrency(city.netValue * 30)}</td>
+                </tr>`;
+            }).join('');
+        }
+
+        function renderDetailMetrics(cityProfiles, stats) {
+            const container = document.getElementById('resource-metric-grid');
+            if (!container) return;
+            const metrics = [];
+            metrics.push({ label: 'Current resource', value: getResourceDisplayName(resourceName), note: 'Resource identifier' });
+            metrics.push({ label: 'Nation stockpile units', value: formatNumber(stats.holdings) });
+            metrics.push({ label: 'Current stockpile market value', value: formatCurrency(stats.stockpileValue) });
+            metrics.push({ label: '24h price change', value: formatPercent(stats.change24h) });
+            metrics.push({ label: '7d price change', value: formatPercent(stats.change7d) });
+            metrics.push({ label: '30d price change', value: formatPercent(stats.change30d) });
+            metrics.push({ label: '7d forecast', value: formatCurrency(stats.stockpileValue * Math.pow(1 + stats.change7d / 100, 7)) });
+            metrics.push({ label: '30d forecast', value: formatCurrency(stats.stockpileValue * Math.pow(1 + stats.change30d / 100, 30)) });
+            metrics.push({ label: '30d average price', value: formatCurrency(stats.avg30d) });
+            metrics.push({ label: '90d average price', value: formatCurrency(stats.avg90d) });
+            metrics.push({ label: 'Price high', value: formatCurrency(stats.high) });
+            metrics.push({ label: 'Price low', value: formatCurrency(stats.low) });
+            metrics.push({ label: 'Trend label', value: stats.trendLabel });
+            metrics.push({ label: 'Volatility index', value: formatPercent(stats.volatility) });
+            metrics.push({ label: 'Net nation position', value: formatCurrency(stats.stockpileValue + stats.cashValue) });
+            metrics.push({ label: 'Cash balance', value: formatCurrency(stats.cashValue) });
+            metrics.push({ label: 'Daily stockpile value', value: formatCurrency(stats.stockpileValue) });
+            metrics.push({ label: 'Weekly stockpile value', value: formatCurrency(stats.stockpileValue * 7) });
+            metrics.push({ label: 'Monthly stockpile value', value: formatCurrency(stats.stockpileValue * 30) });
+
+            cityProfiles.forEach((city, index) => {
+                metrics.push({ label: `${city.name} prod/day`, value: formatNumber(city.productionUnits, 2) });
+                metrics.push({ label: `${city.name} prod/day $`, value: formatCurrency(city.productionValue) });
+                metrics.push({ label: `${city.name} cons/day`, value: formatNumber(city.consumptionUnits, 2) });
+                metrics.push({ label: `${city.name} cons/day $`, value: formatCurrency(city.consumptionValue) });
+                metrics.push({ label: `${city.name} net/day`, value: formatNumber(city.netUnits, 2) });
+                metrics.push({ label: `${city.name} net/day $`, value: formatCurrency(city.netValue) });
+                metrics.push({ label: `${city.name} production/week $`, value: formatCurrency(city.productionValue * 7) });
+                metrics.push({ label: `${city.name} consumption/week $`, value: formatCurrency(city.consumptionValue * 7) });
+                metrics.push({ label: `${city.name} production/month $`, value: formatCurrency(city.productionValue * 30) });
+                metrics.push({ label: `${city.name} consumption/month $`, value: formatCurrency(city.consumptionValue * 30) });
+                metrics.push({ label: `${city.name} stockpile share`, value: formatPercent(stats.stockpileValue > 0 ? (city.productionValue / stats.stockpileValue) * 100 : 0) });
+            });
+
+            container.innerHTML = metrics.slice(0, 192).map(metric => makeMetricCard(metric.label, metric.value, metric.note || '')).join('');
+        }
+
+        function renderHistory(rows, history, avg) {
+            const historyBody = document.getElementById('history-body');
+            if (!historyBody) return;
+            historyBody.innerHTML = history.slice(-30).reverse().map((row) => {
+                const signal = row.price >= avg ? 'Above mean' : 'Below mean';
+                return `<tr><td>${row.date ? new Date(row.date).toLocaleString() : 'Unknown'}</td><td>${formatCurrency(row.price)}</td><td>${signal}</td></tr>`;
+            }).join('');
+        }
+
+        function renderChart(history) {
+            const ctx = document.getElementById('resource-chart').getContext('2d');
+            const labels = history.map(row => row.date ? new Date(row.date).toLocaleDateString() : 'N/A');
+            const data = history.map(row => row.price);
+            const dataset = {
+                labels,
+                datasets: [{
+                    label: `${getResourceDisplayName(resourceName)} Price`,
+                    data,
+                    borderColor: '#22d3ee',
+                    backgroundColor: 'rgba(34, 211, 238, 0.16)',
+                    fill: true,
+                    tension: 0.2,
+                    pointRadius: 2
+                }]
+            };
+            if (chart) { chart.data = dataset; chart.update(); }
+            else { chart = new Chart(ctx, { type: 'line', data: dataset, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#e2e8f0' } } }, scales: { x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.06)' } }, y: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.06)' } } } } }); }
+        }
+
+        async function loadResourceDetail() {
+            const title = document.getElementById('resource-title');
+            const sub = document.getElementById('resource-sub');
+            const kpiGrid = document.getElementById('kpi-grid');
+            const actionPanel = document.getElementById('action-panel');
+            const summaryGrid = document.getElementById('resource-summary-grid');
+            const forecastGrid = document.getElementById('resource-forecast-grid');
+
+            const resourceIcon = typeof getResourceIconHtml === 'function' ? getResourceIconHtml(resourceKey, 20) : '';
+            title.innerHTML = `${resourceIcon}${getResourceDisplayName(resourceName)} DETAIL`;
+            sub.textContent = `Live market intelligence for ${getResourceDisplayName(resourceName)}, including stockpile valuation, city output and consumption, and predictive resource metrics.`;
+
+            try {
+                const query = `query { tradeprices(first: 60) { data { date food coal oil uranium iron bauxite lead gasoline munitions steel aluminum credits } } nations(id: [768640], first: 1) { data { nation_name leader_name population num_cities score alliance_id alliance_position soldiers tanks aircraft ships money credits food coal oil uranium iron bauxite lead gasoline munitions steel aluminum arms_stockpile cities { id name infrastructure land powered oil_power wind_power coal_power nuclear_power coal_mine oil_well uranium_mine barracks farm police_station hospital recycling_center subway supermarket bank shopping_mall stadium lead_mine iron_mine bauxite_mine oil_refinery aluminum_refinery steel_mill munitions_factory factory hangar drydock } } } }`;
+                const response = await fetch(`https://api.politicsandwar.com/graphql?api_key=${API_KEY}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query })
+                });
+                const json = await response.json();
+                const tradeRows = sortMarketRowsNewestFirst(json?.data?.tradeprices?.data);
+                const nation = json?.data?.nations?.data?.[0] || {};
+                const cities = Array.isArray(nation?.cities?.data) ? nation.cities.data : Array.isArray(nation?.cities) ? nation.cities : [];
+                    const latestPrices = getLatestMarketRow(tradeRows);
+                const priceMap = getResourcePriceMap(latestPrices);
+                const history = getPriceHistory(tradeRows, resourceKey);
+                const hasHistory = history.length > 0;
+                const spot = hasHistory ? history[history.length - 1].price : 0;
+                const change24h = getPeriodChange(history, 1);
+                const change7d = getPeriodChange(history, 7);
+                const change30d = getPeriodChange(history, 30);
+                const avg30d = getAverage(history.slice(-30).map(item => item.price));
+                const avg90d = getAverage(history.slice(-90).map(item => item.price));
+                const avgPrice = getAverage(history.map(item => item.price));
+                const high = hasHistory ? Math.max(...history.map(item => item.price)) : 0;
+                const low = hasHistory ? Math.min(...history.map(item => item.price)) : 0;
+                const volatility = hasHistory ? (Math.sqrt(history.reduce((sum, item) => sum + Math.pow(item.price - avgPrice, 2), 0) / history.length) / (avgPrice || 1)) * 100 : 0;
+                const stockpileUnits = Number(nation?.[resourceKey] || 0);
+                const stockpileValue = stockpileUnits * (priceMap[resourceKey] || 0);
+                const cashValue = Number(nation?.money || 0);
+                const cityProfiles = cities.map(city => computeCityResourceProfile(city, resourceKey, priceMap));
+                const topProducer = cityProfiles.slice().sort((a, b) => b.productionValue - a.productionValue)[0]?.name || 'N/A';
+                const topConsumer = cityProfiles.slice().sort((a, b) => b.consumptionValue - a.consumptionValue)[0]?.name || 'N/A';
+                const inventoryShare = stockpileValue > 0 ? (stockpileValue / ((stockpileValue || 0) + cashValue || 1)) * 100 : 0;
+                const trendLabel = change30d > 2 ? 'Bullish' : change30d < -2 ? 'Bearish' : 'Balanced';
+                const stats = {
+                    holdings: stockpileUnits,
+                    stockpileValue,
+                    cashValue,
+                    spot,
+                    change24h,
+                    change7d,
+                    change30d,
+                    avg30d,
+                    avg90d,
+                    high,
+                    low,
+                    volatility,
+                    trendLabel,
+                    topProducer,
+                    topConsumer,
+                    inventoryShare,
+                    velocity: stockpileUnits / (nation?.num_cities || 1)
+                };
+
+                kpiGrid.innerHTML = `
+                    <div class="kpi"><div class="label">Nation</div><div class="value">${nation.nation_name || 'Unknown'}</div></div>
+                    <div class="kpi"><div class="label">Resource</div><div class="value">${getResourceDisplayName(resourceName)}</div></div>
+                    <div class="kpi"><div class="label">Holding units</div><div class="value">${formatNumber(stockpileUnits)}</div></div>
+                    <div class="kpi"><div class="label">Holding market value</div><div class="value">${formatCurrency(stockpileValue)}</div></div>
+                    <div class="kpi"><div class="label">Cities tracked</div><div class="value">${formatNumber(cities.length)}</div></div>
+                    <div class="kpi"><div class="label">Net score</div><div class="value">${formatNumber(nation.score, 2)}</div></div>
+                    <div class="kpi"><div class="label">Allied position</div><div class="value">${nation.alliance_position || 'Independent'}</div></div>
+                    <div class="kpi"><div class="label">Military units</div><div class="value">${formatNumber((nation.soldiers || 0) + (nation.tanks || 0) + (nation.aircraft || 0) + (nation.ships || 0))}</div></div>
+                    <div class="kpi"><div class="label">Price spot</div><div class="value">${formatCurrency(spot)}</div></div>
+                    <div class="kpi"><div class="label">24h change</div><div class="value">${formatPercent(change24h)}</div></div>
+                    <div class="kpi"><div class="label">7d change</div><div class="value">${formatPercent(change7d)}</div></div>
+                    <div class="kpi"><div class="label">30d change</div><div class="value">${formatPercent(change30d)}</div></div>
+                    <div class="kpi"><div class="label">Top producer</div><div class="value">${topProducer}</div></div>
+                    <div class="kpi"><div class="label">Top consumer</div><div class="value">${topConsumer}</div></div>
+                    <div class="kpi"><div class="label">Inventory share</div><div class="value">${formatPercent(inventoryShare)}</div></div>
+                    <div class="kpi"><div class="label">Forecast trend</div><div class="value">${trendLabel}</div></div>
+                `;
+
+                if (hasHistory) {
+                    actionPanel.innerHTML = `${buildActionPosture(change24h)}<br/><br/>Projected 7d movement: ${formatPercent(change7d)} • 30d movement: ${formatPercent(change30d)}`;
+                } else {
+                    actionPanel.innerHTML = `<div class="pill warn">No market price history</div><br/>This resource is not currently traded on the public market price feed. Live stockpile holdings and nation totals are shown instead.`;
+                }
+                renderSummaryCards(stats);
+                renderForecastCards(stats);
+                renderCityStats(cityProfiles, stats);
+                renderDetailMetrics(cityProfiles, stats);
+                renderHistory(tradeRows, history, avg30d);
+                renderChart(history);
+            } catch (error) {
+                sub.textContent = 'Unable to load live market and nation detail feed.';
+                kpiGrid.innerHTML = '<div class="kpi"><div class="label">Feed status</div><div class="value">Offline</div></div>';
+                actionPanel.innerHTML = 'Live resource detail is unavailable. Retry momentarily.';
+                console.error(error);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', loadResourceDetail);
+    </script>
+</body>
+</html>

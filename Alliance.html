@@ -1,0 +1,1081 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NewMerica | Alliance Intel</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        /* === MASTER COLOR PALETTE === */
+        :root { 
+            --bg-deep: #050611; 
+            --surface: rgba(9, 12, 25, 0.6); 
+            --surface-strong: rgba(12, 19, 45, 0.95); 
+            --green-glow: #4ade80; 
+            --red-glow: #f87171;
+            --purple-accent: #a855f7; 
+            --text-main: #e2e8f0; 
+            --text-muted: #94a3b8;
+            --cyan-accent: #22d3ee; 
+            --accent-soft: rgba(34, 211, 238, 0.14); 
+            --border-light: rgba(34,211,238,0.18);
+        }
+        *, *::before, *::after { box-sizing: border-box; }
+
+        /* === BASE BACKGROUND === */
+        body { 
+            font-family: 'Outfit', sans-serif; 
+            color: var(--text-main); 
+            padding: clamp(12px, 2vw, 24px); 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            min-height: 100vh; 
+            margin: 0; 
+            background: linear-gradient(135deg, #070812 0%, #080a15 28%, #0b0f23 72%, #050712 100%);
+        }
+
+        /* === GLASSMORPHISM WRAPPER === */
+        .site-content { 
+            position: relative; 
+            z-index: 3; 
+            width: min(1400px, 100%); 
+            padding: clamp(16px, 2.5vw, 32px); 
+            background: var(--surface); 
+            border: 1px solid rgba(255,255,255,0.06); 
+            border-radius: 28px; 
+            backdrop-filter: blur(20px); 
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5); 
+        }
+
+        /* === NAVIGATION MENU === */
+        .nav-menu { 
+            display: flex; 
+            flex-wrap: wrap;
+            justify-content: center; 
+            gap: 8px; 
+            margin-bottom: 36px; 
+            padding: 10px; 
+            background: rgba(6, 11, 32, 0.9); 
+            border: 1px solid var(--border-light); 
+            border-radius: 22px; 
+        }
+
+        .nav-link { 
+            color: var(--text-muted); 
+            font-size: 0.85rem;
+            font-weight: 600; 
+            text-decoration: none; 
+            padding: 8px 16px; 
+            text-transform: uppercase; 
+            border: 1px solid transparent; 
+            border-radius: 999px; 
+            transition: all 0.2s ease; 
+        }
+
+        .nav-link:hover { color: #fff; background: rgba(255,255,255,0.05); }
+        .nav-link.active { 
+            background: var(--accent-soft); 
+            color: #fff; 
+            border-color: rgba(34,211,238,0.4); 
+            box-shadow: 0 0 15px rgba(34,211,238,0.2);
+        }
+
+        /* === SUB-NAVIGATION (TABS) === */
+        .sub-nav { 
+            display: flex; 
+            justify-content: center; 
+            flex-wrap: wrap;
+            gap: 10px; 
+            margin-bottom: 32px; 
+            width: 100%; 
+        }
+        
+        .sub-link { 
+            background: var(--surface-strong); 
+            color: var(--text-muted); 
+            padding: 8px 18px; 
+            border: 1px solid var(--border-light); 
+            border-radius: 12px;
+            cursor: pointer; 
+            font-weight: 600; 
+            font-size: 0.85rem;
+            text-transform: uppercase; 
+            transition: all 0.2s ease;
+        }
+        
+        .sub-link:hover { color: #fff; background: rgba(255,255,255,0.05); }
+        .sub-link.active { 
+            background: rgba(74, 222, 128, 0.15); 
+            color: var(--green-glow); 
+            border-color: rgba(74, 222, 128, 0.4); 
+            box-shadow: 0 0 15px rgba(74, 222, 128, 0.15); 
+        }
+
+        .tab-content { display: none; width: 100%; animation: fadeIn 0.3s ease-in-out; }
+        .tab-content.active { display: block; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* === PAGE HEADER === */
+        .header-box { text-align: center; margin-bottom: 30px; }
+        .header-box h1 { margin: 0; font-size: clamp(1.8rem, 4vw, 2.6rem); color: #fff; text-transform: uppercase; letter-spacing: 2px; line-height: 1.1; }
+        .header-box p { color: var(--text-muted); max-width: 800px; margin: 10px auto 0; line-height: 1.5; }
+
+        /* === CARDS & CONTAINERS === */
+        .dashboard-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); 
+            gap: 24px; 
+            margin-bottom: 28px; 
+        }
+
+        .card { 
+            background: var(--surface-strong); 
+            padding: clamp(18px, 2vw, 26px); 
+            border-radius: 20px; 
+            border: 1px solid var(--border-light); 
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 0;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 16px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            padding-bottom: 12px;
+        }
+        .card-header h3 { margin: 0; font-size: 1.1rem; color: var(--cyan-accent); text-transform: uppercase; letter-spacing: 1px; }
+
+        .big-val { font-size: 2.2rem; font-weight: 800; color: var(--text-main); }
+        .sub-val { font-size: 0.9rem; color: var(--text-muted); margin-top: 4px; display: block; }
+
+        /* === TABLES === */
+        .table-container { width: 100%; overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; text-align: left; }
+        th { background: rgba(0,0,0,0.4); padding: 16px; font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+        td { padding: 16px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.95rem; font-weight: 600; transition: background 0.2s; }
+        tbody tr:hover { background: rgba(34, 211, 238, 0.05); }
+
+        .text-green { color: var(--green-glow); }
+        .text-cyan { color: var(--cyan-accent); }
+        .text-purple { color: var(--purple-accent); }
+
+        /* === HUD ELEMENTS === */
+        .live-indicator {
+            display: flex; align-items: center; gap: 8px;
+            font-size: 0.75rem; font-weight: 700; color: var(--green-glow); text-transform: uppercase; letter-spacing: 1px;
+        }
+        .dot {
+            width: 8px; height: 8px; background-color: var(--green-glow); border-radius: 50%;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.7); }
+            70% { box-shadow: 0 0 0 6px rgba(74, 222, 128, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0); }
+        }
+
+        .terminal {
+            background: #030408; padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);
+            font-family: 'Courier New', Courier, monospace; font-size: 0.95rem; color: var(--green-glow);
+            max-height: 400px; overflow-y: auto; line-height: 1.6; white-space: pre-wrap;
+        }
+        
+        .color-sphere {
+            display: inline-block; width: 14px; height: 14px; border-radius: 50%;
+            margin-left: 8px; border: 1px solid rgba(255,255,255,0.4);
+            box-shadow: 0 0 10px rgba(255,255,255,0.2);
+            vertical-align: middle;
+        }
+
+        .alliance-flag {
+            max-height: 60px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .hero-status {
+            margin: 0 auto 24px;
+            padding: 18px 20px;
+            border: 1px solid rgba(34,211,238,0.2);
+            border-radius: 18px;
+            background: rgba(2, 8, 20, 0.72);
+            max-width: 1000px;
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px;
+        }
+
+        .status-cell {
+            padding: 12px 14px;
+            border-radius: 12px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+
+        .status-label {
+            display: block;
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+
+        .status-value {
+            display: block;
+            color: #f8fafc;
+            font-weight: 700;
+            line-height: 1.25;
+            overflow-wrap: anywhere;
+        }
+
+        .status-foot {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 12px;
+            color: var(--text-muted);
+            font-size: 0.82rem;
+        }
+
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            background: rgba(74, 222, 128, 0.12);
+            color: var(--green-glow);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .live-indicator { flex-shrink: 0; white-space: nowrap; }
+        .sub-val { line-height: 1.45; }
+
+        .donation-card { margin-top: 20px; }
+        .donation-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 16px; margin-bottom: 20px; }
+        .donation-kpi { min-width: 0; padding: 16px; border: 1px solid var(--border-light); border-radius: 12px; background: rgba(34, 211, 238, 0.06); }
+        .donation-kpi strong { display: block; margin-top: 4px; font-size: 1.35rem; color: var(--green-glow); }
+        .donation-table { min-width: 900px; }
+        .donation-note { color: var(--text-muted); font-size: 0.8rem; margin-top: 12px; }
+        .standing-card { margin-bottom: 20px; padding: 18px; border: 1px solid rgba(168, 85, 247, 0.35); border-radius: 14px; background: rgba(168, 85, 247, 0.08); }
+        .standing-header { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; flex-wrap: wrap; }
+        .standing-rating { font-size: 1.8rem; font-weight: 800; color: var(--cyan-accent); }
+        .standing-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-top: 14px; }
+        .standing-metric { padding: 11px; border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; background: rgba(0,0,0,0.18); }
+        .standing-metric strong { display: block; margin-top: 4px; color: #fff; font-family: 'Courier New', monospace; }
+
+        @media (max-width: 640px) {
+            .site-content { border-radius: 18px; }
+            .nav-menu { display: grid; grid-template-columns: 1fr; gap: 6px; }
+            .sub-nav { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+            .nav-link, .sub-link { width: 100%; text-align: center; }
+            .nav-link { padding: 10px 12px; }
+            .sub-link { padding: 10px 8px; }
+            .header-box { margin-bottom: 24px; }
+            .header-box p { font-size: 0.92rem; }
+            .hero-status { padding: 14px; }
+            .status-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+            .status-cell { padding: 10px; }
+            .status-foot { align-items: flex-start; flex-direction: column; }
+            .card-header { align-items: flex-start; flex-direction: column; gap: 8px; }
+            .card-header h3 { font-size: 1rem; }
+            .big-val { font-size: 1.8rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="site-content">
+        <div class="nav-menu">
+            <a href="DASHBOARD.HTML" class="nav-link">Oversight</a>
+            <a href="MarketAi.HTML" class="nav-link">Market Trends</a>
+            <a href="ALLIANCE.HTML" class="nav-link active">Alliance Intel</a>
+            <a href="MILITARY.HTML" class="nav-link">Military Command</a>
+        </div>
+
+        <div class="header-box">
+            <h1>Alliance Intel</h1>
+            <p>Monitor alliance membership, treaties, communications, and bank activity.</p>
+        </div>
+
+        <div class="hero-status">
+            <div class="status-grid" id="shared-status-grid"></div>
+            <div class="status-foot">
+                <span class="status-pill">Command status: live</span>
+                <span id="page-status">Syncing...</span>
+            </div>
+            <div class="status-foot" style="margin-top: 8px; justify-content: space-between;">
+                <span id="page-updated">Last update: waiting</span>
+                <span id="page-source">Source: Politics &amp; War</span>
+            </div>
+        </div>
+
+        <div class="sub-nav">
+            <div class="sub-link active" onclick="switchTab('sub1', this)">Overview</div>
+            <div class="sub-link" onclick="switchTab('sub2', this)">Treaties</div>
+            <div class="sub-link" onclick="switchTab('sub3', this)">Communications</div>
+            <div class="sub-link" onclick="switchTab('sub4', this)">Raw Data</div>
+        </div>
+
+        <div id="sub1" class="tab-content active">
+            
+            <div class="card" id="clearance-card" style="display:none; border-color: var(--cyan-accent); background: rgba(34, 211, 238, 0.05);">
+                <div class="card-header">
+                    <h3 style="color: #fff;">Diplomatic Status</h3>
+                    <div class="live-indicator"><div class="dot"></div> Verified</div>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px;">
+                    <div>
+                        <div class="big-val" id="position-val" style="color: var(--cyan-accent); font-size: 1.8rem;">Loading...</div>
+                        <span class="sub-val" id="nation-val">Loading nation profile...</span>
+                    </div>
+                    <img id="flag-img" class="alliance-flag" src="" alt="Alliance Flag" style="display: none;">
+                </div>
+            </div>
+
+            <div class="dashboard-grid" id="alliance-grid">
+                </div>
+            <div class="card donation-card" id="donation-card">
+                <div class="card-header">
+                    <h3>Alliance Bank Activity</h3>
+                    <div class="live-indicator"><div class="dot"></div> Synced</div>
+                </div>
+                <div id="donation-content" class="sub-val">Loading alliance bank activity...</div>
+            </div>
+        </div>
+
+        <div id="sub2" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Active Treaties</h3>
+                    <div class="live-indicator"><div class="dot"></div> Monitoring</div>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Treaty ID</th>
+                                <th>Treaty Type</th>
+                                <th>Partner Alliance</th>
+                                <th>Date Signed</th>
+                            </tr>
+                        </thead>
+                        <tbody id="treaty-tbody">
+                            <tr><td colspan="4" style="text-align: center;">Loading treaty data...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="sub3" class="tab-content">
+            <div class="dashboard-grid" id="comms-grid">
+                </div>
+        </div>
+        
+        <div id="sub4" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Raw Alliance Data</h3>
+                    <div class="live-indicator"><div class="dot"></div> Online</div>
+                </div>
+                <div id="alliance-dump" class="terminal">Loading alliance data...</div>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="common.js"></script>
+    <script>
+        const DISCORD_VAULT_SNAPSHOT = Object.freeze({
+            // LocutusAPP message time interpreted in the user's local MDT timezone.
+            asOf: '2026-09-06T08:41:00-06:00',
+            source: 'LocutusAPP Discord alliance ledger',
+            money: 15000000,
+            food: 550000,
+            coal: 0,
+            oil: 1000,
+            uranium: 0,
+            iron: 0,
+            bauxite: 1800,
+            lead: 1500,
+            gasoline: 5000,
+            munitions: 15500,
+            steel: 0,
+            aluminum: 2200
+        });
+
+        const VAULT_RESOURCES = ['food', 'coal', 'oil', 'uranium', 'iron', 'bauxite', 'lead', 'gasoline', 'munitions', 'steel', 'aluminum'];
+
+        function getVaultRecordDelta(record, nationId) {
+            const direction = String(record?.sender_id ?? record?.senderId ?? '') === String(nationId) ? -1 : 1;
+            const note = getRecordText(record).toLowerCase();
+            const delta = {};
+            const fields = ['money', ...VAULT_RESOURCES];
+            if (note.includes('loan') || note.includes('grant')) return delta;
+            fields.forEach(field => {
+                const amount = Number(record?.[field]) || 0;
+                if (amount) delta[field] = amount * direction;
+            });
+
+            // Deposits credit the personal vault even though the API transfer
+            // direction is outgoing from the nation.
+            if (note.includes('deposit') || note === 'preparation') {
+                fields.forEach(field => {
+                    if (delta[field]) delta[field] *= -1;
+                });
+            }
+            return delta;
+        }
+
+        function getPostSnapshotVaultBalance(records, nationId) {
+            const balance = Object.fromEntries(['money', ...VAULT_RESOURCES].map(field => [field, Number(DISCORD_VAULT_SNAPSHOT[field]) || 0]));
+            const cutoff = Date.parse(DISCORD_VAULT_SNAPSHOT.asOf);
+            const appliedRecords = (Array.isArray(records) ? records : []).filter(record => {
+                const time = Date.parse(record?.date || record?.created_at || record?.createdAt || '');
+                return Number.isFinite(time) && time > cutoff;
+            });
+            appliedRecords.forEach(record => {
+                const delta = getVaultRecordDelta(record, nationId);
+                Object.entries(delta).forEach(([field, amount]) => {
+                    balance[field] += amount;
+                });
+            });
+            return { balance, appliedRecords, cutoff };
+        }
+
+        function formatVaultBalance(balance) {
+            const lines = [`Cash: ${formatDonationMoney(balance.money)}`];
+            VAULT_RESOURCES.forEach(resource => {
+                if (balance[resource]) lines.push(`${resource.toUpperCase()}: ${Number(balance[resource]).toLocaleString()}`);
+            });
+            return lines.join('<br>');
+        }
+
+        function switchTab(tabId, element) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.sub-link').forEach(link => link.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            element.classList.add('active');
+        }
+
+        function getPositionText(pos) {
+            switch(pos) {
+                case 1: return "Applicant (Level 1)";
+                case 2: return "Member (Level 2)";
+                case 3: return "Officer (Level 3)";
+                case 4: return "Heir (Level 4)";
+                case 5: return "Leader (Level 5)";
+                default: return "Unaffiliated";
+            }
+        }
+
+        function formatDonationMoney(value) {
+            const amount = Number(value) || 0;
+            return `$${amount.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+        }
+
+        function getDonationAmount(record) {
+            return Number(record?.money ?? record?.amount ?? record?.cash ?? 0) || 0;
+        }
+
+        function getSignedDonationAmount(record, nationId) {
+            const amount = getDonationAmount(record);
+            const senderId = String(record?.sender_id ?? record?.senderId ?? '');
+            return senderId === String(nationId) ? -Math.abs(amount) : Math.abs(amount);
+        }
+
+        function getRecordText(record) {
+            return String(record?.note || record?.message || record?.reason || record?.memo || '').trim();
+        }
+
+        function getRecordParty(record, side, nationId, allianceId) {
+            const value = record?.[side]?.nation_name || record?.[side]?.leader_name || record?.[`${side}_name`] || record?.[`${side}Name`] || record?.[`${side}_nation_name`] || record?.[`${side}NationName`];
+            const partyId = String(record?.[`${side}_id`] ?? record?.[`${side}Id`] ?? '');
+            if (partyId === String(allianceId)) return 'The Commonwealth of Orbis Bank';
+            if (partyId === String(nationId) && !value) return 'NewMerica';
+            return value || `${side === 'sender' ? 'Sender' : 'Receiver'} #${record?.[`${side}_id`] || record?.[`${side}Id`] || 'Unknown'}`;
+        }
+
+        function getRecordResources(record) {
+            const resources = ['food', 'coal', 'oil', 'uranium', 'iron', 'bauxite', 'lead', 'gasoline', 'munitions', 'steel', 'aluminum'];
+            return resources.map(resource => ({ resource, amount: Number(record?.[resource] || 0) || 0 })).filter(item => item.amount !== 0);
+        }
+
+        function formatResourceTotals(totals, priceMap = {}) {
+            return Object.entries(totals).filter(([, amount]) => amount !== 0).map(([resource, amount]) => {
+                const price = Number(priceMap[resource]) || 0;
+                return `${resource}: ${amount.toLocaleString()} @ ${formatDonationMoney(price)} = ${formatDonationMoney(amount * price)}`;
+            }).join(', ') || 'No resources reported';
+        }
+
+        function getResourceValueTotal(totals, priceMap = {}) {
+            return Object.entries(totals).reduce((total, [resource, amount]) => total + amount * (Number(priceMap[resource]) || 0), 0);
+        }
+
+        function getPriceAtTransaction(priceRows, date, fallbackPriceMap = {}) {
+            const timestamp = Date.parse(date || '') || 0;
+            const rows = Array.isArray(priceRows) ? [...priceRows].filter(row => row?.date && Number.isFinite(Date.parse(row.date))).sort((a, b) => Date.parse(a.date) - Date.parse(b.date)) : [];
+            return rows.filter(row => Date.parse(row.date) <= timestamp).pop() || fallbackPriceMap;
+        }
+
+        function getHistoricalResourceValue(records, category, priceRows, fallbackPriceMap, nationId) {
+            return records.reduce((total, record) => {
+                if (classifyDonation(record, nationId) !== category) return total;
+                const prices = getPriceAtTransaction(priceRows, record?.date || record?.created_at || record?.createdAt, fallbackPriceMap);
+                const valuedResources = category === 'Alliance War Supplies'
+                    ? getRecordResources(record).filter(item => item.resource === 'gasoline' || item.resource === 'aluminum')
+                    : getRecordResources(record);
+                return total + valuedResources.reduce((value, item) => value + item.amount * (Number(prices[item.resource]) || 0), 0);
+            }, 0);
+        }
+
+        function formatHistoricalResourceTotals(records, category, priceRows, fallbackPriceMap, nationId) {
+            const totals = {};
+            records.forEach(record => {
+                if (classifyDonation(record, nationId) !== category) return;
+                const prices = getPriceAtTransaction(priceRows, record?.date || record?.created_at || record?.createdAt, fallbackPriceMap);
+                const resources = category === 'Alliance War Supplies'
+                    ? getRecordResources(record).filter(item => item.resource === 'gasoline' || item.resource === 'aluminum')
+                    : getRecordResources(record);
+                resources.forEach(item => {
+                    if (!totals[item.resource]) totals[item.resource] = { units: 0, value: 0, ppu: Number(prices[item.resource]) || 0 };
+                    totals[item.resource].units += item.amount;
+                    totals[item.resource].value += item.amount * (Number(prices[item.resource]) || 0);
+                });
+            });
+            return Object.entries(totals).map(([resource, item]) => `${resource}: ${item.units.toLocaleString()} units, transaction-time PPU ${formatDonationMoney(item.ppu)} = ${formatDonationMoney(item.value)}`).join(', ') || 'No qualifying resources reported';
+        }
+
+        function isNationAllianceTransaction(record, nationId, allianceId) {
+            const senderId = String(record?.sender_id ?? record?.senderId ?? '');
+            const receiverId = String(record?.receiver_id ?? record?.receiverId ?? '');
+            const nation = String(nationId);
+            const alliance = String(allianceId);
+            return Boolean(allianceId) && ((senderId === nation && receiverId === alliance) || (senderId === alliance && receiverId === nation));
+        }
+
+        function isOutgoingToAlliance(record, nationId, allianceId) {
+            const senderId = String(record?.sender_id ?? record?.senderId ?? '');
+            const receiverId = String(record?.receiver_id ?? record?.receiverId ?? '');
+            return senderId === String(nationId) && receiverId === String(allianceId);
+        }
+
+        function classifyDonation(record, nationId) {
+            const text = getRecordText(record).toLowerCase();
+            const resources = getRecordResources(record).map(item => item.resource);
+            const hasCash = getDonationAmount(record) !== 0;
+            const hasBauxite = resources.includes('bauxite');
+            const hasWarSupply = resources.includes('gasoline') || resources.includes('aluminum');
+            const senderId = String(record?.sender_id ?? record?.senderId ?? '');
+            const outgoing = senderId === String(nationId);
+            if (text.includes('#loan') || text.includes('loan')) return outgoing ? 'Loan Repayment' : 'Loan Received (Debt)';
+            if (text.includes('#deposit') || text.includes('deposit') || text === 'preparation') return 'Self Storage';
+            if (text.includes('#ignore')) return outgoing && hasWarSupply ? 'Alliance War Supplies' : (outgoing ? 'Alliance Gift' : 'Alliance Gift Received');
+            if (hasCash && hasWarSupply) return 'Emergency War Fund / War Loot';
+            if (hasCash && hasBauxite) return 'Self Storage';
+            if (outgoing && hasCash && !resources.length) return 'Loan Repayment';
+            if (hasBauxite) return 'Bauxite for Aluminum Production';
+            if (hasWarSupply) return 'Alliance War Supplies';
+            if (text.includes('gift') || text.includes('grant') || text.includes('donat')) return 'Alliance Gift';
+            return 'Other TCO Transfer';
+        }
+
+        function getLedgerAmount(record, nationId) {
+            const category = classifyDonation(record, nationId);
+            if (category === 'Self Storage') return Math.abs(getDonationAmount(record));
+            if (category === 'Loan Received (Debt)') return -Math.abs(getDonationAmount(record));
+            if (category === 'Loan Repayment') return Math.abs(getDonationAmount(record));
+            return getSignedDonationAmount(record, nationId);
+        }
+
+        function getOutstandingLoan(records, nationId) {
+            const chronologicalRecords = [...records].sort((first, second) => {
+                const firstTime = Date.parse(first?.date || first?.created_at || first?.createdAt || '') || 0;
+                const secondTime = Date.parse(second?.date || second?.created_at || second?.createdAt || '') || 0;
+                if (firstTime !== secondTime) return firstTime - secondTime;
+                return (Number(first?.id) || 0) - (Number(second?.id) || 0);
+            });
+            return chronologicalRecords.reduce((balance, record) => {
+                const category = classifyDonation(record, nationId);
+                const amount = Math.abs(getDonationAmount(record));
+                if (category === 'Loan Received (Debt)') return balance + amount;
+                if (category === 'Loan Repayment') return Math.max(0, balance - amount);
+                return balance;
+            }, 0);
+        }
+
+        function getLoanPayoffProjection(records, nationId, outstandingDebt) {
+            const repayments = records
+                .filter(record => classifyDonation(record, nationId) === 'Loan Repayment')
+                .map(record => ({
+                    amount: Math.abs(getDonationAmount(record)),
+                    time: Date.parse(record?.date || record?.created_at || record?.createdAt || '')
+                }))
+                .filter(record => record.amount > 0 && Number.isFinite(record.time))
+                .sort((first, second) => first.time - second.time);
+            const debt = Math.max(0, Number(outstandingDebt) || 0);
+            if (!debt) return { available: true, days: 0, date: new Date() };
+            if (!repayments.length) return { available: false, reason: 'No loan repayments recorded' };
+            const firstTime = repayments[0].time;
+            const elapsedDays = Math.max(1, (Date.now() - firstTime) / 86400000);
+            const totalPaid = repayments.reduce((total, repayment) => total + repayment.amount, 0);
+            const dailyRate = totalPaid / elapsedDays;
+            if (!Number.isFinite(dailyRate) || dailyRate <= 0) return { available: false, reason: 'Repayment rate unavailable' };
+            const days = Math.ceil(debt / dailyRate);
+            return { available: true, days, date: new Date(Date.now() + days * 86400000), dailyRate };
+        }
+
+        function getStandingAssessment(selfStorage, warSupplies, repayments, outstandingDebt) {
+            const stored = Math.max(0, Number(selfStorage) || 0);
+            const supplies = Math.max(0, Number(warSupplies) || 0);
+            const paid = Math.max(0, Number(repayments) || 0);
+            const debt = Math.max(0, Number(outstandingDebt) || 0);
+            const support = supplies + paid;
+            const denominator = Math.max(1, stored + support + debt);
+            const score = Math.round(Math.max(0, Math.min(100, ((support + stored * 0.25) / denominator) * 100)));
+            const titles = [
+                'Critical liability', 'Severe leech risk', 'Extreme dependency', 'Major burden',
+                'Heavy burden', 'High leech risk', 'Leech risk', 'Weak standing',
+                'Low standing', 'Fragile member', 'Unproven member', 'Limited contributor',
+                'Developing member', 'Mixed standing', 'Emerging contributor', 'Reliable member',
+                'Steady contributor', 'Strong contributor', 'Trusted contributor', 'Valued contributor',
+                'Alliance asset', 'Strategic contributor', 'High-value contributor', 'Strategic asset',
+                'High-value strategic asset', 'Cornerstone asset'
+            ];
+            const titleIndex = Math.min(titles.length - 1, Math.floor(score / 4));
+            const label = titles[titleIndex];
+            const tone = score < 30 ? 'var(--red-glow)' : score < 55 ? 'var(--purple-accent)' : score < 75 ? 'var(--cyan-accent)' : 'var(--green-glow)';
+            const factors = [];
+            if (support > 0) factors.push(`support delivered ${formatDonationMoney(support)}`);
+            else factors.push('no recorded war-supply or repayment support');
+            if (debt > 0) factors.push(`outstanding debt ${formatDonationMoney(debt)}`);
+            else factors.push('no outstanding debt');
+            if (stored > 0) factors.push(`retained storage ${formatDonationMoney(stored)}`);
+            return { score, label, tone, support, debt, explanation: `Rated ${score}/100 because ${factors.join(', ')}. Support and repayments raise standing; debt lowers it; self storage receives limited asset credit rather than donation credit.` };
+        }
+
+        function getDailyGrowthMetrics(priceMap, exposure) {
+            let dailyNet = {};
+            try {
+                const stored = JSON.parse(localStorage.getItem('finance_sample_nets_v1') || '{}');
+                if (stored && typeof stored === 'object' && !Array.isArray(stored)) dailyNet = stored;
+            } catch (error) { dailyNet = {}; }
+            let incomeValue = 0;
+            let consumptionValue = 0;
+            Object.entries(dailyNet).forEach(([resource, value]) => {
+                const valuePerDay = Number(value) || 0;
+                const marketValue = valuePerDay * (Number(priceMap[resource]) || 0);
+                if (marketValue >= 0) incomeValue += marketValue;
+                else consumptionValue += Math.abs(marketValue);
+            });
+            const netValue = incomeValue - consumptionValue;
+            const growthRate = exposure > 0 ? (netValue / exposure) * 100 : 0;
+            return { incomeValue, consumptionValue, netValue, growthRate, hasData: Object.keys(dailyNet).length > 0 };
+        }
+
+        function renderDonationTracker(records, nationId, allianceId, priceMap = {}, bankSnapshot = {}, priceRows = []) {
+            const container = document.getElementById('donation-content');
+            if (!container) return;
+            const rows = Array.isArray(records) ? records.filter(record => isNationAllianceTransaction(record, nationId, allianceId)) : [];
+            try {
+                localStorage.setItem('tco-bank-tracker-cache-v1', JSON.stringify({ records: rows, priceMap, allianceId, nationId, updatedAt: Date.now() }));
+            } catch (error) { /* ignore storage quota errors */ }
+            const categoryOrder = ['Outstanding Loan Balance', 'Loan Repayment', 'Alliance War Supplies', 'Self Storage', 'Bauxite for Aluminum Production', 'Alliance Gift Received', 'Loan Received (Debt)'];
+            const visibleCategoryOrder = ['Outstanding Loan Balance', 'Loan Repayment', 'Alliance War Supplies', 'Bauxite for Aluminum Production', 'Alliance Gift Received', 'Loan Received (Debt)'];
+            const totals = Object.fromEntries(categoryOrder.map(category => [category, 0]));
+            const resourceTotals = Object.fromEntries(categoryOrder.map(category => [category, {}]));
+            rows.forEach(record => {
+                const category = classifyDonation(record, nationId);
+                if (categoryOrder.includes(category)) {
+                    totals[category] += getLedgerAmount(record, nationId);
+                    getRecordResources(record).forEach(({ resource, amount }) => {
+                        resourceTotals[category][resource] = (resourceTotals[category][resource] || 0) + Math.abs(amount);
+                    });
+                }
+            });
+            const outstandingLoan = getOutstandingLoan(rows, nationId);
+            totals['Outstanding Loan Balance'] = -outstandingLoan;
+            const loanProjection = getLoanPayoffProjection(rows, nationId, outstandingLoan);
+            const categoryValue = category => totals[category] + getResourceValueTotal(resourceTotals[category], priceMap);
+            const selfStorageBauxiteUnits = Number(resourceTotals['Self Storage']?.bauxite) || 0;
+            const aluminumOutputUnits = selfStorageBauxiteUnits * 0.75;
+            const bauxiteCurrentValue = selfStorageBauxiteUnits * (Number(priceMap.bauxite) || 0);
+            const aluminumCurrentValue = aluminumOutputUnits * (Number(priceMap.aluminum) || 0);
+            const bauxiteProductionValue = bauxiteCurrentValue + aluminumCurrentValue;
+            const standing = getStandingAssessment(
+                categoryValue('Self Storage'),
+                totals['Alliance War Supplies'] + getHistoricalResourceValue(rows, 'Alliance War Supplies', priceRows, priceMap, nationId),
+                categoryValue('Loan Repayment'),
+                Math.abs(categoryValue('Outstanding Loan Balance'))
+            );
+            const historicalWarSuppliesValue = totals['Alliance War Supplies'] + getHistoricalResourceValue(rows, 'Alliance War Supplies', priceRows, priceMap, nationId);
+            const growth = getDailyGrowthMetrics(priceMap, standing.support + standing.debt + categoryValue('Self Storage'));
+            growth.percentile = Math.round(Math.max(0, Math.min(100, standing.score + growth.growthRate)));
+            const bankResources = ['food', 'coal', 'oil', 'uranium', 'iron', 'bauxite', 'lead', 'gasoline', 'munitions', 'steel', 'aluminum'];
+            const vaultState = getPostSnapshotVaultBalance(rows, nationId);
+            const vaultBalance = vaultState.balance;
+            const vaultValue = Number(vaultBalance.money) + bankResources.reduce((total, resource) => total + (Number(vaultBalance[resource]) || 0) * (Number(priceMap[resource]) || 0), 0);
+            const vaultChanges = vaultState.appliedRecords.length
+                ? `${vaultState.appliedRecords.length} API record(s) applied after ${new Date(vaultState.cutoff).toLocaleString()}`
+                : `No API records after ${new Date(vaultState.cutoff).toLocaleString()}`;
+            const ledgerRows = rows.map(record => {
+                const category = classifyDonation(record, nationId);
+                const date = record?.date || record?.created_at || record?.createdAt;
+                const direction = String(record?.sender_id ?? record?.senderId ?? '') === String(nationId) ? 'Out' : 'In';
+                const resourceText = getRecordResources(record).map(item => `${item.resource}: ${item.amount.toLocaleString()}`).join(', ') || 'None';
+                return `<tr><td>${date ? new Date(date).toLocaleString() : 'Unknown date'}</td><td>${category}</td><td>${direction}</td><td>${getRecordParty(record, 'sender', nationId, allianceId)}</td><td>${getRecordParty(record, 'receiver', nationId, allianceId)}</td><td>${formatDonationMoney(getLedgerAmount(record, nationId))}</td><td>${resourceText}</td><td>${getRecordText(record) || 'No note'}</td></tr>`;
+            }).join('');
+            container.className = '';
+            const summary = visibleCategoryOrder.map(category => {
+                const resourceValue = getResourceValueTotal(resourceTotals[category], priceMap);
+                const historicalResourceValue = category === 'Alliance War Supplies' ? getHistoricalResourceValue(rows, category, priceRows, priceMap, nationId) : resourceValue;
+                const totalValue = category === 'Bauxite for Aluminum Production' ? bauxiteProductionValue : totals[category] + historicalResourceValue;
+                if (category === 'Bauxite for Aluminum Production') {
+                    return `<div class="donation-kpi"><span class="status-label">Bauxite for Aluminum Production</span><span class="status-label">Total Value</span><strong>${formatDonationMoney(totalValue)}</strong><span class="donation-note">Bauxite stored: ${selfStorageBauxiteUnits.toLocaleString()} units @ current PPU ${formatDonationMoney(Number(priceMap.bauxite) || 0)} = ${formatDonationMoney(bauxiteCurrentValue)}<br>Aluminum producible: ${aluminumOutputUnits.toLocaleString(undefined, { maximumFractionDigits: 2 })} units @ current PPU ${formatDonationMoney(Number(priceMap.aluminum) || 0)} = ${formatDonationMoney(aluminumCurrentValue)}<br>Combined current production value: ${formatDonationMoney(bauxiteProductionValue)}</span></div>`;
+                }
+                const resourceDetails = category === 'Alliance War Supplies'
+                    ? formatHistoricalResourceTotals(rows, category, priceRows, priceMap, nationId)
+                    : formatResourceTotals(resourceTotals[category], priceMap);
+                const priceBasis = category === 'Alliance War Supplies' ? 'Transaction-time PPU' : 'Current PPU';
+                const card = `<div class="donation-kpi"><span class="status-label">${category}</span><span class="status-label">Total Value</span><strong>${formatDonationMoney(totalValue)}</strong><span class="donation-note">Cash: ${formatDonationMoney(totals[category])}<br>Resources: ${formatDonationMoney(historicalResourceValue)}<br>${priceBasis}: ${resourceDetails}</span></div>`;
+                return card;
+            }).join('');
+            const holdingsMarkup = `<strong>${formatDonationMoney(vaultValue)}</strong><span class="donation-note"><b>Total vault value at current market prices</b><br>Personal cash balance: ${formatDonationMoney(vaultBalance.money)}<br>${formatVaultBalance(vaultBalance)}<br><br>${vaultChanges}<br>Baseline: ${DISCORD_VAULT_SNAPSHOT.source} at ${new Date(DISCORD_VAULT_SNAPSHOT.asOf).toLocaleString()}</span>`;
+            const growthMarkup = growth.hasData ? `<div class="standing-metric"><span class="status-label">Daily income value</span><strong>${formatDonationMoney(growth.incomeValue)}/day</strong></div><div class="standing-metric"><span class="status-label">Daily consumption cost</span><strong>${formatDonationMoney(growth.consumptionValue)}/day</strong></div><div class="standing-metric"><span class="status-label">Net daily growth value</span><strong style="color:${growth.netValue >= 0 ? 'var(--green-glow)' : 'var(--red-glow)'}">${formatDonationMoney(growth.netValue)}/day</strong></div><div class="standing-metric"><span class="status-label">Growth rate</span><strong>${growth.growthRate >= 0 ? '+' : ''}${growth.growthRate.toFixed(3)}%/day</strong></div><div class="standing-metric"><span class="status-label">Composite percentile</span><strong>${growth.percentile}th</strong></div>` : `<div class="standing-metric"><span class="status-label">Daily income/consumption</span><strong>Unavailable</strong><span class="donation-note">Open Finance Hub and load daily net values first.</span></div>`;
+            const payoffMarkup = loanProjection.available ? `<div class="donation-note" style="margin-top:8px;color:var(--red-glow)">Projected payoff: ${loanProjection.date.toLocaleDateString()} (${loanProjection.days.toLocaleString()} days)<br>Based on average repayments of ${formatDonationMoney(loanProjection.dailyRate)}/day.</div>` : `<div class="donation-note" style="margin-top:8px;color:var(--red-glow)">Projected payoff: unavailable (${loanProjection.reason}).</div>`;
+            const standingMarkup = `<div class="standing-card"><div class="standing-header"><div><span class="status-label">Alliance standing indicator</span><div class="standing-rating" style="color:${standing.tone}">${standing.score}/100 · ${standing.label}</div><div class="donation-note" style="max-width:650px;margin-top:8px">${standing.explanation}</div></div><div class="donation-note" style="max-width:460px;margin-top:0">This is an accounting-based progress title, not a measurement of private opinions. Support delivered is war supplies plus repayments; self storage is shown as retained assets, not a donation. The percentile combines this score with daily net growth relative to your exposure.</div></div><div class="standing-grid"><div class="standing-metric"><span class="status-label">Self storage value</span><strong>${formatDonationMoney(categoryValue('Self Storage'))}</strong></div><div class="standing-metric"><span class="status-label">War supplies value at transaction-time PPU</span><strong>${formatDonationMoney(historicalWarSuppliesValue)}</strong></div><div class="standing-metric"><span class="status-label">Repayment value</span><strong>${formatDonationMoney(categoryValue('Loan Repayment'))}</strong></div><div class="standing-metric"><span class="status-label">Outstanding loan</span><strong style="color:var(--red-glow)">${formatDonationMoney(standing.debt)}${payoffMarkup}</strong></div><div class="standing-metric"><span class="status-label">Support delivered</span><strong>${formatDonationMoney(standing.support)}</strong></div>${growthMarkup}</div></div>`;
+            container.innerHTML = `${standingMarkup}<div class="donation-kpi" style="margin-bottom:16px"><span class="status-label">Verified Personal Vault</span>${holdingsMarkup}</div><div class="donation-summary">${summary}</div><div class="table-container"><table class="donation-table"><thead><tr><th>Date</th><th>Category</th><th>Direction</th><th>From</th><th>To</th><th>Ledger Value</th><th>Resources</th><th>Note</th></tr></thead><tbody>${ledgerRows || '<tr><td colspan="8">No transactions found between NewMerica and The Commonwealth of Orbis Bank.</td></tr>'}</tbody></table></div><div class="donation-note">The verified personal vault starts from the Discord snapshot and applies only API records newer than that snapshot. Market prices are used only for the displayed total value; request quantities use the exact cash and resource balances above.</div>`;
+        }
+
+        async function fetchDonationRecords(allianceId, nationId, bankSnapshot = {}) {
+            const container = document.getElementById('donation-content');
+            const recordIds = [allianceId, nationId].map(Number).filter(Number.isFinite).filter(id => id > 0);
+            const filter = recordIds.length ? `, or_id: [${recordIds.join(', ')}]` : '';
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 12000);
+            try {
+                const records = [];
+                for (let page = 1; page <= 10; page += 1) {
+                    const query = `{ bankrecs(first: 100, page: ${page}${filter}) { data { id date sender_id sender_type sender { nation_name leader_name } receiver_id receiver_type receiver { nation_name leader_name } money coal oil uranium iron bauxite lead gasoline munitions steel aluminum food note tax_id } } }`;
+                    const response = await fetch(`https://api.politicsandwar.com/graphql?api_key=${API_KEY}`, {
+                        method: 'POST', cache: 'no-store', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query }), signal: controller.signal
+                    });
+                    const json = await response.json();
+                    if (!response.ok || json.errors?.length) throw new Error(json.errors?.[0]?.message || `HTTP ${response.status}`);
+                    const pageRecords = json.data?.bankrecs?.data || json.data?.bankrecs || [];
+                    records.push(...pageRecords);
+                    if (pageRecords.length < 100) break;
+                }
+                const marketQuery = `{ tradeprices(first: 100) { data { date food coal oil uranium iron bauxite lead gasoline munitions steel aluminum } } }`;
+                const marketResponse = await fetch(`https://api.politicsandwar.com/graphql?api_key=${API_KEY}`, {
+                    method: 'POST', cache: 'no-store', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query: marketQuery })
+                });
+                const marketJson = await marketResponse.json();
+                const priceRows = sortMarketRowsNewestFirst(marketJson?.data?.tradeprices?.data);
+                const latestPrices = getLatestMarketRow(priceRows);
+                const priceMap = Object.fromEntries(['food', 'coal', 'oil', 'uranium', 'iron', 'bauxite', 'lead', 'gasoline', 'munitions', 'steel', 'aluminum'].map(resource => [resource, Number(latestPrices[resource]) || 0]));
+                renderDonationTracker(records, nationId, allianceId, priceMap, bankSnapshot, priceRows);
+            } catch (error) {
+                const message = error.name === 'AbortError' ? 'The bank-record request timed out' : error.message;
+                if (container) container.innerHTML = `<div class="donation-note">Alliance bank activity is unavailable: ${message}. The API key or account permissions may not allow access to these records.</div>`;
+            } finally {
+                clearTimeout(timeoutId);
+            }
+        }
+
+        async function fetchAllianceMemberTotals(allianceId, allianceTaxBrackets = []) {
+            const query = `{ nations(alliance_id: [${Number(allianceId)}], first: 500) { data { id nation_name leader_name population num_cities tax_id money food coal oil uranium iron bauxite lead gasoline munitions steel aluminum } } }`;
+            const response = await fetch(`https://api.politicsandwar.com/graphql?api_key=${API_KEY}`, {
+                method: 'POST',
+                cache: 'no-store',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ query })
+            });
+            const json = await response.json();
+            if (!response.ok || json.errors?.length) {
+                throw new Error(json.errors?.[0]?.message || `HTTP ${response.status}`);
+            }
+
+            const members = json.data?.nations?.data || [];
+            const taxBrackets = Object.fromEntries((Array.isArray(allianceTaxBrackets) ? allianceTaxBrackets : []).map(bracket => [String(bracket.id), bracket]));
+            const resources = ['food', 'coal', 'oil', 'uranium', 'iron', 'bauxite', 'lead', 'gasoline', 'munitions', 'steel', 'aluminum'];
+            const totals = Object.fromEntries(['population', 'money', ...resources].map(key => [key, 0]));
+            members.forEach(member => Object.keys(totals).forEach(key => {
+                totals[key] += Number(member?.[key]) || 0;
+            }));
+            return { members, totals, taxBrackets };
+        }
+
+        function renderAllianceMemberTotals(memberData) {
+            const target = document.getElementById('alliance-grid');
+            if (!target || !memberData) return;
+            const { members, totals, taxBrackets } = memberData;
+            const resources = ['food', 'coal', 'oil', 'uranium', 'iron', 'bauxite', 'lead', 'gasoline', 'munitions', 'steel', 'aluminum'];
+            const stockpileUnits = resources.reduce((sum, resource) => sum + totals[resource], 0);
+            const memberNames = members.slice(0, 8).map(member => member.nation_name).filter(Boolean).join(', ');
+            const taxRows = members.map(member => {
+                const population = Number(member.population) || 0;
+                const taxId = member.tax_id === undefined || member.tax_id === null ? null : member.tax_id;
+                const bracket = taxId === null ? null : taxBrackets[String(taxId)];
+                const moneyRate = Number(bracket?.tax_rate);
+                const resourceRate = Number(bracket?.resource_tax_rate);
+                const formatRate = value => Number.isFinite(value) ? `${(value <= 1 ? value * 100 : value).toFixed(2)}%` : 'Unavailable';
+                const taxableIncome = population * 0.725;
+                const perTurnIncome = taxableIncome / 12;
+                const nationLink = `cities-list.html?nationId=${encodeURIComponent(member.id)}`;
+                return `<tr><td><a href="${nationLink}" style="color:var(--cyan-accent);font-weight:700;text-decoration:none;">${member.nation_name || 'Unknown nation'}</a></td><td>${member.leader_name || 'Unknown leader'}</td><td>${taxId === null ? 'Unavailable' : taxId}</td><td>${bracket?.bracket_name || 'Unavailable'}</td><td>${formatRate(moneyRate)}</td><td>${formatRate(resourceRate)}</td><td>${population.toLocaleString()}</td><td>$${perTurnIncome.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td></tr>`;
+            }).join('');
+            target.insertAdjacentHTML('beforeend', `
+                <div class="card" style="margin-bottom: 0; grid-column: 1 / -1;">
+                    <div class="card-header">
+                        <h3>Alliance Nation Aggregate</h3>
+                        <div class="live-indicator"><div class="dot"></div> All Members</div>
+                    </div>
+                    <div class="big-val" style="font-size: 1.6rem;">${members.length.toLocaleString()} nations</div>
+                    <span class="sub-val">Alliance population: ${totals.population.toLocaleString()} | Combined nation cash: $${totals.money.toLocaleString()} | Combined resource units: ${stockpileUnits.toLocaleString()} | Sample: ${memberNames || 'No member names returned'}</span>
+                    <div style="overflow-x:auto; margin-top:16px;">
+                        <table>
+                            <thead><tr><th>Nation</th><th>Leader</th><th>Tax ID</th><th>Bracket</th><th>Money Tax Rate</th><th>Resource Tax Rate</th><th>Population</th><th>Taxable Income / Turn</th></tr></thead>
+                            <tbody>${taxRows || '<tr><td colspan="5">No alliance member rows returned.</td></tr>'}</tbody>
+                        </table>
+                    </div>
+                    <span class="sub-val">Tax rates are matched from each nation’s tax ID to the alliance TaxBracket record. Taxable income per turn is a population-based estimate using the base income factor (0.725) divided by 12 turns.</span>
+                </div>`);
+        }
+
+        async function fetchAllianceIntel() {
+            try {
+                const nationSnapshot = await fetchSharedNationSnapshot();
+                renderSharedNationCard('shared-status-grid', nationSnapshot);
+                setPageLiveMeta('ALLIANCE LINK ACTIVE', new Date().toLocaleTimeString(), 'Politics & War');
+            } catch (error) {
+                console.warn('Shared snapshot unavailable', error);
+                setPageLiveMeta('SIGNAL LIMITED', 'Waiting on fresh sync', 'Politics & War');
+            }
+
+            // STRICT API v3 QUERY: accept_members correctly formatted
+            const q = { query: `{ 
+                nations(id: [768640]) { 
+                    data { 
+                        nation_name 
+                        leader_name 
+                        id
+                        alliance_id 
+                        alliance_position
+                        alliance { 
+                            id 
+                            name 
+                            acronym 
+                            score 
+                            color 
+                            date
+                            accept_members
+                            forum_link
+                            discord_link
+                            flag
+                            money
+                            coal
+                            oil
+                            uranium
+                            iron
+                            bauxite
+                            lead
+                            gasoline
+                            munitions
+                            steel
+                            aluminum
+                            food
+                            tax_brackets {
+                                id
+                                tax_rate
+                                resource_tax_rate
+                                bracket_name
+                            }
+                            treaties {
+                                id
+                                date
+                                treaty_type
+                                alliance1_id
+                                alliance2_id
+                            }
+                        } 
+                    } 
+                } 
+            }` };
+            
+            try {
+                const res = await fetch(`https://api.politicsandwar.com/graphql?api_key=${API_KEY}`, { 
+                    method: "POST", 
+                    cache: "no-store",
+                    headers: {"Content-Type":"application/json"}, 
+                    body: JSON.stringify(q) 
+                });
+                const data = await res.json();
+                
+                if (data.errors) {
+                    throw new Error("GraphQL Error: " + data.errors[0].message);
+                }
+                
+                const n = data.data.nations.data[0];
+                const al = n.alliance;
+                fetchDonationRecords(al?.id, n.id || 768640, al);
+                
+                if (al) {
+                    // === CLEARANCE CARD ===
+                    document.getElementById('clearance-card').style.display = "block";
+                    document.getElementById('position-val').innerText = getPositionText(n.alliance_position);
+                    document.getElementById('nation-val').innerText = `Leader ${n.leader_name} of ${n.nation_name} | Alliance ID: ${n.alliance_id}`;
+                    if(al.flag) {
+                        const flagEl = document.getElementById('flag-img');
+                        flagEl.src = al.flag;
+                        flagEl.style.display = "block";
+                    }
+
+                    // === TAB 1: COMMAND OVERVIEW GRID ===
+                    const stats = [
+                        { name: "Alliance Headquarters", val: al.name, sub: `Acronym: [${al.acronym}]` },
+                        { name: "Total Score", val: Math.floor(al.score).toLocaleString(), sub: "Combined alliance score" },
+                        { name: "Alliance Color", val: (al.color || "None").toUpperCase(), sub: "Alliance color", isColor: true },
+                        { name: "Recruitment Status", val: al.accept_members ? 'Open' : 'Closed', sub: "Membership applications" }
+                    ];
+                    
+                    let gridHtml = "";
+                    stats.forEach(s => {
+                        let valDisplay = s.val;
+                        if (s.isColor && al.color) {
+                            valDisplay += `<span class="color-sphere" style="background-color: ${al.color.toLowerCase()};"></span>`;
+                        }
+                        
+                        // Dynamic color for Recruitment Status
+                        let valColor = "";
+                        if (s.name === "Recruitment Status") {
+                            valColor = al.accept_members ? "color: var(--green-glow);" : "color: var(--red-glow);";
+                        }
+
+                        gridHtml += `
+                            <div class="card" style="margin-bottom: 0;">
+                                <div class="card-header">
+                                    <h3>${s.name}</h3>
+                                    <div class="live-indicator"><div class="dot"></div> Synced</div>
+                                </div>
+                                <div class="big-val" style="font-size: 2rem; ${valColor}">${valDisplay}</div>
+                                <span class="sub-val">${s.sub}</span>
+                            </div>`;
+                    });
+                    document.getElementById('alliance-grid').innerHTML = gridHtml;
+
+                    try {
+                        const memberData = await fetchAllianceMemberTotals(al.id, al.tax_brackets);
+                        renderAllianceMemberTotals(memberData);
+                    } catch (memberError) {
+                        console.warn('Alliance member aggregate unavailable', memberError);
+                        document.getElementById('alliance-grid').insertAdjacentHTML('beforeend', `
+                            <div class="card" style="margin-bottom: 0; grid-column: 1 / -1; border-color: var(--red-glow);">
+                                <div class="card-header"><h3 style="color: var(--red-glow);">Alliance Member Aggregate</h3></div>
+                                <span class="sub-val">Member totals unavailable: ${memberError.message}</span>
+                            </div>`);
+                    }
+
+                    // === TAB 2: TREATY WEB ===
+                    let treatyHtml = "";
+                    if (al.treaties && al.treaties.length > 0) {
+                        al.treaties.forEach(t => {
+                            const partnerId = (t.alliance1_id === al.id) ? t.alliance2_id : t.alliance1_id;
+                            const treatyDate = new Date(t.date).toLocaleDateString();
+                            
+                            let typeColor = "text-cyan";
+                            if(t.treaty_type.includes("Defense")) typeColor = "text-green";
+                            if(t.treaty_type.includes("Aggression")) typeColor = "text-purple";
+
+                            treatyHtml += `
+                                <tr>
+                                    <td>#${t.id}</td>
+                                    <td class="${typeColor}" style="font-weight: 800;">${t.treaty_type}</td>
+                                    <td>${partnerId}</td>
+                                    <td class="text-muted">${treatyDate}</td>
+                                </tr>
+                            `;
+                        });
+                    } else {
+                        treatyHtml = `<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">No active treaties established.</td></tr>`;
+                    }
+                    document.getElementById('treaty-tbody').innerHTML = treatyHtml;
+
+                    // === TAB 3: COMMS & INTEL ===
+                    const commsHtml = `
+                        <div class="card" style="margin-bottom: 0;">
+                            <div class="card-header">
+                                <h3>Founded</h3>
+                            </div>
+                            <div class="big-val" style="font-size: 1.6rem;">${new Date(al.date).getFullYear()}</div>
+                            <span class="sub-val">Founded: ${new Date(al.date).toLocaleDateString()}</span>
+                        </div>
+                        <div class="card" style="margin-bottom: 0; grid-column: 1 / -1;">
+                            <div class="card-header">
+                                <h3>Communications</h3>
+                            </div>
+                            <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px;">
+                                <a href="${al.discord_link || '#'}" target="_blank" style="color: var(--cyan-accent); text-decoration: none; font-weight: 600; padding: 12px; border: 1px solid var(--border-light); border-radius: 8px; background: rgba(0,0,0,0.3);">
+                                    Discord server: ${al.discord_link ? 'Available' : 'Not available'}
+                                </a>
+                                <a href="${al.forum_link || '#'}" target="_blank" style="color: var(--cyan-accent); text-decoration: none; font-weight: 600; padding: 12px; border: 1px solid var(--border-light); border-radius: 8px; background: rgba(0,0,0,0.3);">
+                                    Official forums: ${al.forum_link ? 'Available' : 'Not available'}
+                                </a>
+                            </div>
+                        </div>
+                    `;
+                    document.getElementById('comms-grid').innerHTML = commsHtml;
+
+                } else {
+                    document.getElementById('alliance-grid').innerHTML = `
+                        <div class="card" style="grid-column: 1 / -1; border-color: var(--red-glow);">
+                            <div class="card-header">
+                                <h3 style="color: var(--red-glow);">No Alliance Detected</h3>
+                            </div>
+                            <div class="big-val" style="color: var(--text-muted);">Unaffiliated</div>
+                            <span class="sub-val" style="color: var(--red-glow); margin-top: 10px;">This nation is not currently aligned with an alliance and has no active diplomatic protection.</span>
+                        </div>`;
+                }
+                
+                // === TAB 4: RAW INTEL ===
+                document.getElementById('alliance-dump').innerText = JSON.stringify(n, null, 2);
+                
+            } catch (e) {
+                console.error("API Pull Failed", e);
+                setPageLiveMeta('SIGNAL LOST', 'API query failed', 'Politics & War');
+                document.getElementById('alliance-grid').innerHTML = `
+                    <div class="card" style="grid-column: 1 / -1; border-color: var(--red-glow);">
+                        <div class="card-header">
+                            <h3 style="color: var(--red-glow);">Network Error</h3>
+                        </div>
+                        <div class="big-val" style="color: var(--text-muted);">Unable to Load Alliance Data</div>
+                        <span class="sub-val" style="color: var(--red-glow); margin-top: 10px;">${e.message || 'Check the API key or network connection.'}</span>
+                    </div>`;
+            }
+        }
+        
+        fetchAllianceIntel();
+        setInterval(fetchAllianceIntel, 60 * 1000);
+    </script>
+</body>
+</html>

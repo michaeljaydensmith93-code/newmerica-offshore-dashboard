@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NewMerica | Role Command Center</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-deep: #050611;
+      --surface: rgba(9, 12, 25, 0.72);
+      --surface-strong: rgba(12, 19, 45, 0.96);
+      --green-glow: #4ade80;
+      --red-glow: #f87171;
+      --purple-accent: #a855f7;
+      --text-main: #e2e8f0;
+      --text-muted: #94a3b8;
+      --cyan-accent: #22d3ee;
+      --accent-soft: rgba(34, 211, 238, 0.14);
+      --border-light: rgba(34,211,238,0.18);
+      --shadow: rgba(0,0,0,0.38);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: clamp(12px, 2vw, 28px);
+      font-family: 'Outfit', sans-serif;
+      color: var(--text-main);
+      background: linear-gradient(135deg, #070812 0%, #080a15 28%, #0b0f23 72%, #050712 100%);
+    }
+
+    .site-content {
+      width: min(1500px, 100%);
+      background: var(--surface);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 28px;
+      box-shadow: 0 30px 80px rgba(0,0,0,0.5);
+      padding: clamp(16px, 2vw, 32px);
+      backdrop-filter: blur(18px);
+    }
+
+    .nav-menu {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+      padding: 10px;
+      margin-bottom: 22px;
+      background: rgba(6,11,32,0.9);
+      border: 1px solid var(--border-light);
+      border-radius: 22px;
+    }
+
+    .nav-link {
+      color: var(--text-muted);
+      text-decoration: none;
+      text-transform: uppercase;
+      font-size: 0.82rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      border-radius: 999px;
+      padding: 8px 16px;
+      transition: 0.2s ease;
+      border: 1px solid transparent;
+    }
+
+    .nav-link:hover { color: #fff; background: rgba(255,255,255,0.05); }
+    .nav-link.active {
+      background: var(--accent-soft);
+      border-color: rgba(34,211,238,0.4);
+      color: white;
+      box-shadow: 0 0 15px rgba(34,211,238,0.18);
+    }
+
+    .header-box {
+      text-align: center;
+      margin: 8px 0 24px;
+    }
+
+    .header-box h1 {
+      margin: 0;
+      font-size: clamp(2rem, 4vw, 3rem);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .header-box p {
+      margin: 10px auto 0;
+      max-width: 780px;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px;
+      border: 1px solid var(--border-light);
+      border-radius: 18px;
+      background: rgba(8, 12, 26, 0.8);
+      margin-bottom: 20px;
+    }
+
+    .role-wrap {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .toolbar label {
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .toolbar input {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border-light);
+      border-radius: 10px;
+      color: var(--text-main);
+      font: inherit;
+      width: min(420px, 60vw);
+      padding: 10px 12px;
+    }
+
+    button {
+      cursor: pointer;
+      border: none;
+      border-radius: 10px;
+      background: linear-gradient(135deg, rgba(34,211,238,0.2), rgba(34,211,238,0.08));
+      color: white;
+      padding: 10px 18px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      border: 1px solid rgba(34,211,238,0.3);
+      transition: transform 0.15s ease;
+    }
+
+    button:hover { transform: translateY(-1px); }
+
+    .hero-status {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-bottom: 22px;
+    }
+
+    .status-card, .card {
+      background: var(--surface-strong);
+      border: 1px solid var(--border-light);
+      border-radius: 20px;
+      padding: clamp(16px, 2vw, 22px);
+      box-shadow: 0 18px 36px var(--shadow);
+    }
+
+    .status-card .label {
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 0.72rem;
+      display: block;
+      margin-bottom: 8px;
+    }
+
+    .status-card .value {
+      font-size: clamp(1.6rem, 2vw, 2.3rem);
+      font-weight: 800;
+      letter-spacing: 0.02em;
+    }
+
+    .status-card .sub {
+      color: var(--text-muted);
+      margin-top: 8px;
+      display: block;
+    }
+
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 18px;
+      margin-bottom: 20px;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding-bottom: 12px;
+      margin-bottom: 14px;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .card-header h3 {
+      margin: 0;
+      font-size: 1rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--cyan-accent);
+    }
+
+    .live-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--green-glow);
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-weight: 700;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      background: var(--green-glow);
+      border-radius: 50%;
+      box-shadow: 0 0 12px rgba(74,222,128,0.8);
+    }
+
+    .big-value {
+      font-size: 1.9rem;
+      font-weight: 800;
+      margin-bottom: 6px;
+      color: #f7fafc;
+    }
+
+    .sub-value {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      line-height: 1.6;
+    }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 18px;
+      margin-bottom: 20px;
+    }
+
+    .list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .list-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+      background: rgba(255,255,255,0.025);
+      border: 1px solid rgba(255,255,255,0.04);
+      border-radius: 12px;
+    }
+
+    .list-item span {
+      color: var(--text-muted);
+    }
+
+    .list-item strong {
+      color: #fff;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 11px 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      vertical-align: top;
+      font-size: 0.92rem;
+    }
+
+    th {
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 0.72rem;
+    }
+
+    .pill {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 0.74rem;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.04);
+      color: var(--text-main);
+      white-space: nowrap;
+    }
+
+    .warning { color: var(--red-glow); }
+    .good { color: var(--green-glow); }
+    .muted { color: var(--text-muted); }
+
+    @media (max-width: 620px) {
+      .toolbar { align-items: stretch; }
+      .role-wrap { width: 100%; }
+      .toolbar input { width: 100%; }
+      .toolbar button { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="site-content">
+    <div class="nav-menu">
+      <a href="DASHBOARD.HTML" class="nav-link">Oversight</a>
+      <a href="MarketAi.HTML" class="nav-link">Market Trends</a>
+      <a href="ALLIANCE.HTML" class="nav-link">Alliance Intel</a>
+      <a href="MILITARY.HTML" class="nav-link">Military Command</a>
+      <a href="position-hub.html" class="nav-link active">Role Center</a>
+    </div>
+
+    <div class="header-box">
+      <h1>Role Command Center</h1>
+      <p>Monitor treasury, inventory, city production, resource risk, and alliance activity in one live dashboard built for your new position.</p>
+    </div>
+
+    <div class="toolbar">
+      <div class="role-wrap">
+        <label for="role-title">Role</label>
+        <input id="role-title" value="Alliance Operations Manager" />
+      </div>
+      <button id="refresh-btn">Refresh Data</button>
+    </div>
+
+    <div class="hero-status" id="hero-status"></div>
+
+    <div class="dashboard-grid" id="kpi-grid"></div>
+
+    <div class="two-col">
+      <section class="card">
+        <div class="card-header">
+          <h3>Position Snapshot</h3>
+          <div class="live-indicator"><span class="dot"></span> Synced</div>
+        </div>
+        <div id="role-summary" class="sub-value">Loading role overview...</div>
+      </section>
+
+      <section class="card">
+        <div class="card-header">
+          <h3>Bank & Stockpile</h3>
+          <div class="live-indicator"><span class="dot"></span> Live</div>
+        </div>
+        <div id="bank-summary" class="list"></div>
+      </section>
+
+      <section class="card">
+        <div class="card-header">
+          <h3>Bank Ledger</h3>
+          <div class="live-indicator"><span class="dot"></span> Recent</div>
+        </div>
+        <div id="bank-ledger" class="list"></div>
+      </section>
+    </div>
+
+    <div class="two-col">
+      <section class="card">
+        <div class="card-header">
+          <h3>Tax Activity</h3>
+          <div class="live-indicator"><span class="dot"></span> Ledger</div>
+        </div>
+        <div id="tax-activity" class="list"></div>
+      </section>
+
+      <section class="card">
+        <div class="card-header">
+          <h3>National Stockpile</h3>
+          <div class="live-indicator"><span class="dot"></span> Holdings</div>
+        </div>
+        <div id="stockpile-summary" class="list"></div>
+      </section>
+    </div>
+
+    <div class="two-col">
+      <section class="card">
+        <div class="card-header">
+          <h3>Resources Under Pressure</h3>
+          <div class="live-indicator"><span class="dot"></span> Market</div>
+        </div>
+        <div id="resource-pressure" class="list"></div>
+      </section>
+
+      <section class="card">
+        <div class="card-header">
+          <h3>Latest Market Pulse</h3>
+          <div class="live-indicator"><span class="dot"></span> Current</div>
+        </div>
+        <div id="market-pulse" class="list"></div>
+      </section>
+    </div>
+
+    <section class="card">
+      <div class="card-header">
+        <h3>Recent Activity</h3>
+        <div class="live-indicator"><span class="dot"></span> Ledger</div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Category</th>
+            <th>Direction</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody id="activity-table"></tbody>
+      </table>
+    </section>
+  </div>
+
+  <script src="common.js"></script>
+  <script>
+    const NATION_ID = 768640;
+    const RESOURCE_TYPES = ['food','coal','oil','uranium','iron','bauxite','lead','gasoline','munitions','steel','aluminum'];
+    const CITY_BUILDING_KEYS = ['farm','coal_mine','iron_mine','bauxite_mine','lead_mine','uranium_mine','oil_well','oil_refinery','aluminum_refinery','steel_mill','munitions_factory'];
+    const UNIT_LABELS = {
+      food: 'Food', coal: 'Coal', oil: 'Oil', uranium: 'Uranium', iron: 'Iron',
+      bauxite: 'Bauxite', lead: 'Lead', gasoline: 'Gasoline', munitions: 'Munitions',
+      steel: 'Steel', aluminum: 'Aluminum'
+    };
+    const BUILDING_LABELS = {
+      farm: 'Farms', coal_mine: 'Coal Mines', iron_mine: 'Iron Mines', bauxite_mine: 'Bauxite Mines',
+      lead_mine: 'Lead Mines', uranium_mine: 'Uranium Mines', oil_well: 'Oil Wells', oil_refinery: 'Oil Refineries',
+      aluminum_refinery: 'Aluminum Refineries', steel_mill: 'Steel Mills', munitions_factory: 'Munitions Factories'
+    };
+
+    const money = value => `$${(Number(value) || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+
+    function setRoleTitle() {
+      const input = document.getElementById('role-title');
+      const value = (input.value || '').trim() || 'Alliance Operations Manager';
+      document.title = `NewMerica | ${value}`;
+      return value;
+    }
+
+    async function api(query, signal) {
+      const response = await fetch(`https://api.politicsandwar.com/graphql?api_key=${window.API_KEY || ''}`, {
+        method: 'POST',
+        cache: 'no-store',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query }),
+        signal
+      });
+      const json = await response.json();
+      if (!response.ok || json.errors?.length) {
+        throw new Error(json.errors?.[0]?.message || `HTTP ${response.status}`);
+      }
+      return json.data;
+    }
+
+    function getRoleSummary(nation, alliance, prices, totalBankValue) {
+      const roleTitle = setRoleTitle();
+      const summary = [];
+      summary.push(`<strong>${roleTitle}</strong>`);
+      summary.push(`${nation?.nation_name || 'Unknown nation'} • Leader: ${nation?.leader_name || 'Unknown'}`);
+      summary.push(`${alliance?.name || 'No alliance'} • ID ${alliance?.id || 'Unknown'} • Score ${Number(alliance?.score || nation?.score || 0).toLocaleString()}`);
+      summary.push(`Inventory value: ${money(totalBankValue)} • Latest market snapshot: ${new Date(prices?.date || Date.now()).toLocaleString()}`);
+      return summary.join('<br>');
+    }
+
+    function renderHeroStatus(nation, alliance, bankCash, bankResources, totalBankValue) {
+      const cards = [
+        { label: 'Role', value: setRoleTitle(), sub: `${nation?.leader_name || 'Leader'} · ${nation?.nation_name || 'Nation'}` },
+        { label: 'Alliance', value: alliance?.name || 'Independent', sub: alliance?.acronym ? `[${alliance.acronym}]` : 'No active alliance' },
+        { label: 'Cash on hand', value: money(bankCash), sub: 'Alliance bank cash' },
+        { label: 'Resource value', value: money(totalBankValue - bankCash), sub: `${RESOURCE_TYPES.filter(r => (bankResources[r] || 0) > 0).length} tracked resources` }
+      ];
+
+      document.getElementById('hero-status').innerHTML = cards.map(card => `
+        <div class="status-card">
+          <span class="label">${card.label}</span>
+          <div class="value">${card.value}</div>
+          <span class="sub">${card.sub}</span>
+        </div>
+      `).join('');
+    }
+
+    function renderKpis(nation, alliance, bankCash, bankResources, subtotal, market) {
+      const kpis = [
+        { label: 'Population', value: Number(nation?.population || 0).toLocaleString(), sub: 'Persons' },
+        { label: 'Cities', value: Number(nation?.num_cities || 0).toLocaleString(), sub: 'Controlled cities' },
+        { label: 'Army', value: Number(nation?.soldiers || 0).toLocaleString(), sub: 'Soldiers' },
+        { label: 'Alliance bank', value: money(subtotal), sub: `Cash + resource value` },
+        { label: 'Critical materials', value: bankResources.food ? 'Tracked' : 'Low', sub: `${bankResources.food || 0} food` },
+        { label: 'Market snapshot', value: new Date(market?.date || Date.now()).toLocaleDateString(), sub: 'Latest trade prices' }
+      ];
+
+      document.getElementById('kpi-grid').innerHTML = kpis.map(item => `
+        <div class="card">
+          <div class="card-header">
+            <h3>${item.label}</h3>
+            <div class="live-indicator"><span class="dot"></span> live</div>
+          </div>
+          <div class="big-value">${item.value}</div>
+          <div class="sub-value">${item.sub}</div>
+        </div>
+      `).join('');
+    }
+
+    function renderBankSummary(bankCash, bankResources, prices) {
+      const items = RESOURCE_TYPES.map(key => {
+        const amount = Number(bankResources[key] || 0);
+        if (!amount) return null;
+        const price = Number(prices[key] || 0);
+        const value = amount * price;
+        return `<div class="list-item"><span>${UNIT_LABELS[key]}</span><strong>${amount.toLocaleString()} · ${money(value)}</strong></div>`;
+      }).filter(Boolean);
+
+      document.getElementById('bank-summary').innerHTML = `
+        <div class="list-item"><span>Cash</span><strong>${money(bankCash)}</strong></div>
+        ${items.slice(0, 10).join('') || '<div class="list-item"><span>No active resource counts</span><strong>—</strong></div>'}
+      `;
+    }
+
+    function renderBankLedger(entries) {
+      if (!Array.isArray(entries) || !entries.length) {
+        document.getElementById('bank-ledger').innerHTML = '<div class="list-item"><span>No bank entries</span><strong>—</strong></div>';
+        return;
+      }
+
+      const top = entries.slice(0, 6);
+      document.getElementById('bank-ledger').innerHTML = top.map(record => {
+        const moneyValue = Number(record.money || 0);
+        const note = String(record.note || record.reason || record.message || 'Bank movement').trim() || 'Bank movement';
+        const direction = moneyValue >= 0 ? 'In' : 'Out';
+        const amount = moneyValue >= 0 ? moneyValue : Math.abs(moneyValue);
+        return `<div class="list-item"><span>${new Date(record.date || Date.now()).toLocaleString()}</span><strong>${direction} ${amount.toLocaleString()} · ${note}</strong></div>`;
+      }).join('');
+    }
+
+    function renderTaxActivity(entries) {
+      const items = (Array.isArray(entries) ? entries : []).filter(record => {
+        const hasTaxId = record && (record.tax_id !== undefined && record.tax_id !== null && String(record.tax_id).trim() !== '');
+        const text = String(record?.note || record?.reason || record?.message || '').toLowerCase();
+        return hasTaxId || text.includes('tax');
+      }).slice(0, 6);
+
+      if (!items.length) {
+        document.getElementById('tax-activity').innerHTML = '<div class="list-item"><span>No tax transactions</span><strong>Not exposed by API</strong></div>';
+        return;
+      }
+
+      document.getElementById('tax-activity').innerHTML = items.map(record => {
+        const moneyValue = Number(record.money || 0);
+        const note = String(record.note || record.reason || record.message || 'Tax entry').trim() || 'Tax entry';
+        return `<div class="list-item"><span>${new Date(record.date || Date.now()).toLocaleString()}</span><strong>${moneyValue >= 0 ? '+' : '-'}${Math.abs(moneyValue).toLocaleString()} · ${note}</strong></div>`;
+      }).join('');
+    }
+
+    function renderStockpileSummary(nation, prices) {
+      const rows = RESOURCE_TYPES.map(key => {
+        const amount = Number(nation?.[key] || 0);
+        const price = Number(prices?.[key] || 0);
+        return { key, amount, value: amount * price };
+      }).filter(item => item.amount > 0).sort((a, b) => b.value - a.value).slice(0, 6);
+
+      document.getElementById('stockpile-summary').innerHTML = rows.length ? rows.map(item => `
+        <div class="list-item">
+          <span>${UNIT_LABELS[item.key]}</span>
+          <strong>${item.amount.toLocaleString()} · ${money(item.value)}</strong>
+        </div>
+      `).join('') : '<div class="list-item"><span>No stockpile holdings</span><strong>—</strong></div>';
+    }
+
+    function renderResourcePressure(bankResources, prices) {
+      const rows = RESOURCE_TYPES.map(key => {
+        const amount = Number(bankResources[key] || 0);
+        const price = Number(prices[key] || 0);
+        return { key, amount, price };
+      }).filter(item => item.amount > 0).sort((a, b) => (b.amount * b.price) - (a.amount * a.price));
+
+      const top = rows.slice(0, 6);
+      document.getElementById('resource-pressure').innerHTML = top.map(item => `
+        <div class="list-item">
+          <span>${UNIT_LABELS[item.key]}</span>
+          <strong>${item.amount.toLocaleString()} @ ${money(item.price)}</strong>
+        </div>
+      `).join('') || '<div class="list-item"><span>No tracked resource values</span><strong>—</strong></div>';
+    }
+
+    function renderMarketPulse(latest) {
+      const rows = RESOURCE_TYPES.map(key => ({ key, value: Number(latest[key] || 0) }));
+      const top = rows.filter(item => item.value > 0).slice(0, 6);
+      document.getElementById('market-pulse').innerHTML = top.map(item => `
+        <div class="list-item">
+          <span>${UNIT_LABELS[item.key]}</span>
+          <strong>${money(item.value)}</strong>
+        </div>
+      `).join('');
+    }
+
+    function getCityCapacityTotals(cities) {
+      const totals = Object.fromEntries(CITY_BUILDING_KEYS.map(key => [key, 0]));
+      (Array.isArray(cities) ? cities : []).forEach(city => {
+        CITY_BUILDING_KEYS.forEach(key => {
+          totals[key] += Number(city[key] || 0);
+        });
+      });
+      return totals;
+    }
+
+    function renderCityCapacity(cities) {
+      const totals = getCityCapacityTotals(cities);
+      const rows = CITY_BUILDING_KEYS.map(key => ({
+        key,
+        label: BUILDING_LABELS[key] || key,
+        total: totals[key] || 0
+      })).filter(item => item.total > 0);
+
+      document.getElementById('city-capacity').innerHTML = rows.map(item => `
+        <div class="list-item">
+          <span>${item.label}</span>
+          <strong>${item.total.toLocaleString()}</strong>
+        </div>
+      `).join('') || '<div class="list-item"><span>No city capacity data</span><strong>—</strong></div>';
+    }
+
+    function renderPriorityBrief(bankResources, latestMarket) {
+      const checks = [];
+      if ((Number(bankResources.food) || 0) < 500) checks.push('Food stockpile below comfort threshold');
+      if ((Number(bankResources.oil) || 0) < 150 || (Number(bankResources.gasoline) || 0) < 300) checks.push('Oil/gasoline coverage should be replenished');
+      if ((Number(bankResources.bauxite) || 0) < 400) checks.push('Bauxite needs attention for aluminum output');
+      if ((Number(bankResources.steel) || 0) < 150) checks.push('Steel reserves are thin; watch market timing');
+      if ((Number(bankResources.munitions) || 0) < 400) checks.push('Munitions reserve is below preferred war support floor');
+      if (!checks.length) checks.push('Resource posture looks stable');
+
+      const highlights = checks.slice(0, 5).map(item => `<div class="list-item"><span>Priority</span><strong>${item}</strong></div>`).join('');
+      document.getElementById('priority-brief').innerHTML = highlights;
+    }
+
+    function renderRiskMatrix(bankResources, latestMarket) {
+      const risks = RESOURCE_TYPES.map(key => {
+        const amount = Number(bankResources[key] || 0);
+        const price = Number(latestMarket[key] || 0);
+        let status = 'Stable';
+        if (amount < 100 && ['food','oil','bauxite','steel','gasoline', 'munitions'].includes(key)) status = 'Watch';
+        if (amount < 50 && ['food','oil','bauxite','steel','gasoline', 'munitions'].includes(key)) status = 'Critical';
+        if (amount === 0) status = 'Empty';
+        return { key, amount, price, status };
+      }).filter(item => item.amount > 0 || item.status !== 'Stable').slice(0, 6);
+
+      document.getElementById('risk-matrix').innerHTML = risks.map(item => `
+        <div class="list-item">
+          <span>${UNIT_LABELS[item.key] || item.key}</span>
+          <strong>${item.amount.toLocaleString()} · ${item.status}</strong>
+        </div>
+      `).join('') || '<div class="list-item"><span>No active risk signals</span><strong>Stable</strong></div>';
+    }
+
+    function renderActivity(rows) {
+      const tbody = document.getElementById('activity-table');
+      if (!rows.length) {
+        tbody.innerHTML = '<tr><td colspan="4" class="muted">No recent alliance activity available.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = rows.slice(0, 8).map(record => {
+        const date = record.date || record.created_at || 'Unknown';
+        const note = String(record.note || record.reason || record.message || 'No note').trim();
+        const direction = String(record.sender_id || '') === String(NATION_ID) ? 'Outgoing' : 'Incoming';
+        const kind = note.includes('deposit') || note.includes('#deposit') ? 'Deposit' : (note.includes('withdraw') ? 'Withdrawal' : 'Transfer');
+        return `<tr><td>${new Date(date).toLocaleString()}</td><td>${kind}</td><td>${direction}</td><td>${note || 'No note'}</td></tr>`;
+      }).join('');
+    }
+
+    async function loadRoleData() {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 15000);
+
+      try {
+        const nationData = await api(`{ nations(id: [${NATION_ID}], first: 1) { data { nation_name leader_name population num_cities score alliance_id alliance { id name acronym score color money food coal oil uranium iron bauxite lead gasoline munitions steel aluminum } cities { id name land infrastructure farm oil_refinery aluminum_refinery steel_mill munitions_factory coal_mine iron_mine bauxite_mine lead_mine uranium_mine oil_well } } } }`, controller.signal);
+
+        const nation = nationData?.nations?.data?.[0] || {};
+        const alliance = nation?.alliance || {};
+        const allianceBank = {
+          money: Number(alliance.money) || 0,
+          food: Number(alliance.food) || 0,
+          coal: Number(alliance.coal) || 0,
+          oil: Number(alliance.oil) || 0,
+          uranium: Number(alliance.uranium) || 0,
+          iron: Number(alliance.iron) || 0,
+          bauxite: Number(alliance.bauxite) || 0,
+          lead: Number(alliance.lead) || 0,
+          gasoline: Number(alliance.gasoline) || 0,
+          munitions: Number(alliance.munitions) || 0,
+          steel: Number(alliance.steel) || 0,
+          aluminum: Number(alliance.aluminum) || 0
+        };
+
+        const marketData = await api('{ tradeprices(first: 10) { data { date food coal oil uranium iron bauxite lead gasoline munitions steel aluminum } } }', controller.signal);
+        const marketRows = sortMarketRowsNewestFirst(marketData?.tradeprices?.data || []);
+        const latestMarket = getLatestMarketRow(marketRows) || {};
+
+        const bankValue = allianceBank.money + RESOURCE_TYPES.reduce((sum, key) => sum + (allianceBank[key] || 0) * (Number(latestMarket[key]) || 0), 0);
+
+        renderHeroStatus(nation, alliance, allianceBank.money, allianceBank, bankValue);
+        renderKpis(nation, alliance, allianceBank.money, allianceBank, bankValue, latestMarket);
+        document.getElementById('role-summary').innerHTML = getRoleSummary(nation, alliance, latestMarket, bankValue);
+        renderBankSummary(allianceBank.money, allianceBank, latestMarket);
+        renderStockpileSummary(nation, latestMarket);
+        renderResourcePressure(allianceBank, latestMarket);
+        renderMarketPulse(latestMarket);
+        renderPriorityBrief(allianceBank, latestMarket);
+        renderCityCapacity(nation?.cities || []);
+        renderRiskMatrix(allianceBank, latestMarket);
+
+        const records = await api(`{ bankrecs(first: 25, page: 1, or_id: [${NATION_ID}, ${alliance.id || 0}]) { data { id date sender_id receiver_id money note reason message tax_id coal oil uranium iron bauxite lead gasoline munitions steel aluminum food } } }`, controller.signal);
+        const recent = (records?.bankrecs?.data || []).filter(record => record && (String(record.sender_id || '') === String(NATION_ID) || String(record.receiver_id || '') === String(NATION_ID) || String(record.sender_id || '') === String(alliance.id || '') || String(record.receiver_id || '') === String(alliance.id || ''))).slice(0, 8);
+        renderBankLedger(recent);
+        renderTaxActivity(recent);
+        renderActivity(recent);
+
+      } catch (error) {
+        document.getElementById('role-summary').innerHTML = `<span class="warning">Data unavailable: ${error.message}</span>`;
+        document.getElementById('bank-summary').innerHTML = '<div class="list-item"><span>API request failed</span><strong>Retry</strong></div>';
+        document.getElementById('bank-ledger').innerHTML = '<div class="list-item"><span>Bank ledger unavailable</span><strong>Retry</strong></div>';
+        document.getElementById('tax-activity').innerHTML = '<div class="list-item"><span>Tax activity unavailable</span><strong>Retry</strong></div>';
+        document.getElementById('stockpile-summary').innerHTML = '<div class="list-item"><span>Stockpile data unavailable</span><strong>Retry</strong></div>';
+        document.getElementById('resource-pressure').innerHTML = '<div class="list-item"><span>Market data unavailable</span><strong>—</strong></div>';
+        document.getElementById('market-pulse').innerHTML = '<div class="list-item"><span>Unable to load prices</span><strong>—</strong></div>';
+        document.getElementById('priority-brief').innerHTML = '<div class="list-item"><span>Watchlist</span><strong>API unavailable</strong></div>';
+        document.getElementById('city-capacity').innerHTML = '<div class="list-item"><span>Capacity data unavailable</span><strong>—</strong></div>';
+        document.getElementById('risk-matrix').innerHTML = '<div class="list-item"><span>Risk matrix unavailable</span><strong>—</strong></div>';
+        document.getElementById('activity-table').innerHTML = '<tr><td colspan="4" class="warning">Unable to load recent activity.</td></tr>';
+      } finally {
+        clearTimeout(timer);
+      }
+    }
+
+    document.getElementById('refresh-btn').addEventListener('click', () => {
+      setRoleTitle();
+      loadRoleData();
+    });
+
+    document.getElementById('role-title').addEventListener('input', setRoleTitle);
+    loadRoleData();
+  </script>
+</body>
+</html>

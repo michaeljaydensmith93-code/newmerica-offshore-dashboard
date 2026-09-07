@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nation HUD</title>
+  <style>
+    :root { color-scheme: dark; --bg: #050816; --panel: #0e1428; --line: #24304f; --cyan: #00f0ff; --text: #f5f7ff; --muted: #7d8ca8; }
+    body { margin: 0; font-family: Arial, sans-serif; background: var(--bg); color: var(--text); }
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 24px; }
+    .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 20px; box-shadow: 0 0 20px rgba(0,240,255,0.1); }
+    h1 { margin: 0 0 12px; color: var(--cyan); }
+    .meta { color: var(--muted); margin-bottom: 16px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+    .box { background: rgba(255,255,255,0.03); border: 1px solid var(--line); border-radius: 10px; padding: 12px; }
+    .label { color: var(--muted); font-size: 0.78rem; text-transform: uppercase; margin-bottom: 6px; }
+    .value { font-size: 1.1rem; color: var(--text); }
+    .back { display: inline-block; margin-bottom: 16px; color: var(--cyan); text-decoration: none; }
+    .godview { float: right; color: var(--cyan); border: 1px solid var(--cyan); padding: 8px 12px; border-radius: 6px; text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <a class="back" href="DASHBOARD.HTML">← Back to Dashboard</a>
+    <a class="godview" href="GODVIEW.html">🔒 God View</a>
+    <div class="panel">
+      <h1>Nation HUD</h1>
+      <div class="meta" id="meta">Loading nation profile...</div>
+      <div class="grid" id="content"></div>
+    </div>
+  </div>
+  <script>
+    const API_KEY = '731a391e2f41251b8bcc';
+    const NATION_ID = 768640;
+    async function loadData() {
+      try {
+        const query = `query { nations(id: [${NATION_ID}], first: 1) { data { nation_name leader_name population num_cities score alliance_id alliance_position soldiers tanks aircraft ships } } }`;
+        const response = await fetch(`https://api.politicsandwar.com/graphql?api_key=${API_KEY}`, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({query})});
+        const json = await response.json();
+        if (json.errors) throw new Error(json.errors[0]?.message || 'GraphQL errors');
+        const nation = json.data?.nations?.data?.[0];
+        document.getElementById('meta').textContent = `${nation?.nation_name || 'Unknown'} • ${nation?.leader_name || 'Unknown'}`;
+        const fields = [
+          ['Nation', nation?.nation_name || 'Unknown'],
+          ['Commander', nation?.leader_name || 'Unknown'],
+          ['Population', Number(nation?.population || 0).toLocaleString()],
+          ['Cities', Number(nation?.num_cities || 0).toLocaleString()],
+          ['Score', Number(nation?.score || 0).toLocaleString()],
+          ['Alliance', nation?.alliance_id ? `ID ${nation.alliance_id}` : 'Independent'],
+          ['Soldiers', Number(nation?.soldiers || 0).toLocaleString()],
+          ['Tanks', Number(nation?.tanks || 0).toLocaleString()],
+          ['Aircraft', Number(nation?.aircraft || 0).toLocaleString()],
+          ['Ships', Number(nation?.ships || 0).toLocaleString()]
+        ];
+        document.getElementById('content').innerHTML = fields.map(([label, value]) => `<div class="box"><div class="label">${label}</div><div class="value">${value}</div></div>`).join('');
+      } catch (error) {
+        document.getElementById('content').innerHTML = `<div class="box"><div class="label">Error</div><div class="value">${error.message}</div></div>`;
+      }
+    }
+    loadData();
+  </script>
+</body>
+</html>

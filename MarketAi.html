@@ -1,0 +1,1101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NewMerica | Market Trading</title>
+    
+    <!-- Custom Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        /* === MASTER COLOR PALETTE === */
+        :root { 
+            --bg-deep: #050611; 
+            --surface: rgba(9, 12, 25, 0.6); 
+            --surface-strong: rgba(12, 19, 45, 0.95); 
+            --green-glow: #4ade80; 
+            --red-glow: #f87171;
+            --purple-accent: #a855f7; 
+            --text-main: #e2e8f0; 
+            --text-muted: #94a3b8;
+            --cyan-accent: #22d3ee; 
+            --accent-soft: rgba(34, 211, 238, 0.14); 
+            --border-light: rgba(34,211,238,0.18);
+            --v3-accent: #f43f5e;
+        }
+
+        /* === BASE BACKGROUND === */
+        body { 
+            font-family: 'Outfit', sans-serif; 
+            color: var(--text-main); 
+            padding: 20px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            min-height: 100vh; 
+            margin: 0; 
+            background: linear-gradient(135deg, #070812 0%, #080a15 28%, #0b0f23 72%, #050712 100%);
+            position: relative;
+        }
+        body::before { content: ''; position: fixed; inset: 0; background: repeating-linear-gradient(0deg, rgba(255,255,255,0.02), rgba(255,255,255,0.02) 1px, transparent 1px, transparent 10px); pointer-events: none; z-index: -1; opacity: 0.65; }
+
+        /* === GLASSMORPHISM WRAPPER === */
+        .site-content { 
+            position: relative; 
+            z-index: 3; 
+            width: min(1400px, 100%); 
+            padding: 24px; 
+            background: var(--surface); 
+            border: 1px solid rgba(255,255,255,0.06); 
+            border-radius: 28px; 
+            backdrop-filter: blur(20px); 
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5); 
+        }
+
+        /* === NAVIGATION MENU === */
+        .nav-menu { 
+            display: flex; 
+            flex-wrap: wrap;
+            justify-content: center; 
+            gap: 10px; 
+            margin-bottom: 30px; 
+            padding: 14px; 
+            background: rgba(6, 11, 32, 0.9); 
+            border: 1px solid var(--border-light); 
+            border-radius: 22px; 
+        }
+
+        .nav-link { 
+            color: var(--text-muted); 
+            font-size: 0.85rem;
+            font-weight: 600; 
+            text-decoration: none; 
+            padding: 8px 16px; 
+            text-transform: uppercase; 
+            border: 1px solid transparent; 
+            border-radius: 999px; 
+            transition: all 0.2s ease; 
+        }
+
+        .nav-link:hover { color: #fff; background: rgba(255,255,255,0.05); }
+        .nav-link.active { 
+            background: var(--accent-soft); 
+            color: #fff; 
+            border-color: rgba(34,211,238,0.4); 
+            box-shadow: 0 0 15px rgba(34,211,238,0.2);
+        }
+
+        /* === SUB NAVIGATION TABS === */
+        .sub-nav { display: flex; justify-content: center; gap: 8px; margin-bottom: 28px; flex-wrap: wrap; }
+        .sub-link { background: rgba(10, 15, 28, 0.92); color: var(--cyan-accent); padding: 10px 16px; border: 1px solid var(--border-light); border-radius: 999px; cursor: pointer; font-size: 0.85rem; font-weight: 700; transition: transform 0.2s ease, background 0.2s ease; }
+        .sub-link:hover { transform: translateY(-1px); background: rgba(34,211,238,0.08); }
+        .sub-link.active { background: linear-gradient(135deg, rgba(34,211,238,0.18), rgba(168,85,247,0.18)); color: #fff; border-color: rgba(34,211,238,0.35); }
+        .sub-link.v3-tab { border-color: var(--v3-accent); color: var(--v3-accent); }
+        .sub-link.v3-tab.active { background: linear-gradient(135deg, rgba(244,63,94,0.18), rgba(168,85,247,0.18)); color: #fff; border-color: var(--v3-accent); }
+        
+        .tab-content { display: none; width: 100%; animation: fadeIn 0.3s ease; }
+        .tab-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* === PAGE HEADER === */
+        .header-box { text-align: center; margin-bottom: 30px; }
+        .header-box h1 { margin: 0; font-size: 2.2rem; color: #fff; text-transform: uppercase; letter-spacing: 2px; }
+        .header-box p { color: var(--text-muted); max-width: 800px; margin: 10px auto 0; line-height: 1.5; }
+
+        .hero-badge { display: inline-block; padding: 6px 14px; border-radius: 999px; border: 1px solid rgba(245, 158, 11, 0.28); background: rgba(245, 158, 11, 0.12); color: #fee2b3; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.12em; font-weight: 800; margin: 0 5px; }
+        .v3-badge { border-color: var(--v3-accent); background: rgba(244,63,94,0.15); color: var(--v3-accent); }
+
+        /* === CARDS & CONTAINERS === */
+        .dashboard-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; }
+        @media (max-width: 900px) { .dashboard-grid { grid-template-columns: 1fr; } }
+
+        .card { background: var(--surface-strong); padding: 24px; border-radius: 20px; border: 1px solid var(--border-light); position: relative; overflow: hidden; }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 12px; }
+        .card-header h3 { margin: 0; font-size: 1.1rem; color: var(--cyan-accent); text-transform: uppercase; }
+
+        .table-container { width: 100%; background: var(--surface-strong); border-radius: 20px; border: 1px solid var(--border-light); overflow: hidden; margin-bottom: 24px; }
+
+        /* === TABLES === */
+        table { width: 100%; border-collapse: collapse; text-align: left; }
+        th { background: rgba(0,0,0,0.4); padding: 16px; font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+        td { padding: 16px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.95rem; font-weight: 600; transition: background 0.2s; }
+        tbody tr:hover { background: rgba(34, 211, 238, 0.05); }
+
+        /* === HUD ELEMENTS === */
+        .live-indicator { display: flex; align-items: center; gap: 8px; font-size: 0.75rem; font-weight: 700; color: var(--green-glow); text-transform: uppercase; letter-spacing: 1px; }
+        .dot { width: 8px; height: 8px; background-color: var(--green-glow); border-radius: 50%; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.7); } 70% { box-shadow: 0 0 0 6px rgba(74, 222, 128, 0); } 100% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0); } }
+
+        /* === TERMINALS === */
+        .terminal { background: #000; padding: 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); font-family: 'Courier New', Courier, monospace; font-size: 0.85rem; color: var(--text-muted); height: 200px; overflow-y: auto; line-height: 1.6; }
+        .v3-terminal-box { background: rgba(0,0,0,0.8); border: 1px solid rgba(244,63,94,0.3); padding: 20px; border-radius: 12px; color: #cbd5e1; height: 350px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; box-shadow: inset 0 0 20px rgba(244,63,94,0.05); }
+        .v3-line { margin-bottom: 8px; }
+        .v3-system { color: #94a3b8; }
+        .v3-action { color: var(--green-glow); font-weight: bold; }
+        .v3-alert { color: var(--v3-accent); font-weight: bold; }
+
+        /* === SPECIFIC COMPONENT STYLES === */
+        .hud-container { background: rgba(2, 8, 20, 0.88); border: 1px solid rgba(245, 158, 11, 0.18); padding: 24px; margin-bottom: 20px; border-radius: 20px; position: relative; overflow-x: auto; }
+        .hud-title { color: #fbbf24; text-transform: uppercase; letter-spacing: 2px; border-bottom: 1px solid rgba(245, 158, 11, 0.25); padding-bottom: 10px; margin-top: 0; margin-bottom: 15px; font-family: 'Courier New', Courier, monospace; }
+        .executive-shell { margin: 24px 0 30px; }
+        .executive-grid { display: grid; grid-template-columns: 1.35fr 0.95fr; gap: 16px; }
+        .hud-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; }
+        .hud-card { display: block; text-decoration: none; background: linear-gradient(135deg, rgba(10,18,35,0.96), rgba(7,11,22,0.92)); border: 1px solid rgba(34,211,238,0.16); border-radius: 16px; padding: 14px; color: var(--text-main); transition: transform 0.2s ease, border-color 0.2s ease; }
+        .hud-card:hover { transform: translateY(-2px); border-color: rgba(34,211,238,0.34); }
+        .hud-card strong { display: block; font-size: 0.95rem; color: var(--cyan-accent); margin-bottom: 8px; }
+        .hud-card .value { font-size: 1.08rem; font-weight: 800; margin-bottom: 6px; }
+        .hud-card .meta { font-size: 0.8rem; color: var(--text-muted); }
+        .intel-grid { display: grid; gap: 12px; }
+        .intel-card { background: linear-gradient(135deg, rgba(12, 18, 34, 0.98), rgba(7, 11, 22, 0.95)); border: 1px solid rgba(34,211,238,0.16); border-radius: 18px; padding: 14px; display: block; text-decoration: none; color: inherit; transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease; box-shadow: inset 0 1px 0 rgba(255,255,255,0.04); }
+        .intel-card:hover { transform: translateY(-2px); border-color: rgba(34,211,238,0.34); box-shadow: 0 16px 28px rgba(0,0,0,0.22); }
+        .intel-card h4 { margin: 0 0 10px; color: #fff; font-size: 0.92rem; text-transform: uppercase; letter-spacing: 0.09em; }
+        .intel-metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-bottom: 10px; }
+        .intel-metric { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 8px 10px; }
+        .intel-metric span { display: block; font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
+        .intel-metric strong { font-size: 0.9rem; color: #fff; display: block; line-height: 1.25; }
+        .intel-list { margin: 0; padding-left: 16px; color: var(--text-muted); font-size: 0.84rem; }
+        .intel-list li { margin-bottom: 6px; }
+        .sheet-link { display: inline-flex; align-items: center; gap: 6px; margin-top: 10px; color: var(--cyan-accent); font-size: 0.82rem; font-weight: 700; text-decoration: none; }
+        .sheet-link:hover { color: #fff; }
+        @media (max-width: 900px) { .executive-grid { grid-template-columns: 1fr; } .intel-metrics { grid-template-columns: 1fr; } }
+        .hud-table { width: 100%; border-collapse: collapse; font-family: 'Courier New', Courier, monospace; font-size: 0.85rem; }
+        .hud-table th { color: var(--green-glow); border-bottom: 1px solid rgba(74, 222, 128, 0.5); padding:10px; text-align:left; white-space: nowrap; background: transparent; }
+        .hud-table td { color: #e2e8f0; border-bottom: 1px solid rgba(74, 222, 128, 0.15); padding:10px; white-space: nowrap; }
+        .hud-highlight { color: var(--green-glow); text-shadow: 0 0 5px rgba(74, 222, 128, 0.3); font-weight: bold; }
+
+        .patriot-container { background: linear-gradient(180deg, #0f172a 0%, #020617 100%); border: 2px solid #b91c1c; border-top: 4px solid #1d4ed8; border-bottom: 4px solid #1d4ed8; padding: 20px; margin-bottom: 20px; border-radius: 12px; overflow-x: auto; }
+        .patriot-title { color: #f8fafc; text-align: center; text-transform: uppercase; letter-spacing: 4px; margin-top: 0; padding-bottom: 15px; border-bottom: 2px dashed #b91c1c; font-size: 1.4rem; text-shadow: 2px 2px 0px #000; }
+        .patriot-table { width: 100%; border-collapse: collapse; font-size: 0.95rem; text-align: left; }
+        .patriot-table th { background: #b91c1c; color: #fff; padding: 12px; text-transform: uppercase; border-right: 1px solid #7f1d1d; }
+        .patriot-table td { padding: 12px; border-bottom: 1px solid #1e293b; color: #cbd5e1; }
+        .patriot-table tr:nth-child(even) { background: rgba(29, 78, 216, 0.1); }
+
+        .fact-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin: 20px; }
+        .fact-item { background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(245, 158, 11, 0.16); padding: 18px; border-radius: 18px; color: #f8fafc; }
+        .fact-item strong { display: block; font-size: 0.85rem; color: #fbbf24; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.08em; }
+        .fact-item span { display: block; font-size: 1.4rem; font-weight: 800; line-height: 1.2; }
+
+        .chart-container { background: var(--surface-strong); border: 1px solid var(--border-light); border-radius: 24px; padding: 22px; margin-top: 24px; height: 360px; width: 100%; box-sizing: border-box; }
+        .resource-popup { display: none; position: absolute; z-index: 100; background: rgba(8,14,32,0.98); border: 1px solid var(--cyan-accent); border-radius: 16px; padding: 16px; box-shadow: 0 20px 40px rgba(0,0,0,0.6); pointer-events: none; width: 340px; }
+        .resource-popup.visible { display: block; }
+        .resource-popup-title { color: #e2e8f0; font-weight: 800; margin-bottom: 12px; font-size: 0.95rem; letter-spacing: 0.04em; }
+        .resource-popup-chart { width: 100%; height: 170px; }
+
+        /* Thought Process specific */
+        .thought-item { margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid rgba(34, 211, 238, 0.12); }
+        .thought-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+        .thought-item span { display: block; color: #94a3b8; font-size: 0.75rem; margin-bottom: 6px; text-transform: uppercase;}
+        .thought-note { color: var(--cyan-accent); line-height: 1.6; }
+
+        .hero-status {
+            margin: 0 auto 24px;
+            padding: 18px 20px;
+            border: 1px solid rgba(34,211,238,0.2);
+            border-radius: 18px;
+            background: rgba(2, 8, 20, 0.72);
+            max-width: 1000px;
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px;
+        }
+
+        .status-cell {
+            padding: 12px 14px;
+            border-radius: 12px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+
+        .status-label {
+            display: block;
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+
+        .status-value {
+            display: block;
+            color: #f8fafc;
+            font-weight: 700;
+            line-height: 1.25;
+        }
+
+        .status-foot {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 12px;
+            color: var(--text-muted);
+            font-size: 0.82rem;
+        }
+
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            background: rgba(74, 222, 128, 0.12);
+            color: var(--green-glow);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="site-content">
+        <!-- GLOBAL NAVIGATION -->
+        <div class="nav-menu">
+            <a href="DASHBOARD.HTML" class="nav-link">Home (Oversight)</a>
+            <a href="MarketAi.HTML" class="nav-link active">Market Trends</a>
+            <a href="ALLIANCE.HTML" class="nav-link">Alliance Intel</a>
+            <a href="MILITARY.HTML" class="nav-link">Military Command</a>
+        </div>
+
+        <!-- PAGE HEADER -->
+        <div class="header-box">
+            <h1>NewMerica Market Command</h1>
+            <p>Live resource intelligence fused from current price feeds and supply-chain signals. Click a resource row to inspect breakout points and keep the portfolio refreshed with near-real-time movement.</p>
+            <div style="display: flex; justify-content: center; gap: 10px; margin-top: 15px;">
+                <div class="hero-badge">Live Price Matrix</div>
+            </div>
+        </div>
+
+        <div class="hero-status">
+            <div class="status-grid" id="shared-status-grid"></div>
+            <div class="status-foot">
+                <span class="status-pill">Market vector • live</span>
+                <span id="page-status">SYNCING...</span>
+            </div>
+            <div class="status-foot" style="margin-top: 8px; justify-content: space-between;">
+                <span id="page-updated">Last update: waiting...</span>
+                <span id="page-source">Source: Politics & War + Sheets</span>
+            </div>
+        </div>
+
+        <div class="executive-shell">
+            <div class="executive-grid">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Executive HUD Matrix</h3>
+                        <div class="live-indicator"><div class="dot"></div> Live resource signals</div>
+                    </div>
+                    <div id="hud-grid" class="hud-grid"></div>
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Spreadsheet Intel</h3>
+                        <div class="live-indicator"><div class="dot"></div> Sheet feeds</div>
+                    </div>
+                    <div id="spreadsheet-intel-grid" class="intel-grid"></div>
+                    <a class="sheet-link" href="trade-partners.html">Open trade-partner dossier →</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- SUB NAVIGATION -->
+        <div class="sub-nav">
+            <div class="sub-link active" onclick="switchTab('sub1', this)">Trade Engine</div>
+            <div class="sub-link" onclick="switchTab('sub2', this)">Global Trade Prices</div>
+            <div class="sub-link" onclick="switchTab('sub3', this)">Active Trades</div>
+            <div class="sub-link" onclick="switchTab('sub4', this)">Global Embargoes</div>
+        </div>
+
+        <!-- TAB 1: TRADE ENGINE -->
+        <div id="sub1" class="tab-content active">
+            <div class="dashboard-grid">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Trade Orders</h3>
+                        <div class="live-indicator"><div class="dot"></div> Market Feed Active</div>
+                    </div>
+                    <div style="overflow-x: auto;">
+                        <table>
+                            <thead>
+                                <tr><th>Asset</th><th>Order</th><th>Qty</th><th>Price</th></tr>
+                            </thead>
+                            <tbody id="v2-orders">
+                                <tr><td colspan="4" style="text-align:center;color:var(--text-muted);">Loading v2 orders...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Trade Logic</h3>
+                        <div class="live-indicator"><div class="dot"></div> Signal Feed Linked</div>
+                    </div>
+                    <div class="terminal" id="thought-process">
+                        Loading logic from sheet...
+                    </div>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <div class="card-header" style="padding: 20px 24px 0; border: none;">
+                    <h3>Master Resource Arbitrage</h3>
+                    <div style="font-size: 0.8rem; color: var(--text-muted);">Click a row to load its chart and analysis</div>
+                </div>
+                <table>
+                    <thead>
+                        <tr><th>Asset Name</th><th>Avg. Price</th><th>Current Price</th><th>Directive</th></tr>
+                    </thead>
+                    <tbody id="ai-body">
+                        <tr><td colspan="4" style="text-align:center;">Engine initializing... connecting to Google Sheets...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- TAB 2: GLOBAL TRADE PRICES -->
+        <div id="sub2" class="tab-content">
+            <div class="hud-container">
+                <h3 class="hud-title">Global Trade Prices (Live Matrix)</h3>
+                <table class="hud-table">
+                    <thead>
+                        <tr>
+                            <th>TIMESTAMP</th><th>GASOLINE</th><th>STEEL</th><th>OIL</th>
+                            <th>IRON</th><th>COAL</th><th>LEAD</th><th>BAUXITE</th>
+                            <th>URANIUM</th><th>MUNITIONS</th><th>ALUMINUM</th><th>FOOD</th>
+                        </tr>
+                    </thead>
+                    <tbody id="prices-body">
+                        <tr><td colspan="12" style="color: var(--green-glow); text-align: center;">Decrypting market prices...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="table-container" id="day-change-summary">
+                <div class="card-header" style="padding: 20px 24px 0; border: none;">
+                    <h3>Price Movement Summary</h3>
+                </div>
+                <table id="day-change-table">
+                    <thead>
+                        <tr><th>Resource</th><th>7d Avg</th><th>7d High</th><th>7d Low</th><th>Day Change</th></tr>
+                    </thead>
+                    <tbody><tr><td colspan="5" style="text-align:center;color:#fbbf24;">Loading movement stats...</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- TAB 3: ACTIVE TRADES -->
+        <div id="sub3" class="tab-content">
+            <div class="hud-container">
+                <h3 class="hud-title">Active Trade History</h3>
+                <table class="hud-table">
+                    <thead>
+                        <tr>
+                            <th>TRADE ID</th><th>RESOURCE</th><th>QUANTITY</th>
+                            <th>PRICE/UNIT</th><th>TOTAL VALUE</th><th>STATUS</th>
+                        </tr>
+                    </thead>
+                    <tbody id="trades-body">
+                        <tr><td colspan="6" style="color: var(--green-glow); text-align: center;">Loading personal trade ledger...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="table-container">
+                <div class="card-header" style="padding: 20px 24px 0; border: none;">
+                    <h3>Trade History Highlights</h3>
+                </div>
+                <div class="fact-grid" id="trade-facts">
+                    <div class="fact-item"><strong>Lifetime Trades</strong><span id="fact-trade-count">-</span></div>
+                    <div class="fact-item"><strong>Peak Day Profit</strong><span id="fact-peak-profit">-</span></div>
+                    <div class="fact-item"><strong>Best Resource</strong><span id="fact-best-resource">-</span></div>
+                    <div class="fact-item"><strong>Win Rate</strong><span id="fact-win-rate">-</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 4: GLOBAL EMBARGOES -->
+        <div id="sub4" class="tab-content">
+            <div class="patriot-container">
+                <h3 class="patriot-title"><span style="color:#b91c1c;">★</span> GLOBAL SANCTIONS & EMBARGOES <span style="color:#b91c1c;">★</span></h3>
+                <table class="patriot-table">
+                    <thead>
+                        <tr><th>ID</th><th>DATE</th><th>SENDER (NATION ID)</th><th>TARGET (NATION ID)</th><th>REASON</th></tr>
+                    </thead>
+                    <tbody id="embargoes-body">
+                        <tr><td colspan="5" style="text-align: center; font-weight: bold; color: #1d4ed8;">Initializing Sanctions Database...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- TAB 5: MARKET DIRECTOR -->
+        <div id="sub5" class="tab-content">
+            <div class="patriot-container" style="border-color: var(--v3-accent); background: linear-gradient(180deg, #4f074f 0%, #060205 100%);">
+                <h3 class="patriot-title" style="color: var(--v3-accent); border-bottom-color: var(--v3-accent);"><span>★</span> MARKET DIRECTOR <span>★</span></h3>
+                <p style="color: #cbd5e1; text-align: center; margin-bottom: 20px;">Execution engine synthesizing live price data against strict reserve protocols.</p>
+                
+                <div class="v3-terminal-box" id="v3-terminal">
+                    <div class="v3-line v3-system">> INITIALIZING V3 DIRECTIVE ENGINE...</div>
+                    <div class="v3-line v3-system">> AWAITING LIVE MARKET FEED MATRIX...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MASTER CHART -->
+        <div class="chart-container">
+            <canvas id="marketChart"></canvas>
+        </div>
+
+    </div>
+
+    <!-- POPUP -->
+    <div id="resource-popup" class="resource-popup">
+        <div class="resource-popup-title">Resource breakout</div>
+        <div class="resource-popup-chart"><canvas id="resourcePopupChart"></canvas></div>
+    </div>
+
+    <!-- SCRIPTS -->
+    <script>
+        function switchTab(tabId, el) {
+            document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+            document.querySelectorAll('.sub-link').forEach(sl => sl.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            el.classList.add('active');
+        }
+    </script>
+    <script src="common.js"></script>
+    <script>
+        const REFRESH_INTERVAL_MS = 30000;
+        let marketChart;
+        let resourcePopupChart;
+        let globalCachedRows = [];
+        let globalRawRows = [];
+        const SHEET_ID = "1KlXsnU_OEzTpefr3bPHqs8YAT3MlqaT3X-ITxrIE6ys"; // Your Master Sheet ID
+
+        const resourceGroups = {
+            manufactured: ['STEEL', 'ALUMINUM', 'MUNITIONS'],
+            imported: ['FOOD', 'GASOLINE'],
+            produced: ['OIL', 'IRON', 'COAL', 'LEAD', 'BAUXITE', 'URANIUM']
+        };
+
+        let latestMarketPrices = {};
+
+        function sortMarketRowsNewestFirst(rows) {
+            return (Array.isArray(rows) ? rows : []).slice().sort((a, b) => {
+                const timeA = Date.parse(a?.date || '') || 0;
+                const timeB = Date.parse(b?.date || '') || 0;
+                return timeB - timeA;
+            });
+        }
+
+        async function fetchTrueV3Director() {
+            const terminal = document.getElementById('v3-terminal');
+            if(!terminal) return;
+
+            const predictUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=AiPREDICT&range=A1:H15`;
+            
+            try {
+                const res = await fetch(predictUrl);
+                const text = await res.text();
+                const jsonMatch = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\);?/);
+                
+                if (!jsonMatch) throw new Error("Prediction API link severed.");
+                const data = JSON.parse(jsonMatch[1]);
+                const rows = data.table.rows;
+
+                let terminalHTML = `<div class="v3-line v3-system">[${new Date().toLocaleTimeString()}] > V5.2 OMNISCIENT ENGINE INITIATED...</div>`;
+                terminalHTML += `<div class="v3-line v3-system">[${new Date().toLocaleTimeString()}] > DOWNLOADING ALGORITHM K-FACTOR MATRIX...</div><br/>`;
+
+                if (rows && rows.length > 1) {
+                    for (let i = rows.length - 1; i > 0; i--) {
+                        if (!rows[i] || !rows[i].c) continue;
+                        
+                        let time = rows[i].c[0]?.f || rows[i].c[0]?.v || 'UNKNOWN';
+                        let asset = rows[i].c[1]?.v || 'UNKNOWN';
+                        let actual = rows[i].c[2]?.v || 0;
+                        let error = rows[i].c[4]?.v || '0%';
+                        let oldK = rows[i].c[5]?.v || '1.25';
+                        let newK = rows[i].c[6]?.v || '1.25';
+                        let nextPred = rows[i].c[7]?.v || 0;
+
+                        terminalHTML += `<div class="v3-line v3-system">>> ASSET SCAN: <span style="color:var(--cyan-accent); font-weight:bold;">${asset}</span></div>`;
+                        
+                        let errorNum = parseFloat(error);
+                        if (errorNum > 5.0) {
+                            terminalHTML += `<div class="v3-line v3-alert" style="padding-left: 15px;">- WARNING: Prediction failed by ${error}. Market volatile.</div>`;
+                            terminalHTML += `<div class="v3-line v3-action" style="padding-left: 15px;">- AUTO-CORRECTION: Adjusting K-Factor [${oldK} -> ${newK}] to widen safety threshold.</div>`;
+                        } else if (errorNum > 0 && errorNum < 2.0) {
+                            terminalHTML += `<div class="v3-line v3-system" style="padding-left: 15px; color:var(--green-glow);">- PRECISION: Prediction highly accurate (${error} variance).</div>`;
+                            terminalHTML += `<div class="v3-line v3-action" style="padding-left: 15px;">- AUTO-CORRECTION: Tightening K-Factor [${oldK} -> ${newK}] for aggressive trading.</div>`;
+                        } else {
+                            terminalHTML += `<div class="v3-line v3-system" style="padding-left: 15px;">- STATUS: Variance ${error}. Current K-Factor [${newK}] remains optimal.</div>`;
+                        }
+                        
+                        terminalHTML += `<div class="v3-line v3-system" style="padding-left: 15px; margin-bottom: 10px;">- NEXT TARGET CYCLE PRICE: $${parseFloat(nextPred).toFixed(2)}</div>`;
+                    }
+                } else {
+                    terminalHTML += `<div class="v3-line v3-alert">> AWAITING FIRST PREDICTION DATA FROM SPREADSHEET...</div>`;
+                }
+
+                terminalHTML += `<br/><div class="v3-line v3-system">> ALGORITHM SELF-MODIFICATION COMPLETE. AWAITING NEXT TICK...</div>`;
+                terminal.innerHTML = terminalHTML;
+
+            } catch(e) {
+                terminal.innerHTML = `<div class="v3-line v3-alert">> V5.2 CRITICAL FAILURE: SPREADSHEET FEED LOST (${e.message})</div>`;
+            }
+        }
+
+        function getAssetPriceSeries(assetName) { return latestMarketPrices[assetName]?.values || []; }
+        function normalizeHeader(label) { return String(label || '').trim().toLowerCase(); }
+        function buildHeaderIndex(cols) {
+            const headers = {};
+            if (!cols || cols.length === 0) return headers;
+            cols.forEach((col, index) => {
+                if (col && typeof col.label === 'string' && col.label.trim().length > 0) {
+                    headers[normalizeHeader(col.label)] = index;
+                }
+            });
+            return headers;
+        }
+        function buildHeaderConfig(data) {
+            const cols = data?.table?.cols || [];
+            const rows = data?.table?.rows || [];
+            let headerIndex = buildHeaderIndex(cols);
+            let dataRows = rows;
+
+            if (Object.keys(headerIndex).length === 0 && rows.length > 0) {
+                const firstRow = rows[0];
+                if (firstRow && firstRow.c) {
+                    const values = firstRow.c.map(cell => String(cell?.v || '').trim().toLowerCase());
+                    const looksLikeHeader = values.filter(v => v.length > 0).length >= 3 &&
+                        values.some(v => ['time updated','asset','trade action','target volume','live market','$','algorithmic logic','logic'].some(key => v.includes(key)));
+
+                    if (looksLikeHeader) {
+                        firstRow.c.forEach((cell, index) => {
+                            if (cell && cell.v) {
+                                headerIndex[normalizeHeader(cell.v)] = index;
+                            }
+                        });
+                        dataRows = rows.slice(1);
+                    }
+                }
+            }
+            return { headerIndex, dataRows, rawRows: rows };
+        }
+        function getCellValue(row, index) { return row?.c?.[index]?.v ?? ''; }
+        function findHeaderIndex(headerIndex, candidates) {
+            return candidates.reduce((found, key) => found !== undefined ? found : headerIndex[key], undefined);
+        }
+
+        function extractModelOrders(rows, headerIndex) {
+            if (!rows || rows.length === 0) return [];
+            const assetIndex = findHeaderIndex(headerIndex, ['asset', 'resource', 'symbol', 'item']);
+            const orderIndex = findHeaderIndex(headerIndex, ['trade action', 'action', 'order', 'signal', 'side']);
+            const qtyIndex = findHeaderIndex(headerIndex, ['target volume', 'quantity', 'qty', 'amount', 'volume']);
+            const priceIndex = findHeaderIndex(headerIndex, ['live market $', 'live market', 'price', 'market $', 'market price', 'cost']);
+
+            if ([assetIndex, orderIndex, qtyIndex, priceIndex].some(i => i === undefined)) return [];
+            return rows.map((row) => ({
+                asset: getCellValue(row, assetIndex) || 'N/A',
+                order: getCellValue(row, orderIndex) || 'N/A',
+                qty: getCellValue(row, qtyIndex) || 'N/A',
+                price: getCellValue(row, priceIndex) || 'N/A'
+            }));
+        }
+
+        function extractThoughtProcess(rows, headerIndex) {
+            if (!rows || rows.length === 0) return [];
+            const noteIndex = findHeaderIndex(headerIndex, ['algorithmic logic', 'logic', 'notes', 'comment', 'reason', 'a.i. thought process']);
+            const assetIndex = findHeaderIndex(headerIndex, ['asset', 'resource', 'symbol', 'item']);
+            const timeIndex = findHeaderIndex(headerIndex, ['time updated', 'timestamp', 'date', 'time']);
+            if (noteIndex === undefined) return [];
+
+            const thoughtRows = rows.slice(3, 11);
+            return thoughtRows.map((row) => {
+                if (!row) return null;
+                const note = String(getCellValue(row, noteIndex)).trim();
+                if (!note) return null;
+                return {
+                    time: String(getCellValue(row, timeIndex)).trim(),
+                    asset: String(getCellValue(row, assetIndex)).trim(),
+                    note
+                };
+            }).filter(Boolean);
+        }
+
+        function renderThoughtProcess(rows, headerIndex) {
+            const notes = extractThoughtProcess(rows, headerIndex);
+            const container = document.getElementById('thought-process');
+            if (!container) return;
+
+            if (notes.length === 0) {
+                container.innerHTML = `<div style="color:var(--text-muted);">No thought process details available yet.</div>`;
+                return;
+            }
+
+            container.innerHTML = notes.map((item) => `
+                <div class="thought-item">
+                    <span>${item.time ? item.time + ' • ' : ''}${item.asset ? item.asset + ' • ' : ''}Signal Logic</span>
+                    <div class="thought-note">${item.note}</div>
+                </div>
+            `).join('');
+        }
+
+        function renderModelOrders(rows, headerIndex) {
+            const headers = headerIndex || buildHeaderIndex(rows);
+            const modelRows = rows || [];
+            const v2Orders = extractModelOrders(modelRows, headers);
+            const container = document.getElementById('v2-orders');
+            if (!container) return;
+
+            if (v2Orders.length === 0) {
+                container.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--text-muted);">No orders found.</td></tr>`;
+                return;
+            }
+
+            container.innerHTML = v2Orders.map((order) => `
+                <tr class="resource-row" data-asset="${order.asset}" data-order="${order.order}" data-qty="${order.qty}">
+                    <td style="color:var(--cyan-accent);">${typeof getResourceIconHtml === 'function' ? getResourceIconHtml(order.asset,18) : ''}${order.asset}</td>
+                    <td>${order.order}</td>
+                    <td>${order.qty}</td>
+                    <td>${order.price}</td>
+                </tr>
+            `).join('');
+        }
+
+        async function runAiEngine() {
+            const range = 'A1:G20';
+            const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=AI%20TRADING%20DESK&range=${range}`;
+            
+            try {
+                const res = await fetch(url);
+                if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+                const text = await res.text();
+                
+                const jsonMatch = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\);?/);
+                if (!jsonMatch) throw new Error("Could not parse data from Google.");
+                
+                const data = JSON.parse(jsonMatch[1]);
+                const sheetConfig = buildHeaderConfig(data);
+                const headerIndex = sheetConfig.headerIndex;
+                globalCachedRows = sheetConfig.dataRows;
+                globalRawRows = sheetConfig.rawRows;
+                if (!globalCachedRows || globalCachedRows.length === 0) throw new Error("Sheet is empty.");
+
+                let tableHtml = "";
+                let primaryAsset = null;
+
+                const groupMeta = [
+                    { title: 'Manufactured Resources', assets: resourceGroups.manufactured },
+                    { title: 'Imported Resources', assets: resourceGroups.imported },
+                    { title: 'Produced / Mined Resources', assets: resourceGroups.produced }
+                ];
+
+                groupMeta.forEach((group) => {
+                    const groupRows = group.assets
+                        .map((assetName) => {
+                            const priceData = latestMarketPrices[assetName];
+                            if (!priceData || !priceData.values.length) return null;
+
+                            if (!primaryAsset) primaryAsset = assetName;
+                            const avg = priceData.avg;
+                            const spot = priceData.spot;
+                            const directive = spot < avg ? "STRONG BUY" : "SELL / SHORT";
+                            const directiveColor = spot < avg ? "var(--green-glow)" : "var(--red-glow)";
+
+                            return `
+                                <tr onclick="updateTrendChart('${assetName}')" style="cursor:pointer;">
+                                    <td style="font-weight:bold; color:var(--cyan-accent);">${typeof getResourceIconHtml === 'function' ? getResourceIconHtml(assetName,18) : ''}${assetName} 📊</td>
+                                    <td>$${avg.toFixed(2)}</td>
+                                    <td>$${spot.toFixed(2)}</td>
+                                    <td><span style="color:${directiveColor}; font-weight:bold;">${directive}</span></td>
+                                </tr>`;
+                        })
+                        .filter(Boolean);
+
+                    if (groupRows.length > 0) {
+                        tableHtml += `
+                            <tr class="group-header"><td colspan="4" style="color:var(--text-muted); font-size:0.8rem; text-transform:uppercase;">${group.title}</td></tr>
+                            ${groupRows.join('')}`;
+                    }
+                });
+
+                document.getElementById('ai-body').innerHTML = tableHtml || `<tr><td colspan="4" style="text-align:center;color:var(--text-muted);">No entries available.</td></tr>`;
+                
+                renderThoughtProcess(globalRawRows, headerIndex);
+                renderModelOrders(globalCachedRows, headerIndex);
+                if (primaryAsset) updateTrendChart(primaryAsset);
+
+            } catch(e) { 
+                console.error("AI Engine Error:", e); 
+                document.getElementById('ai-body').innerHTML = `<tr><td colspan="4" style="color:var(--red-glow); font-weight:bold;">Engine Offline: ${e.message}</td></tr>`;
+            }
+        }
+
+        async function fetchMarketAPI() {
+            try {
+                const nationSnapshot = await fetchSharedNationSnapshot();
+                renderSharedNationCard('shared-status-grid', nationSnapshot);
+                setPageLiveMeta('MARKET VECTOR ACTIVE', new Date().toLocaleTimeString(), 'Politics & War + Sheets');
+            } catch (error) {
+                console.warn('Shared snapshot unavailable', error);
+                setPageLiveMeta('SIGNAL LIMITED', 'Waiting on fresh sync', 'Politics & War + Sheets');
+            }
+
+            const query = `{ 
+                tradeprices(first: 20) { data { date coal oil uranium iron bauxite lead gasoline munitions steel aluminum food } }
+                trades(first: 50) { data { id offer_resource offer_amount price accepted sender_id receiver_id date type } }
+                embargoes(first: 10) { data { id date reason sender_id receiver_id } }
+            }`;
+
+            try {
+                const res = await fetch(`https://api.politicsandwar.com/graphql?api_key=${window.API_KEY || ''}`, { method: "POST", cache: "no-store", headers: {"Content-Type":"application/json"}, body: JSON.stringify({query}) });
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const data = await res.json();
+                if (data.errors?.length) throw new Error(data.errors.map(error => error.message).join('; '));
+
+                const pricesData = sortMarketRowsNewestFirst(data.data?.tradeprices?.data);
+                if (pricesData.length === 0) throw new Error('No market price rows returned');
+                latestMarketPrices = {};
+                const trackedAssets = ['GASOLINE','STEEL','OIL','IRON','COAL','LEAD','BAUXITE','URANIUM','MUNITIONS','ALUMINUM','FOOD'];
+                trackedAssets.forEach((assetName) => {
+                    const series = pricesData.map(point => Number(point[assetName.toLowerCase()] || 0)).filter(value => value > 0);
+                    if (series.length > 0) {
+                        const avg = series.reduce((sum, value) => sum + value, 0) / series.length;
+                        latestMarketPrices[assetName] = {
+                            values: series.slice().reverse(), 
+                            avg, spot: series[0], high7: Math.max(...series), low7: Math.min(...series),
+                            changeDay: series.length > 1 ? ((series[0] - series[1]) / series[1]) * 100 : 0,
+                            updatedAt: pricesData[0].date
+                        };
+                    }
+                });
+
+                let pricesHtml = '';
+                pricesData.forEach(p => {
+                    let pDate = p.date ? new Date(p.date).toLocaleString() : "Unknown Date";
+                    pricesHtml += `
+                        <tr>
+                            <td style="color: #888;">${pDate}</td>
+                            <td class="hud-highlight">$${Math.floor(p.gasoline || 0).toLocaleString()}</td>
+                            <td class="hud-highlight">$${Math.floor(p.steel || 0).toLocaleString()}</td>
+                            <td class="hud-highlight">$${Math.floor(p.oil || 0).toLocaleString()}</td>
+                            <td class="hud-highlight">$${Math.floor(p.iron || 0).toLocaleString()}</td>
+                            <td class="hud-highlight">$${Math.floor(p.coal || 0).toLocaleString()}</td>
+                            <td class="hud-highlight">$${Math.floor(p.lead || 0).toLocaleString()}</td>
+                            <td class="hud-highlight">$${Math.floor(p.bauxite || 0).toLocaleString()}</td>
+                            <td class="hud-highlight">$${Math.floor(p.uranium || 0).toLocaleString()}</td>
+                            <td class="hud-highlight">$${Math.floor(p.munitions || 0).toLocaleString()}</td>
+                            <td class="hud-highlight">$${Math.floor(p.aluminum || 0).toLocaleString()}</td>
+                            <td class="hud-highlight">$${Math.floor(p.food || 0).toLocaleString()}</td>
+                        </tr>`;
+                });
+                document.getElementById('prices-body').innerHTML = pricesHtml;
+                renderPriceMovementSummary(latestMarketPrices);
+                setPageLiveMeta('MARKET VECTOR ACTIVE', pricesData[0].date ? new Date(pricesData[0].date).toLocaleTimeString() : new Date().toLocaleTimeString(), 'Politics & War');
+
+                fetchTrueV3Director();
+
+                const trades = data.data.trades.data;
+                const entityId = 768640;
+                const personalTrades = trades.filter(t => !t.accepted && (t.sender_id === entityId || t.receiver_id === entityId));
+                let tradeHtml = '';
+                if (personalTrades.length > 0) {
+                    personalTrades.forEach(t => {
+                        const totalValue = t.offer_amount * t.price;
+                        const statusColor = t.accepted ? 'var(--green-glow)' : '#fbbf24';
+                        const statusText = t.accepted ? 'EXECUTED' : 'PENDING';
+                        tradeHtml += `
+                            <tr>
+                                <td style="color: #888;">#${t.id}</td>
+                                <td style="text-transform: uppercase; font-weight: bold;">${t.offer_resource}</td>
+                                <td class="hud-highlight">${t.offer_amount.toLocaleString()}</td>
+                                <td>$${t.price.toLocaleString()}</td>
+                                <td class="hud-highlight">$${totalValue.toLocaleString()}</td>
+                                <td style="color: ${statusColor}; font-weight: bold;">[ ${statusText} ]</td>
+                            </tr>`;
+                    });
+                } else {
+                    tradeHtml = `<tr><td colspan="6" style="color:#fbbf24; text-align:center;">No pending trades found.</td></tr>`;
+                }
+                document.getElementById('trades-body').innerHTML = tradeHtml;
+                renderTradeFacts(personalTrades);
+
+                const embargoes = data.data.embargoes.data;
+                let embargoHtml = '';
+                embargoes.forEach(e => {
+                    let eDate = e.date ? new Date(e.date).toLocaleDateString() : "Unknown Date";
+                    embargoHtml += `
+                        <tr>
+                            <td>#${e.id}</td>
+                            <td>${eDate}</td>
+                            <td>${e.sender_id || 'System'}</td>
+                            <td>${e.receiver_id || 'System'}</td>
+                            <td style="color:var(--text-muted);">"${e.reason || 'Classified / Unspecified'}"</td>
+                        </tr>`;
+                });
+                document.getElementById('embargoes-body').innerHTML = embargoHtml;
+
+            } catch (e) {
+                console.error("API Pull Failed", e);
+                setPageLiveMeta('SIGNAL LOST', 'Market feed failed', 'Politics & War + Sheets');
+            }
+        }
+
+        let refreshTimer;
+        let isRefreshing = false;
+
+        async function refreshDashboard() {
+            if (document.hidden) {
+                refreshTimer = setTimeout(refreshDashboard, REFRESH_INTERVAL_MS);
+                return;
+            }
+            if (isRefreshing) return;
+            isRefreshing = true;
+            try {
+                await fetchMarketAPI();
+                await runAiEngine();
+                renderExecutiveHud();
+                await loadSpreadsheetIntel();
+            } finally {
+                isRefreshing = false;
+                refreshTimer = setTimeout(refreshDashboard, REFRESH_INTERVAL_MS);
+            }
+        }
+
+        document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshDashboard(); });
+
+        function renderPriceMovementSummary(prices) {
+            const summaryBody = document.querySelector('#day-change-table tbody');
+            if (!summaryBody) return;
+            const rows = Object.entries(prices).map(([asset, stats]) => {
+                const changeLabel = stats.changeDay.toFixed(2) + '%';
+                const color = stats.changeDay >= 0 ? 'var(--green-glow)' : 'var(--red-glow)';
+                return `
+                    <tr>
+                        <td>${asset}</td>
+                        <td>$${stats.avg.toFixed(2)}</td>
+                        <td>$${stats.high7.toFixed(2)}</td>
+                        <td>$${stats.low7.toFixed(2)}</td>
+                        <td style="color:${color}; font-weight:700;">${stats.changeDay > 0 ? '+' : ''}${changeLabel}</td>
+                    </tr>`;
+            });
+            summaryBody.innerHTML = rows.join('');
+        }
+
+        function renderTradeFacts(trades) {
+            const totalTrades = trades.length;
+            const executedTrades = trades.filter(t => t.accepted).length;
+            const winRate = totalTrades > 0 ? ((executedTrades / totalTrades) * 100).toFixed(1) : '0.0';
+            const peakProfit = trades.reduce((max, t) => Math.max(max, (t.offer_amount * t.price) || 0), 0);
+            const resourceCounts = trades.reduce((counts, t) => {
+                const resource = t.offer_resource || 'Unknown';
+                counts[resource] = (counts[resource] || 0) + 1;
+                return counts;
+            }, {});
+            const bestResource = Object.entries(resourceCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || 'None';
+            document.getElementById('fact-trade-count').innerText = totalTrades.toLocaleString();
+            document.getElementById('fact-peak-profit').innerText = `$${Math.floor(peakProfit).toLocaleString()}`;
+            document.getElementById('fact-best-resource').innerText = bestResource;
+            document.getElementById('fact-win-rate').innerText = `${winRate}%`;
+        }
+
+        function getSheetRows(data) {
+            const rows = data?.table?.rows || [];
+            const cols = data?.table?.cols || [];
+            const headerTitles = cols.map((col) => String(col.label || '').trim()).filter(Boolean);
+            return rows.map((row) => {
+                const values = (row?.c || []).map((cell) => {
+                    if (!cell) return '';
+                    if (typeof cell.v === 'number') return cell.v;
+                    if (typeof cell.v === 'string') return cell.v;
+                    if (cell.f) return cell.f;
+                    return cell.v || '';
+                });
+                return { values, headerTitles };
+            }).filter((row) => row.values.some((value) => String(value).trim().length > 0));
+        }
+
+        function normalizeHeader(label) {
+            return String(label || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+        }
+
+        function getValueByCandidates(row, candidates) {
+            const headers = row?.headerTitles || [];
+            const headerIndex = {};
+            headers.forEach((header, index) => {
+                headerIndex[normalizeHeader(header)] = index;
+            });
+            const match = candidates.map((candidate) => headerIndex[normalizeHeader(candidate)]).find((index) => index !== undefined);
+            return match === undefined ? '' : row.values[match];
+        }
+
+        function formatSummaryValue(value) {
+            if (value === null || value === undefined || value === '') return '—';
+            return String(value);
+        }
+
+        async function fetchSheetTab(sheetName, range = 'A1:Z50') {
+            const encodedSheet = encodeURIComponent(sheetName);
+            const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodedSheet}&range=${range}`;
+            const response = await fetch(url);
+            const text = await response.text();
+            const match = text.match(/google\.visualization\.Query\.setResponse\(([^]+)\);?/);
+            if (!match) throw new Error(`No payload for ${sheetName}`);
+            const data = JSON.parse(match[1]);
+            return getSheetRows(data);
+        }
+
+        async function loadSpreadsheetIntel() {
+            const container = document.getElementById('spreadsheet-intel-grid');
+            if (!container) return;
+
+            try {
+                const [executedRows, partnerRows, talliesRows, patternRows] = await Promise.all([
+                    fetchSheetTab('EXECUTED TRADES', 'A1:K40').catch(() => []),
+                    fetchSheetTab('TRADE PARTNERS', 'A1:K40').catch(() => []),
+                    fetchSheetTab('NATION TALLIES', 'A1:K40').catch(() => []),
+                    fetchSheetTab('TRADE PATTERNS', 'A1:K40').catch(() => [])
+                ]);
+
+                const executedSummary = executedRows.slice(0, 3).map((row) => {
+                    const resource = formatSummaryValue(getValueByCandidates(row, ['resource', 'asset', 'item', 'commodity']));
+                    const partner = formatSummaryValue(getValueByCandidates(row, ['partner', 'counterparty', 'target', 'nation']));
+                    const status = formatSummaryValue(getValueByCandidates(row, ['status', 'trade status', 'outcome']));
+                    return `${resource} • ${partner} • ${status}`;
+                });
+
+                const partnerSummary = partnerRows.slice(0, 4).map((row) => {
+                    const partner = formatSummaryValue(getValueByCandidates(row, ['partner', 'counterparty', 'name']));
+                    const trades = formatSummaryValue(getValueByCandidates(row, ['trades', 'count', 'activity']));
+                    const total = formatSummaryValue(getValueByCandidates(row, ['volume', 'total', 'value']));
+                    return `${partner} — ${trades} trades • ${total}`;
+                });
+
+                const nationSummary = talliesRows.slice(0, 4).map((row) => {
+                    const nation = formatSummaryValue(getValueByCandidates(row, ['nation', 'name', 'country']));
+                    const activity = formatSummaryValue(getValueByCandidates(row, ['activity', 'trades', 'score']));
+                    const net = formatSummaryValue(getValueByCandidates(row, ['net worth', 'net', 'value', 'balance']));
+                    return `${nation} — ${activity} • ${net}`;
+                });
+
+                const patternSummary = patternRows.slice(0, 4).map((row) => {
+                    const pattern = formatSummaryValue(getValueByCandidates(row, ['pattern', 'signal', 'behavior']));
+                    const resource = formatSummaryValue(getValueByCandidates(row, ['resource', 'asset', 'item']));
+                    const timing = formatSummaryValue(getValueByCandidates(row, ['timing', 'time', 'window']));
+                    return `${pattern} • ${resource} • ${timing}`;
+                });
+
+                container.innerHTML = `
+                    <a class="intel-card" href="trade-partners.html">
+                        <h4>Executed trade log</h4>
+                        <div class="intel-metrics">
+                            <div class="intel-metric"><span>Records</span><strong>${executedRows.length}</strong></div>
+                            <div class="intel-metric"><span>Latest signal</span><strong>${executedSummary[0] || 'Awaiting rows'}</strong></div>
+                        </div>
+                        <ul class="intel-list">${executedSummary.slice(0, 3).map((item) => `<li>${item}</li>`).join('')}</ul>
+                    </a>
+                    <a class="intel-card" href="trade-partners.html">
+                        <h4>Trade partners</h4>
+                        <div class="intel-metrics">
+                            <div class="intel-metric"><span>Partners</span><strong>${partnerRows.length}</strong></div>
+                            <div class="intel-metric"><span>Top link</span><strong>${partnerSummary[0] || 'Awaiting sheet'}</strong></div>
+                        </div>
+                        <ul class="intel-list">${partnerSummary.slice(0, 3).map((item) => `<li>${item}</li>`).join('')}</ul>
+                    </a>
+                    <a class="intel-card" href="cities-list.html">
+                        <h4>Nation tallies</h4>
+                        <div class="intel-metrics">
+                            <div class="intel-metric"><span>Nations</span><strong>${talliesRows.length}</strong></div>
+                            <div class="intel-metric"><span>Highlight</span><strong>${nationSummary[0] || 'Awaiting sheet'}</strong></div>
+                        </div>
+                        <ul class="intel-list">${nationSummary.slice(0, 3).map((item) => `<li>${item}</li>`).join('')}</ul>
+                    </a>
+                    <a class="intel-card" href="resource-detail.html?resource=food">
+                        <h4>Trade patterns</h4>
+                        <div class="intel-metrics">
+                            <div class="intel-metric"><span>Patterns</span><strong>${patternRows.length}</strong></div>
+                            <div class="intel-metric"><span>Signal</span><strong>${patternSummary[0] || 'Awaiting sheet'}</strong></div>
+                        </div>
+                        <ul class="intel-list">${patternSummary.slice(0, 3).map((item) => `<li>${item}</li>`).join('')}</ul>
+                    </a>`;
+            } catch (error) {
+                container.innerHTML = '<div class="intel-card"><h4>Sheet intel</h4><ul class="intel-list"><li>Google sheet feed unavailable right now.</li></ul></div>';
+                console.warn('Spreadsheet intel failed', error);
+            }
+        }
+
+        function renderExecutiveHud() {
+            const container = document.getElementById('hud-grid');
+            if (!container) return;
+            const trackedAssets = ['GASOLINE','STEEL','OIL','IRON','COAL','LEAD','BAUXITE','URANIUM','MUNITIONS','ALUMINUM','FOOD'];
+            const cards = trackedAssets.map((asset) => {
+                const stats = latestMarketPrices[asset];
+                if (!stats) return '';
+                const change = Number(stats.changeDay || 0);
+                const changeText = `${change >= 0 ? '+' : ''}${change.toFixed(1)}%`;
+                const color = change >= 0 ? 'var(--green-glow)' : 'var(--red-glow)';
+                return `
+                    <a class="hud-card" href="resource-detail.html?resource=${encodeURIComponent(asset)}">
+                        <strong>${asset}</strong>
+                        <div class="value">$${Number(stats.spot || 0).toLocaleString()}</div>
+                        <div class="meta" style="color:${color};">${changeText}</div>
+                        <div class="meta">Avg $${Number(stats.avg || 0).toFixed(2)}</div>
+                    </a>`;
+            }).filter(Boolean);
+            container.innerHTML = cards.length ? cards.join('') : '<div class="intel-card"><h4>HUD</h4><ul><li>Waiting on fresh market feed</li></ul></div>';
+        }
+        
+        function updateTrendChart(assetName) {
+            const validPrices = getAssetPriceSeries(assetName);
+            if (validPrices.length === 0) return;
+            const labels = validPrices.map((_, i) => `Entry ${i + 1}`);
+            const ctx = document.getElementById('marketChart').getContext('2d');
+            const chartConfig = {
+                type: 'line', 
+                data: { labels: labels, datasets: [{ label: `${assetName} Price Trend History`, data: validPrices, borderColor: '#22d3ee', backgroundColor: 'rgba(34, 211, 238, 0.1)', fill: true, tension: 0.15 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#e2e8f0' } } }, scales: { x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#e2e8f0' } }, y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#e2e8f0' } } } }
+            };
+            if (marketChart) { marketChart.data = chartConfig.data; marketChart.options = chartConfig.options; marketChart.update(); } else { marketChart = new Chart(ctx, chartConfig); }
+        }
+
+        function showResourcePopup(assetName, event, orderInfo = '') {
+            const popup = document.getElementById('resource-popup');
+            const ctx = document.getElementById('resourcePopupChart').getContext('2d');
+            const validPrices = getAssetPriceSeries(assetName);
+            if (validPrices.length === 0) return;
+            const labels = validPrices.map((_, i) => `T-${validPrices.length - i}`);
+            const avg = validPrices.reduce((a, b) => a + b, 0) / validPrices.length;
+            const std = Math.sqrt(validPrices.reduce((a, b) => a + Math.pow(b - avg, 2), 0) / validPrices.length);
+            const breakoutLine = validPrices.map(() => avg + std * 1.5);
+            const isBreakout = validPrices[validPrices.length - 1] > breakoutLine[breakoutLine.length - 1];
+            const statusColor = isBreakout ? 'var(--green-glow)' : '#f59e0b';
+
+            popup.querySelector('.resource-popup-title').innerHTML = `${assetName} • ${orderInfo || 'Price breakout'} <span style="color:${statusColor};">${isBreakout ? 'BREAKOUT' : 'STABLE'}</span>`;
+            
+            const chartConfig = {
+                type: 'line',
+                data: { labels: labels, datasets: [{ label: 'Recent Price', data: validPrices, borderColor: '#22d3ee', backgroundColor: 'rgba(34, 211, 238, 0.18)', fill: true, tension: 0.2, pointRadius: 3 }, { label: 'Threshold', data: breakoutLine, borderColor: '#facc15', borderDash: [6, 4], pointRadius: 0, fill: false }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { display: false }, y: { grid: { color: 'rgba(255,255,255,0.08)' }, ticks: { color: '#e2e8f0' } } } }
+            };
+            if (resourcePopupChart) { resourcePopupChart.data = chartConfig.data; resourcePopupChart.options = chartConfig.options; resourcePopupChart.update(); } else { resourcePopupChart = new Chart(ctx, chartConfig); }
+
+            const rect = event.target.getBoundingClientRect();
+            popup.style.left = `${Math.min(window.innerWidth - 340, rect.left + rect.width / 2)}px`;
+            popup.style.top = `${rect.top + window.scrollY + rect.height + 12}px`;
+            popup.classList.add('visible');
+        }
+
+        function hideResourcePopup() { const popup = document.getElementById('resource-popup'); if (popup) popup.classList.remove('visible'); }
+
+        document.getElementById('v2-orders')?.addEventListener('mouseover', (event) => { const target = event.target.closest('.resource-row'); if (!target) return; showResourcePopup(target.dataset.asset, event, `${target.dataset.order} • Q${target.dataset.qty}`); });
+        document.getElementById('v2-orders')?.addEventListener('mouseout', (event) => { if (event.target.closest('.resource-row')) hideResourcePopup(); });
+
+        refreshDashboard();
+    </script>
+</body>
+</html>

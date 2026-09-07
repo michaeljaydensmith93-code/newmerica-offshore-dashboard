@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NewMerica | Self Storage</title>
+  <style>
+    :root { color-scheme: dark; --bg:#06121f; --panel:#0d1e31; --line:#24415a; --text:#eef3f9; --muted:#99a7c0; --accent:#d1ad4a; --positive:#6dd0ad; }
+    * { box-sizing:border-box; }
+    body { margin:0; padding:24px; color:var(--text); font-family:Arial,sans-serif; background:radial-gradient(circle at top,rgba(209,173,74,.1),transparent 32%),var(--bg); }
+    main { max-width:1200px; margin:auto; }
+    a { color:var(--accent); }
+    .panel { padding:22px; margin-top:18px; background:rgba(13,30,49,.94); border:1px solid var(--line); border-radius:14px; }
+    h1 { margin:0 0 8px; color:var(--accent); }
+    h2 { margin:0; color:var(--accent); font-size:1rem; text-transform:uppercase; letter-spacing:.08em; }
+    .muted { color:var(--muted); }
+    .summary { display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:12px; margin-top:18px; }
+    .kpi { padding:16px; background:rgba(255,255,255,.04); border:1px solid var(--line); border-radius:10px; }
+    .kpi span { display:block; color:var(--muted); font-size:.75rem; text-transform:uppercase; }
+    .kpi strong { display:block; margin-top:5px; color:var(--positive); font-size:1.35rem; }
+    .table-wrap { overflow-x:auto; margin-top:16px; }
+    table { width:100%; min-width:900px; border-collapse:collapse; }
+    th,td { padding:10px 8px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; }
+    th { color:var(--accent); font-size:.72rem; text-transform:uppercase; white-space:nowrap; }
+    .note { margin-top:12px; color:var(--muted); font-size:.82rem; line-height:1.5; }
+    .capacity-table { min-width:900px; }
+  </style>
+</head>
+<body>
+  <main>
+    <a href="Alliance.html">← Back to Alliance Intel</a>
+    <section class="panel">
+      <h1>Self Storage</h1>
+      <div id="status" class="muted">Loading TCO storage deposits...</div>
+      <div id="content"></div>
+    </section>
+  </main>
+  <script src="common.js"></script>
+  <script>
+    const API_KEY = window.API_KEY || '731a391e2f41251b8bcc';
+    const NATION_ID = 768640;
+    const RESOURCES = ['food','coal','oil','uranium','iron','bauxite','lead','gasoline','munitions','steel','aluminum'];
+    const LAST_RECORD_SELF_STORAGE = {
+      food: 100110,
+      coal: 208.89,
+      oil: 205.65,
+      uranium: 46.36,
+      lead: 852.5,
+      iron: 19.22,
+      bauxite: 1009.06,
+      gasoline: 3004.42,
+      munitions: 2505.01,
+      steel: 41.76,
+      aluminum: 1504.33
+    };
+    const money = value => `$${(Number(value) || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+    const text = value => String(value || '').trim().toLowerCase();
+    const getNote = record => text(record.note || record.message || record.reason || record.memo);
+    const getCash = record => Number(record.money) || 0;
+    const getResources = record => RESOURCES.map(resource => ({ resource, amount:Number(record[resource]) || 0 })).filter(item => item.amount !== 0);
+    const TROOP_RECIPES = [
+      { unit:'Soldiers', cash:5, inputs:{} },
+      { unit:'Tanks', cash:60, inputs:{ steel:0.5 } },
+      { unit:'Aircraft', cash:4000, inputs:{ aluminum:5 } },
+      { unit:'Ships', cash:50000, inputs:{ steel:30 } }
+    ];
+    function renderRecruitCapacity(cash, resourceTotals) {
+      const rows = TROOP_RECIPES.map(recipe => {
+        const cashLimit = Math.floor(cash / recipe.cash);
+        const resourceLimits = Object.entries(recipe.inputs).map(([resource, required]) => ({ resource, capacity:Math.floor((resourceTotals[resource] || 0) / required) }));
+        const maxRecruitable = Math.min(cashLimit, ...resourceLimits.map(item => item.capacity));
+        const limiting = [{ resource:'cash', capacity:cashLimit }, ...resourceLimits].filter(item => item.capacity === maxRecruitable).map(item => item.resource).join(' + ');
+        const requirements = [`$${recipe.cash}`].concat(Object.entries(recipe.inputs).map(([resource, required]) => `${required} ${resource}`)).join(' + ');
+        const remainingCash = cash - maxRecruitable * recipe.cash;
+        const remainingResources = Object.entries(recipe.inputs).map(([resource, required]) => `${resource}: ${((resourceTotals[resource] || 0) - maxRecruitable * required).toLocaleString()}`).join(', ') || 'All resources unchanged';
+        return `<tr><td>${recipe.unit}</td><td>${requirements}</td><td>${cashLimit.toLocaleString()}</td><td>${resourceLimits.map(item => `${item.resource}: ${item.capacity.toLocaleString()}`).join('<br>') || 'None'}</td><td>${maxRecruitable.toLocaleString()}</td><td>${limiting}</td><td>${money(remainingCash)}</td><td>${remainingResources}</td></tr>`;
+      }).join('');
+      return `<div class="panel"><h2>Troops Recruitable From This Vault</h2><div class="table-wrap"><table class="capacity-table"><thead><tr><th>Unit</th><th>Cost per unit</th><th>Cash-only limit</th><th>Resource limits</th><th>Maximum recruitable</th><th>Limiting source</th><th>Cash left</th><th>Resources left</th></tr></thead><tbody>${rows}</tbody></table></div><div class="note">Calculations use the cash and resources stored in this vault. Soldiers cost $5 each; tanks cost $60 and 0.5 steel; aircraft cost $4,000 and 5 aluminum; ships cost $50,000 and 30 steel. Actual recruitment is also subject to game limits, military capacity, and city requirements.</div></div>`;
+    }
+    const api = (query, signal) => fetch(`https://api.politicsandwar.com/graphql?api_key=${API_KEY}`, { method:'POST', cache:'no-store', headers:{'Content-Type':'application/json'}, body:JSON.stringify({query}), signal }).then(async response => { const json = await response.json(); if (!response.ok || json.errors?.length) throw new Error(json.errors?.[0]?.message || `HTTP ${response.status}`); return json.data; });
+    function isStorage(record, nationId, allianceId) {
+      const sender = String(record.sender_id || ''), receiver = String(record.receiver_id || '');
+      const pair = (sender === String(nationId) && receiver === String(allianceId)) || (sender === String(allianceId) && receiver === String(nationId));
+      const note = getNote(record);
+      return pair && (note.includes('#deposit') || note.includes('deposit') || note === 'preparation' || (getCash(record) !== 0 && getResources(record).some(item => item.resource === 'bauxite')));
+    }
+    async function load() {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 15000);
+      try {
+        const nationData = await api(`{ nations(id: [${NATION_ID}], first: 1) { data { alliance { id name } } } }`, controller.signal);
+        const alliance = nationData?.nations?.data?.[0]?.alliance;
+        if (!alliance) throw new Error('No alliance found for NewMerica.');
+        const records = [];
+        for (let page = 1; page <= 10; page += 1) {
+          const data = await api(`{ bankrecs(first: 100, page: ${page}, or_id: [${NATION_ID}, ${alliance.id}]) { data { id date sender_id receiver_id money coal oil uranium iron bauxite lead gasoline munitions steel aluminum food note } } }`, controller.signal);
+          const pageRecords = data?.bankrecs?.data || [];
+          records.push(...pageRecords);
+          if (pageRecords.length < 100) break;
+        }
+        const pricesData = await api('{ tradeprices(first: 10) { data { date food coal oil uranium iron bauxite lead gasoline munitions steel aluminum } } }', controller.signal);
+        const prices = sortMarketRowsNewestFirst(pricesData?.tradeprices?.data);
+        const latest = getLatestMarketRow(prices);
+        const storage = records.filter(record => isStorage(record, NATION_ID, alliance.id));
+        const cash = storage.reduce((sum, record) => sum + Math.abs(getCash(record)), 0);
+        const resourceTotals = Object.fromEntries(RESOURCES.map(resource => [resource, 0]));
+        storage.forEach(record => getResources(record).forEach(item => { resourceTotals[item.resource] += Math.abs(item.amount); }));
+        const displayResourceTotals = { ...resourceTotals };
+        Object.entries(LAST_RECORD_SELF_STORAGE).forEach(([resource, amount]) => {
+          displayResourceTotals[resource] = Number(amount) || 0;
+        });
+        const resourceValue = RESOURCES.reduce((sum, resource) => sum + displayResourceTotals[resource] * (Number(latest?.[resource]) || 0), 0);
+        const rows = storage.map(record => {
+          const resourceText = getResources(record).map(item => `${item.resource}: ${item.amount.toLocaleString()} @ ${money(latest?.[item.resource])} = ${money(item.amount * (Number(latest?.[item.resource]) || 0))}`).join('<br>') || 'None';
+          return `<tr><td>${record.date ? new Date(record.date).toLocaleString() : 'Unknown'}</td><td>${money(getCash(record))}</td><td>${resourceText}</td><td>${getNote(record) || 'No note provided'}</td></tr>`;
+        }).join('');
+        document.getElementById('status').textContent = `Live TCO storage deposits • ${alliance.name || 'Alliance bank'} • Updated ${new Date().toLocaleTimeString()}`;
+        document.getElementById('content').innerHTML = `<div class="summary"><div class="kpi"><span>Cash Stored</span><strong>${money(cash)}</strong></div><div class="kpi"><span>Resource Value</span><strong>${money(resourceValue)}</strong></div><div class="kpi"><span>Total Storage Value</span><strong>${money(cash + resourceValue)}</strong></div><div class="kpi"><span>Deposits</span><strong>${storage.length}</strong></div></div><div class="panel"><h2>Stored Resources</h2><div class="note">${RESOURCES.map(resource => `${resource}: ${displayResourceTotals[resource].toLocaleString()} @ ${money(latest?.[resource])} = ${money(displayResourceTotals[resource] * (Number(latest?.[resource]) || 0))}`).join('<br>')}</div></div>${renderRecruitCapacity(cash, displayResourceTotals)}<div class="table-wrap"><table><thead><tr><th>Date</th><th>Cash</th><th>Resources and market values</th><th>Bank note</th></tr></thead><tbody>${rows || '<tr><td colspan="4">No self-storage deposits found.</td></tr>'}</tbody></table></div><div class="note">Self Storage includes #deposit, Preparation, and cash-plus-bauxite deposits. Values are positive because these are assets stored for NewMerica. The current balance reflects the latest confirmed storage record snapshot.</div>`;
+      } catch (error) {
+        try {
+          const cached = JSON.parse(localStorage.getItem('tco-bank-tracker-cache-v1') || 'null');
+          if (cached?.records?.length && cached?.priceMap) {
+            document.getElementById('status').textContent = `Cached TCO storage deposits • Last synced ${new Date(cached.updatedAt).toLocaleString()}`;
+            const storage = cached.records.filter(record => isStorage(record, cached.nationId || NATION_ID, cached.allianceId));
+            const cash = storage.reduce((sum, record) => sum + Math.abs(getCash(record)), 0);
+            const resourceTotals = Object.fromEntries(RESOURCES.map(resource => [resource, 0]));
+            storage.forEach(record => getResources(record).forEach(item => { resourceTotals[item.resource] += Math.abs(item.amount); }));
+            const displayResourceTotals = { ...resourceTotals };
+            Object.entries(LAST_RECORD_SELF_STORAGE).forEach(([resource, amount]) => {
+              displayResourceTotals[resource] = Number(amount) || 0;
+            });
+            const resourceValue = RESOURCES.reduce((sum, resource) => sum + displayResourceTotals[resource] * (Number(cached.priceMap[resource]) || 0), 0);
+            document.getElementById('content').innerHTML = `<div class="summary"><div class="kpi"><span>Cash Stored</span><strong>${money(cash)}</strong></div><div class="kpi"><span>Resource Value</span><strong>${money(resourceValue)}</strong></div><div class="kpi"><span>Total Storage Value</span><strong>${money(cash + resourceValue)}</strong></div><div class="kpi"><span>Deposits</span><strong>${storage.length}</strong></div></div><div class="panel"><h2>Stored Resources</h2><div class="note">${RESOURCES.map(resource => `${resource}: ${displayResourceTotals[resource].toLocaleString()} @ ${money(cached.priceMap[resource])} = ${money(displayResourceTotals[resource] * (Number(cached.priceMap[resource]) || 0))}`).join('<br>')}</div></div>${renderRecruitCapacity(cash, displayResourceTotals)}`;
+            return;
+          }
+        } catch (cacheError) { /* ignore malformed cache */ }
+        document.getElementById('status').textContent = `Storage data unavailable: ${error.name === 'AbortError' ? 'request timed out' : error.message}`;
+      } finally { clearTimeout(timeout); }
+    }
+    load();
+    setInterval(() => { if (document.visibilityState === 'visible') load(); }, 300000);
+  </script>
+</body>
+</html>

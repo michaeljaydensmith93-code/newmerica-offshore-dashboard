@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>NewMerica Offshore Dashboard</title>
+	<style>
+		body{margin:0;background:#07110f;color:#edf7ef;font:16px/1.5 Georgia,serif}
+		main{max-width:960px;margin:auto;padding:40px 20px}
+		h1{color:#e8c878;font-weight:400}
+		ul{columns:3;padding:0;list-style:none}
+		li{margin:8px 0}
+		a{color:#62d39b}
+		@media(max-width:700px){ul{columns:1}}
+	</style>
+</head>
+<body>
+	<main>
+		<h1>NewMerica Offshore Dashboard</h1>
+		<p>Published dashboard files and tools.</p>
+		<ul id="links"></ul>
+	</main>
+	<script>
+		const files = [
+			'Alliance.html','DASHBOARD.HTML','GODVIEW.html','LIVE_TRADES.HTML','MarketAi.html',
+			'Military.html','WAR.HTML','ai-city-hud.html','aircraft-hud.html','alliance-hud.html',
+			'alliance-storage.html','avg-city-hud.html','cities-hud.html','cities-list.html',
+			'city-classifications.html','city-details.html','city-overview-hud.html','commander-hud.html',
+			'finance-hub.new.html','infrastructure-hud.html','market-trends.html','nation-hud.html',
+			'net-score-hud.html','offshore-anris-cute-cat-cafe.html','position-hub.html',
+			'resource-detail.html','ships-hud.html','soldiers-hud.html','tax-account.html',
+			'titan-compare.html','treasury-hud.html','tanks-hud.html','BARROWS%20ESTATE%20%26%20TRUST.HTML'
+		];
+		document.getElementById('links').innerHTML = files.map(file => {
+			const label = decodeURIComponent(file).replace(/\.html?$/i,'');
+			return `<li><a href="${file}">${label}</a></li>`;
+		}).join('');
+	</script>
+</body>
+</html>

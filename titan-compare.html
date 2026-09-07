@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>TITAN Compare</title>
+    <style>
+        body{font-family:Inter,Segoe UI,Arial;background:#071028;color:#e6eef8;padding:24px}
+        .card{background:rgba(255,255,255,0.03);padding:18px;border-radius:10px;border:1px solid rgba(255,255,255,0.04)}
+        .card a{color:#f7fbff;font-weight:600;text-decoration:none;}
+        .card a:hover{color:#ffffff;text-decoration:underline;}
+        table{width:100%;border-collapse:collapse;margin-top:12px}
+        th,td{padding:8px;border-bottom:1px solid rgba(255,255,255,0.04);text-align:left}
+        th{color:#9fb8d9;font-size:0.85rem}
+        .delta.positive{color:#7ee787}
+        .delta.negative{color:#ff8b8b}
+        .loading{color:#94a3b8}
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>TITAN - Nation Comparison</h2>
+        <div class="loading" id="status">Loading player list from sheet...</div>
+        <div id="controls" style="margin-top:12px"></div>
+        <div id="results"></div>
+        <pre id="debug" style="margin-top:12px;color:#a3b7d6;background:rgba(0,0,0,0.15);padding:8px;border-radius:6px;display:none;max-height:240px;overflow:auto"></pre>
+    </div>
+
+<script>
+(function(){
+    const SHEET_ID = '1KlXsnU_OEzTpefr3bPHqs8YAT3MlqaT3X-ITxrIE6ys';
+    const GID = '1647754152';
+    const ME_ID = 768640; // your nation id (change if needed)
+    const statusEl = document.getElementById('status');
+    const resultsEl = document.getElementById('results');
+    const debugEl = document.getElementById('debug');
+
+    function setStatus(t){ if (statusEl) statusEl.textContent = t; }
+
+    function parseGviz(text){
+        const m = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\);?/);
+        if (!m) throw new Error('Bad GViz response');
+        return JSON.parse(m[1]);
+    }
+
+    function buildHeaderIndex(cols){
+        const headers = {};
+        cols.forEach((c,i)=>{ headers[String(c.label||'').trim().toLowerCase()] = i; });
+        return headers;
+    }
+
+    // API key helper: load from localStorage into window.API_KEY
+    const storedKey = localStorage.getItem('PWA_API_KEY');
+    if (storedKey) window.API_KEY = storedKey;
+
+    // build controls: API key input + save/clear/refresh
+    const controlsEl = document.getElementById('controls');
+    if (controlsEl) {
+        const keyLabel = document.createElement('label'); keyLabel.style.color = '#9fb8d9'; keyLabel.style.marginRight='8px'; keyLabel.textContent='API Key';
+        const keyInput = document.createElement('input'); keyInput.style.padding='6px'; keyInput.style.marginRight='8px'; keyInput.value = storedKey || '';
+        const saveBtn = document.createElement('button'); saveBtn.textContent = 'Save Key'; saveBtn.style.marginRight='6px';
+        const clearBtn = document.createElement('button'); clearBtn.textContent = 'Clear Key'; clearBtn.style.marginRight='6px';
+        const refreshBtn = document.createElement('button'); refreshBtn.textContent = 'Refresh';
+        controlsEl.appendChild(keyLabel); controlsEl.appendChild(keyInput); controlsEl.appendChild(saveBtn); controlsEl.appendChild(clearBtn); controlsEl.appendChild(refreshBtn);
+
+        saveBtn.addEventListener('click', () => {
+            const v = String(keyInput.value || '').trim();
+            if (!v) return setStatus('Cannot save empty key');
+            localStorage.setItem('PWA_API_KEY', v);
+            window.API_KEY = v;
+            setStatus('API key saved to localStorage');
+            fetchAndRender();
+        });
+        clearBtn.addEventListener('click', () => {
+            localStorage.removeItem('PWA_API_KEY');
+            window.API_KEY = '';
+            keyInput.value = '';
+            setStatus('API key cleared');
+        });
+        refreshBtn.addEventListener('click', () => fetchAndRender());
+    }
+
+    async function fetchAndRender(){
+        try{
+            setStatus('Fetching sheet...');
+            const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&gid=${GID}`;
+            const r = await fetch(url);
+            const txt = await r.text();
+            if (debugEl) { debugEl.style.display = 'block'; debugEl.textContent = `Fetched ${txt.length} characters from sheet. Response status: ${r.status}`; }
+            let data;
+            try {
+                data = parseGviz(txt);
+            } catch (pe) {
+                if (debugEl) debugEl.textContent += "\n\nGViz parse failed. Showing first 2000 chars:\n" + txt.slice(0,2000);
+                throw pe;
+            }
+            if (debugEl) {
+                try {
+                    const colLabels = (data.table.cols||[]).map(c=>c.label||'').slice(0,20);
+                    const sampleRow = (data.table.rows||[]).slice(0,5).map(r=>r.c?.map(c=>c?.v||'') );
+                    debugEl.textContent += `\n\nParsed GViz: cols=${(data.table.cols||[]).length}, rows=${(data.table.rows||[]).length}`;
+                    debugEl.textContent += `\nColumns (first 20): ${JSON.stringify(colLabels)}`;
+                    debugEl.textContent += `\nSample rows (first 5): ${JSON.stringify(sampleRow)}`;
+                } catch (e) { debugEl.textContent += `\n\nDebug parse error: ${e.message}`; }
+            }
+
+            // use column B (index 1) for nation ids as requested
+            const nationIdx = 1; // column B (0-based index)
+            setStatus('Using column B for nation ids.');
+            const rows = data.table.rows || [];
+            const ids = rows.map(rw => {
+                const raw = String(rw.c?.[nationIdx]?.v || '').trim();
+                const m = raw.match(/(\d+)/);
+                return m ? m[1] : null;
+            }).filter(Boolean);
+            const uniqueIds = Array.from(new Set(ids));
+            if (debugEl) debugEl.textContent += `\n\nExtracted IDs (${ids.length}, unique ${uniqueIds.length}): ${JSON.stringify(ids.slice(0,50))}`;
+            if (ids.length === 0) { setStatus('No nation ids found on sheet.'); return; }
+            setStatus(`Found ${ids.length} nation ids (${uniqueIds.length} unique). Fetching nation data...`);
+
+            // fetch nations batch
+            async function fetchNationsBatch(idList){
+                const q = `query { nations(id: [${idList.join(',')}], first: ${idList.length}) { data { id nation_name leader_name population num_cities score money soldiers } } }`;
+                const res = await fetch(`https://api.politicsandwar.com/graphql?api_key=${window.API_KEY || ''}`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({query: q}) });
+                const j = await res.json();
+                return j.data?.nations?.data || [];
+            }
+
+            // batch in groups of 10
+            const allIds = uniqueIds.map(id=>Number(id)).filter(Number.isFinite);
+            const batches = [];
+            for (let i=0;i<allIds.length;i+=10) batches.push(allIds.slice(i,i+10));
+            const fetched = [];
+            const batchErrors = [];
+            for (const [bi,b] of batches.entries()){
+                try{ const got = await fetchNationsBatch(b); fetched.push(...got); if (debugEl) debugEl.textContent += `\nBatch ${bi}: requested ${b.length}, got ${got.length}`; } catch(e){ console.warn('batch failed', e); batchErrors.push({batch:bi,error:String(e)}); if (debugEl) debugEl.textContent += `\nBatch ${bi} failed: ${String(e)}`; }
+            }
+            if (debugEl) debugEl.textContent += `\n\nBatches: ${batches.length}, total fetched nations: ${fetched.length}`;
+            if (fetched.length === 0) {
+                if (debugEl) debugEl.textContent += `\n\nHint: No nation data was returned. Possible causes: missing/invalid API key (window.API_KEY), API rate limits, or GraphQL errors.`;
+            }
+
+            // fetch my nation
+            let myNation = null;
+            try{ const me = await fetchNationsBatch([ME_ID]); myNation = me[0] || null; } catch(e){ console.warn('me fetch failed', e); }
+            if (!myNation) setStatus('Unable to fetch your nation data; comparisons may be incomplete.');
+            else setStatus('Rendering comparisons...');
+
+            // render table
+            const nationById = Object.fromEntries(fetched.map(n => [String(n.id), n]));
+            const allNations = ids.map(id => nationById[id] || {
+                id,
+                nation_name: 'Unknown',
+                leader_name: '-',
+                population: 0,
+                num_cities: '-',
+                score: 0,
+                soldiers: 0,
+                money: 0
+            });
+            const sortedNations = allNations.slice().sort((a, b) => {
+                const aScore = myNation ? (a.score - myNation.score) : 0;
+                const bScore = myNation ? (b.score - myNation.score) : 0;
+                return bScore - aScore;
+            });
+            const rowsHtml = sortedNations.map(n => {
+                const diffScore = myNation ? (n.score - myNation.score) : 0;
+                return `
+                    <tr>
+                        <td><a href="https://politicsandwar.com/nation/id=${n.id}" target="_blank">${n.nation_name}</a></td>
+                        <td>${n.leader_name||'-'}</td>
+                        <td>${n.population?.toLocaleString?.() || '-'}</td>
+                        <td>${n.num_cities || '-'}</td>
+                        <td>${n.score || '-'}</td>
+                        <td>${n.soldiers?.toLocaleString?.() || '-'}</td>
+                        <td>${n.money?.toLocaleString?.() || '-'}</td>
+                        <td class="delta ${diffScore>0?'positive':'negative'}">${diffScore>0?'+':''}${diffScore}</td>
+                    </tr>`;
+            }).join('');
+
+            resultsEl.innerHTML = `
+                <table>
+                    <thead><tr><th>Nation</th><th>Leader</th><th>Population</th><th>Cities</th><th>Score</th><th>Soldiers</th><th>Money</th><th>Score Δ vs Me</th></tr></thead>
+                    <tbody>${rowsHtml}</tbody>
+                </table>`;
+            setStatus('Comparison complete.');
+
+        } catch (err) {
+            console.error(err);
+            setStatus('Error: ' + (err.message || err));
+            if (debugEl) debugEl.style.display = 'block';
+        }
+    }
+
+    // initial run
+    fetchAndRender();
+
+})();
+</script>
+
+</body>
+</html>

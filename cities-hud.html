@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cities HUD</title>
+  <script src="common.js"></script>
+  <style>
+    :root { color-scheme: dark; --bg: #050816; --panel: #0e1428; --line: #24304f; --cyan: #00f0ff; --text: #f5f7ff; --muted: #7d8ca8; --green: #4ade80; --accent: #5eead4; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: 'Segoe UI', Arial, sans-serif; background: radial-gradient(circle at top, rgba(0,240,255,0.08), transparent 32%), var(--bg); color: var(--text); }
+    .wrap { max-width: 1280px; margin: 0 auto; padding: 24px; }
+    .panel { position: relative; background: linear-gradient(145deg, rgba(14,20,40,0.98), rgba(8,13,26,0.96)); border: 1px solid rgba(94,234,212,0.25); border-radius: 16px; padding: 22px; box-shadow: 0 0 24px rgba(0,240,255,0.12), inset 0 0 0 1px rgba(255,255,255,0.02); }
+    h1 { margin: 0 0 10px; color: var(--cyan); font-size: 1.4rem; letter-spacing: 0.04em; text-transform: uppercase; }
+    .meta { color: var(--muted); margin-bottom: 16px; display: flex; flex-wrap: wrap; gap: 8px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border-bottom: 1px solid rgba(36,48,79,0.8); padding: 10px 8px; text-align: left; }
+    th { color: var(--accent); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.06em; background: rgba(0,240,255,0.06); }
+    tbody tr { transition: background 0.2s ease; }
+    tbody tr:hover { background: rgba(0,240,255,0.06); }
+    .back { display: inline-block; margin-bottom: 16px; color: var(--cyan); text-decoration: none; font-weight: 600; }
+    .back:hover { color: var(--accent); }
+    .pill { display: inline-block; padding: 5px 10px; border-radius: 999px; background: rgba(0,240,255,0.14); color: var(--cyan); font-size: 0.8rem; margin-right: 6px; border: 1px solid rgba(0,240,255,0.2); }
+    .city-link { color: var(--cyan); text-decoration: none; cursor: pointer; font-weight: 600; }
+    .city-link:hover { color: var(--accent); text-decoration: underline; }
+    .summary { max-width: min(360px, calc(100% - 24px)); margin: 0 0 12px auto; padding: 8px 10px; border-radius: 10px; background: rgba(74,222,128,0.08); border: 1px solid rgba(74,222,128,0.18); color: var(--green); font-weight: 600; font-size: 0.76rem; line-height: 1.35; text-align: right; z-index: 2; }
+    .summary-trend { display: inline-flex; align-items: center; justify-content: flex-end; gap: 8px; margin-top: 6px; font-size: 0.76rem; color: var(--muted); }
+    .summary-trend-badge { font-weight: 700; letter-spacing: 0.03em; }
+    .summary-trend-spark { width: 90px; height: 22px; display: block; }
+    .group { margin-top: 18px; padding: 14px; border-radius: 12px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); }
+    .group h3 { color: var(--accent); margin: 0 0 8px; font-size: 1rem; letter-spacing: 0.04em; text-transform: uppercase; }
+    .group table { margin-bottom: 4px; }
+    .city-name-stack { display: flex; flex-direction: column; gap: 4px; }
+    .city-name { font-weight: 700; color: var(--text); }
+    .city-trend-meta { display: flex; align-items: center; gap: 8px; font-size: 0.68rem; color: var(--muted); line-height: 1.2; margin-bottom: 2px; }
+    .city-trend-badge { font-weight: 700; letter-spacing: 0.03em; }
+    .city-trend-spark { width: 72px; height: 22px; display: block; }
+    .group-trend { display: inline-flex; align-items: center; gap: 8px; margin-left: 10px; font-size: 0.8rem; color: var(--muted); }
+    .group-trend-badge { font-weight: 700; letter-spacing: 0.03em; }
+    .group-trend-spark { width: 68px; height: 18px; display: block; }
+    .toolbar { display: flex; justify-content: flex-end; margin-bottom: 10px; }
+    .toolbar button { padding: 7px 12px; border: 1px solid rgba(0,240,255,0.2); background: rgba(0,240,255,0.12); color: var(--cyan); border-radius: 8px; cursor: pointer; font-weight: 600; }
+    .toolbar button:hover { background: rgba(0,240,255,0.2); }
+    .war-shell { display: flex; flex-direction: column; gap: 14px; }
+    .war-titlebar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; }
+    .war-badge { display: inline-flex; align-items: center; width: fit-content; padding: 4px 8px; border-radius: 999px; background: rgba(0,240,255,0.12); color: var(--cyan); font-size: 0.7rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 8px; border: 1px solid rgba(0,240,255,0.22); }
+    .war-tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+    .war-tab { border: 1px solid rgba(94,234,212,0.2); background: rgba(255,255,255,0.03); color: var(--text); padding: 7px 12px; border-radius: 999px; cursor: pointer; font-weight: 600; }
+    .war-tab.active { background: rgba(0,240,255,0.14); color: var(--cyan); border-color: rgba(0,240,255,0.3); }
+    .war-pane.hidden { display: none; }
+    .war-card { background: rgba(255,255,255,0.035); border: 1px solid rgba(94,234,212,0.18); border-radius: 12px; padding: 14px; }
+    .war-grid { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
+    .war-kpi { background: rgba(0,240,255,0.08); border: 1px solid rgba(0,240,255,0.16); border-radius: 10px; padding: 10px 12px; }
+    .war-kpi span { display: block; color: var(--muted); font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.08em; }
+    .war-kpi strong { display: block; margin-top: 4px; font-size: 0.98rem; color: var(--text); }
+    .war-list { display: grid; gap: 8px; }
+    .war-list-item { display: flex; justify-content: space-between; gap: 12px; padding: 8px 10px; border-radius: 8px; background: rgba(255,255,255,0.03); color: var(--muted); }
+    .war-list-item strong { color: var(--text); }
+    .modal { display: none; position: fixed; inset: 0; background: rgba(2,6,23,0.8); z-index: 20; padding: 20px; }
+    .modal.open { display: flex; align-items: center; justify-content: center; }
+    .modal-card { width: min(900px, 100%); max-height: 80vh; overflow: auto; background: var(--panel); border: 1px solid rgba(94,234,212,0.25); border-radius: 14px; padding: 16px; box-shadow: 0 0 24px rgba(0,240,255,0.16); }
+    .modal-card h3 { margin-top: 0; color: var(--accent); }
+    .modal-card pre { white-space: pre-wrap; word-break: break-word; background: rgba(255,255,255,0.04); padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06); color: var(--text); font-size: 0.8rem; }
+    .modal-close { float: right; background: transparent; border: 0; color: var(--cyan); cursor: pointer; font-size: 1rem; }
+  </style>
+  <script>
+    (function(){
+      // Best-effort: increase EventEmitter default listeners if available in this context
+      try{
+        const EventEmitter = (typeof require === 'function' && require('events') && require('events').EventEmitter) || window.EventEmitter;
+        if (EventEmitter && typeof EventEmitter.defaultMaxListeners === 'number') {
+          EventEmitter.defaultMaxListeners = Math.max(50, EventEmitter.defaultMaxListeners || 10);
+        }
+      }catch(e){}
+
+      // Silence noisy extension warnings locally (non-destructive). This only mutes specific console.warn messages.
+      try{
+        const _origWarn = console.warn.bind(console);
+        console.warn = function(...args){
+          try{
+            const s = String(args[0] || '');
+            if (s.includes('MaxListenersExceededWarning') || s.includes('ObjectMultiplex - orphaned data for stream')) {
+              return; // drop this warning
+            }
+          }catch(e){}
+          return _origWarn(...args);
+        };
+      }catch(e){}
+    })();
+  </script>
+</head>
+<body>
+  <div class="wrap">
+    <a class="back" href="DASHBOARD.HTML">← Back to Dashboard</a>
+    <div class="panel">
+      <div class="war-shell">
+        <div class="war-titlebar">
+          <div>
+            <div class="war-badge">WAR EXTRACT</div>
+            <h1>Cities HUD</h1>
+          </div>
+          <div class="war-tabs" role="tablist">
+            <button class="war-tab active" data-war-tab="overview" type="button">Overview</button>
+            <button class="war-tab" data-war-tab="groups" type="button">Groups</button>
+            <button class="war-tab" id="openCitiesListBtn" type="button">Cities List</button>
+          </div>
+        </div>
+        <div class="toolbar"><button id="viewTrendLogBtn" type="button">View Trend Log</button></div>
+        <div class="war-pane active" id="warOverviewPane">
+          <div class="summary" id="summary"></div>
+          <div class="meta" id="meta">Loading city roster...</div>
+          <div id="content">Working...</div>
+        </div>
+        <div class="war-pane hidden" id="warGroupsPane">
+          <div id="groupsContent" class="war-card">Working...</div>
+        </div>
+      </div>
+    </div>
+    <div class="modal" id="trendLogModal" aria-hidden="true">
+      <div class="modal-card">
+        <button class="modal-close" id="closeTrendLogBtn" type="button" aria-label="Close">✕</button>
+        <h3>Saved Trend History</h3>
+        <pre id="trendLogOutput">No data yet.</pre>
+      </div>
+    </div>
+    </div>
+  </div>
+  <script>
+    const API_KEY = '5bc5a81f4c67e52b148c';
+    const NATION_ID = 768640;
+    const TURNS_PER_DAY = 12;
+    function formatNumber(value) { const num = Number(value); return Number.isFinite(num) ? num.toLocaleString() : '—'; }
+    function formatDecimal(value, digits = 2) { const num = Number(value); return Number.isFinite(num) ? num.toLocaleString(undefined, { maximumFractionDigits: digits, minimumFractionDigits: digits }) : '—'; }
+    function formatMoney(value) { const num = Number(value); return Number.isFinite(num) ? `$${num.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '—'; }
+    function getTrendHistoryKey(city) {
+      const id = String(city?.id || city?.city_id || '').trim();
+      const name = String(city?.name || city?.city_name || '').trim();
+      return id || name || 'unknown-city';
+    }
+    function getStoredTrendHistory() {
+      try {
+        const raw = localStorage.getItem('cities-hud-trend-history-v1');
+        return raw ? JSON.parse(raw) : {};
+      } catch (error) {
+        return {};
+      }
+    }
+    function openTrendLogModal() {
+      const output = document.getElementById('trendLogOutput');
+      const modal = document.getElementById('trendLogModal');
+      if (!output || !modal) return;
+      output.textContent = JSON.stringify(getStoredTrendHistory(), null, 2);
+      modal.classList.add('open');
+      modal.setAttribute('aria-hidden', 'false');
+    }
+    function closeTrendLogModal() {
+      const modal = document.getElementById('trendLogModal');
+      if (!modal) return;
+      modal.classList.remove('open');
+      modal.setAttribute('aria-hidden', 'true');
+    }
+    function saveTrendHistory(history) {
+      try {
+        localStorage.setItem('cities-hud-trend-history-v1', JSON.stringify(history));
+      } catch (error) {
+        // ignore storage errors
+      }
+    }
+    function updateTrendHistory(cityData) {
+      const history = getStoredTrendHistory();
+      cityData.forEach((city) => {
+        const key = getTrendHistoryKey(city);
+        const existing = Array.isArray(history[key]) ? history[key] : [];
+        history[key] = [...existing, {
+          ts: Date.now(),
+          grossProfit: Number(city.grossProfit || 0),
+          netProfit: Number(city.profit || 0),
+          commerceIncome: Number(city.commerceIncome || 0)
+        }].slice(-24);
+      });
+      saveTrendHistory(history);
+      return history;
+    }
+    function getTrendProjection(history) {
+      const points = Array.isArray(history) ? history : [];
+      if (points.length < 2) return { label: '—', direction: 'neutral', pct: 0 };
+      const values = points.map((point) => Number(point.grossProfit || 0)).filter(Number.isFinite);
+      if (values.length < 2) return { label: '—', direction: 'neutral', pct: 0 };
+      const first = values[0];
+      const last = values[values.length - 1];
+      // guard against zero or non-finite values to avoid division by zero producing Infinity
+      if (!Number.isFinite(first) || !Number.isFinite(last) || Math.abs(last) < 1e-12) return { label: '—', direction: 'neutral', pct: 0 };
+      const delta = (last - first) / Math.max(1, values.length - 1);
+      const projected = last + delta;
+      const pct = ((projected - last) / Math.abs(last)) * 100;
+      const direction = pct > 0.5 ? 'up' : pct < -0.5 ? 'down' : 'flat';
+      const roundedPct = Math.abs(pct) < 1 ? Math.round(pct * 1000) / 1000 : Math.round(pct * 1000) / 1000;
+      const label = `${pct >= 0 ? '+' : ''}${roundedPct.toFixed(3)}%`;
+      return { label, direction, pct };
+    }
+    function buildSparklineSvg(history, width = 72, height = 22, color = '#4ade80') {
+      const points = Array.isArray(history) ? history : [];
+      const values = points.map((point) => Number(point.grossProfit || 0)).filter(Number.isFinite);
+      const padding = 2;
+      if (values.length < 2) {
+        return `<svg class="city-trend-spark" viewBox="0 0 ${width} ${height}" aria-label="trend"><line x1="${padding}" y1="${height / 2}" x2="${width - padding}" y2="${height / 2}" stroke="rgba(125,140,168,0.45)" stroke-width="1.6" stroke-linecap="round" /></svg>`;
+      }
+      const min = Math.min(...values);
+      const max = Math.max(...values);
+      const safeMax = max === min ? max + 1 : max;
+      const coords = values.map((value, index) => {
+        const x = padding + (index / Math.max(1, values.length - 1)) * (width - padding * 2);
+        const normalized = max === min ? 0.5 : (value - min) / (safeMax - min);
+        const y = padding + (1 - normalized) * (height - padding * 2);
+        return `${x.toFixed(1)},${y.toFixed(1)}`;
+      }).join(' ');
+      return `<svg class="${width === 72 ? 'city-trend-spark' : 'group-trend-spark'}" viewBox="0 0 ${width} ${height}" aria-label="sparkline"><polyline points="${coords}" fill="none" stroke="${color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></svg>`;
+    }
+    function renderCityNameCell(city, history) {
+      const projection = getTrendProjection(history || []);
+      const trendColor = projection.direction === 'up' ? '#4ade80' : projection.direction === 'down' ? '#f87171' : '#7d8ca8';
+      const sparkline = buildSparklineSvg(history || []);
+      const cityLabel = city?.name || 'Unnamed City';
+      return `<td><div class="city-name-stack"><div class="city-trend-meta"><span class="city-trend-badge" style="color:${trendColor}">${projection.label}</span>${sparkline}</div><div class="city-name"><a class="city-link" href="city-details.html?cityId=${encodeURIComponent(city.id || '')}&cityName=${encodeURIComponent(cityLabel)}">${cityLabel}</a></div></div></td>`;
+    }
+    function renderGroupHeader(groupName, history) {
+      const projection = getTrendProjection(history || []);
+      const trendColor = projection.direction === 'up' ? '#4ade80' : projection.direction === 'down' ? '#f87171' : '#7d8ca8';
+      const sparkline = buildSparklineSvg(history || [], 68, 18, trendColor);
+      return `<span class="group-trend"><span class="group-trend-badge" style="color:${trendColor}">${projection.label}</span>${sparkline}</span>`;
+    }
+    function getCappedBonusMultiplier(count, maxCount, maxBonus = 0.5) {
+      const safeCount = Math.min(Math.max(Number(count) || 0, 0), maxCount);
+      if (!Number.isFinite(safeCount) || maxCount <= 0) return 1;
+      return 1 + (safeCount / maxCount) * maxBonus;
+    }
+    function getCappedBonusOutput(baseOutput, count, maxCount, maxBonus = 0.5) {
+      return Number(baseOutput) * getCappedBonusMultiplier(count, maxCount, maxBonus);
+    }
+    function getDailyOutput(baseOutput, count, maxCount, maxBonus = 0.5) {
+      return getCappedBonusOutput(baseOutput, count, maxCount, maxBonus) * 12;
+    }
+    function getSupermarketDailyProfit(population, count = 1) {
+      const referencePopulation = 169454;
+      const referenceRevenue = 19656.63;
+      const safePopulation = Math.max(Number(population) || 0, 0);
+      const revenuePerBuilding = referenceRevenue * (safePopulation / referencePopulation);
+      const profitPerBuilding = revenuePerBuilding - 600;
+      return Number(count || 0) * profitPerBuilding;
+    }
+    function getCommerceIncome(population, buildingCommerce, baseIncome = 1.0, commerceMultiplier = 0.05, crimePenalty = 0) {
+      const safePopulation = Math.max(Number(population) || 0, 0);
+      const safeBuildingCommerce = Number(buildingCommerce || 0);
+      return safePopulation > 0 ? safePopulation * (baseIncome + safeBuildingCommerce * commerceMultiplier) * (1 - crimePenalty) : 0;
+    }
+    function normalizeText(value) {
+      return String(value || '')
+        .normalize('NFKD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/\s*\d+\s*days?/gi, '')
+        .replace(/[^a-z0-9 ]+/gi, ' ')
+        .trim()
+        .toLowerCase();
+    }
+    function getSheetRows(data) {
+      const cols = data?.table?.cols || [];
+      return (data?.table?.rows || []).map((row) => ({
+        cells: (row?.c || []).map((cell) => {
+          if (!cell) return '';
+          if (typeof cell.v === 'number' || typeof cell.v === 'boolean') return cell.v;
+          return String(cell.v || '').trim();
+        }),
+        headers: cols.map((col) => String(col.label || '').trim())
+      }));
+    }
+    function getCityPopulationFromSheet(cityName, sheetRows) {
+      const normalizedCity = normalizeText(cityName || '');
+      const populationRow = sheetRows.find((row) => normalizeText(row.cells[1]) === 'population');
+      const headerRow = sheetRows.length > 0 ? sheetRows[0].headers : [];
+      if (!populationRow || !headerRow.length) return null;
+      const columnIndex = headerRow.findIndex((label, index) => index > 1 && normalizeText(label).includes(normalizedCity));
+      if (columnIndex < 0) {
+        const fallbackIndex = headerRow.findIndex((label, index) => index > 1 && normalizeText(label) === normalizedCity);
+        if (fallbackIndex >= 0) return Number(populationRow.cells[fallbackIndex]) || null;
+        return null;
+      }
+      return Number(populationRow.cells[columnIndex]) || null;
+    }
+    async function fetchCityPopulationMap(cityNames) {
+      const SHEET_ID = '1KlXsnU_OEzTpefr3bPHqs8YAT3MlqaT3X-ITxrIE6ys';
+      const SHEET_GID = '1972996458';
+      const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?gid=${SHEET_GID}&tqx=out:json&range=A1:Z50`;
+      const response = await fetch(url);
+      const text = await response.text();
+      const match = text.match(/google\.visualization\.Query\.setResponse\(([^]+)\);?/);
+      if (!match) return new Map();
+      const data = JSON.parse(match[1]);
+      const rows = getSheetRows(data);
+      const entries = cityNames.map((name) => [normalizeText(name || ''), getCityPopulationFromSheet(name, rows)]);
+      return new Map(entries.filter(([, population]) => Number.isFinite(Number(population))));
+    }
+    async function fetchCitySheetStats() {
+      const SHEET_ID = '1KlXsnU_OEzTpefr3bPHqs8YAT3MlqaT3X-ITxrIE6ys';
+      const SHEET_GID = '1972996458';
+      const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?gid=${SHEET_GID}&tqx=out:json&range=A1:Z50`;
+      try {
+        const text = await fetch(url).then(response => response.text());
+        const match = text.match(/google\.visualization\.Query\.setResponse\(([^]+)\);?/);
+        if (!match) return {};
+        const data = JSON.parse(match[1]);
+        const rows = getSheetRows(data);
+        const headers = rows[0]?.headers || [];
+        const fields = { infrastructure:'infrastructure', land:'land', population:'city_population', disease:'disease', crime:'crime', pollution:'pollution', commerce:'sheetCommerce', 'coal power plant':'coal_power', 'oil power plant':'oil_power', 'nuclear power plant':'nuclear_power', 'wind power plant':'wind_power', 'iron mine':'iron_mine', 'oil well':'oil_well', 'coal mine':'coal_mine', 'bauxite mine':'bauxite_mine', 'lead mine':'lead_mine', 'uranium mine':'uranium_mine', farm:'farm', 'oil refinery':'oil_refinery', 'steel mill':'steel_mill', 'aluminum refinery':'aluminum_refinery', 'munitions factory':'munitions_factory', 'police station':'police_station', hospital:'hospital', 'recycling center':'recycling_center', subway:'subway', supermarket:'supermarket', bank:'bank', 'shopping mall':'shopping_mall', stadium:'stadium', barracks:'barracks', factory:'factory', hangar:'hangar', drydock:'drydock' };
+        return rows.reduce((cities, row) => {
+          const field = fields[normalizeText(row.cells[1])];
+          if (!field) return cities;
+          headers.forEach((header, index) => {
+            if (index > 1 && header) (cities[normalizeText(header)] ||= {})[field] = Number(row.cells[index]) || 0;
+          });
+          return cities;
+        }, {});
+      } catch (error) {
+        console.warn('City Sheet stats unavailable.', error);
+        return {};
+      }
+    }
+    function getFacilityProfiles() {
+      return {
+        farm: { label: 'Farm', output: 0, upkeep: 300, resource: 'food', dynamicOutput: city => getCappedBonusOutput(Number(city.land || 0) / 500, Number(city.farm || 0), 20), operatingCost: 300, description: 'Farms produce food equal to land / 500 per farm (about 4.98 food/turn at current land) and can be built up to 20 per city. Output increases via a capped bonus that reaches +50% at 20 farms.' },
+        supermarket: { label: 'Supermarket', output: 0, upkeep: 2, resource: null, operatingCost: 600, description: 'Supermarkets increase commerce by 4% per building and can be built up to 4 per city. They do not affect the pollution index.' },
+        bank: { label: 'Bank', output: 0, upkeep: 2, resource: null, operatingCost: 0, description: 'Banks increase commerce and do not directly produce steel.' },
+        stadium: { label: 'Stadium', output: 0, upkeep: 2, resource: null, operatingCost: 0, description: 'Stadiums drive event revenue but do not directly produce steel.' },
+        iron_mine: { label: 'Iron Mine', output: 0.25, upkeep: 3, resource: 'iron', dynamicOutput: city => getCappedBonusOutput(0.25, Number(city.iron_mine || 0), 10), operatingCost: 1600, description: 'Iron mines produce 0.25 tons of iron per turn (3 tons/day) and can be built up to 10 per city. Output increases via a capped bonus that reaches +50% at 10 mines.' },
+        coal_mine: { label: 'Coal Mine', output: 0.25, upkeep: 2, resource: 'coal', dynamicOutput: city => getCappedBonusOutput(0.25, Number(city.coal_mine || 0), 10), operatingCost: 400, description: 'Coal mines produce 0.25 tons of coal per turn (3 tons/day) and can be built up to 10 per city. Output increases via a capped bonus that reaches +50% at 10 mines.' },
+        lead_mine: { label: 'Lead Mine', output: 0.25, upkeep: 2, resource: 'lead', dynamicOutput: city => getCappedBonusOutput(0.25, Number(city.lead_mine || 0), 10), operatingCost: 1200, description: 'Lead mines produce 0.25 tons of lead per turn (3 tons/day) and can be built up to 10 per city. Output increases via a capped bonus that reaches +50% at 10 mines.' },
+        bauxite_mine: { label: 'Bauxite Mine', output: 0.25, upkeep: 2, resource: 'bauxite', dynamicOutput: city => getCappedBonusOutput(0.25, Number(city.bauxite_mine || 0), 10), operatingCost: 1000, description: 'Bauxite mines produce 0.25 tons of bauxite per turn (3 tons/day) and can be built up to 10 per city. Output increases via a capped bonus that reaches +50% at 10 mines.' },
+        oil_well: { label: 'Oil Well', output: 0.25, upkeep: 2, resource: 'oil', dynamicOutput: city => getCappedBonusOutput(0.25, Number(city.oil_well || 0), 10), operatingCost: 0, description: 'Produces about 0.25 tons of oil per turn (3 tons/day), with a capped production bonus that reaches +50% at 10 wells.' },
+        uranium_mine: { label: 'Uranium Mine', output: 0.25, upkeep: 3, resource: 'uranium', dynamicOutput: city => getCappedBonusOutput(0.25, Number(city.uranium_mine || 0), 5), operatingCost: 5000, description: 'Uranium mines produce 0.25 tons of uranium per turn (3 tons/day) and can be built up to 5 per city. Output increases via a capped bonus that reaches +50% at 5 mines.' },
+        oil_refinery: { label: 'Oil Refinery', output: 0.5, upkeep: 3, resource: 'gasoline', operatingCost: 4000, description: 'Oil refineries convert oil into gasoline at 0.5 per turn (6 per day) and can be built up to 5 per city. Each refinery adds 32 pollution points.' },
+        aluminum_refinery: { label: 'Aluminum Refinery', output: 0.75, upkeep: 3, resource: 'aluminum', operatingCost: 2500, description: 'Aluminum refineries convert bauxite into aluminum at 0.75 per turn (9 per day) and can be built up to 5 per city. Each refinery adds 40 pollution points.' },
+        steel_mill: { label: 'Steel Mill', output: 0.75, upkeep: 4, resource: 'steel', operatingCost: 4000, description: 'Steel mills convert iron and coal into steel at 0.75 per turn (9 per day) and can be built up to 5 per city. Each mill adds 40 pollution points.' },
+        munitions_factory: { label: 'Munitions Factory', output: 1.5, upkeep: 4, resource: 'munitions', operatingCost: 3500, description: 'Munitions factories convert lead into munitions at 1.5 per turn (18 per day) and can be built up to 5 per city. Each factory adds 32 pollution points.' },
+        police_station: { label: 'Police Station', output: 0, upkeep: 2, resource: null, operatingCost: 750, description: 'Police stations reduce crime by 2.5% per building and can be built up to 5 per city. Each station adds 1 pollution point.' },
+        hospital: { label: 'Hospital', output: 0, upkeep: 2, resource: null, operatingCost: 1000, description: 'Hospitals reduce disease by 2.5% per building and can be built up to 5 per city. Each hospital adds 4 pollution points.' },
+        recycling_center: { label: 'Recycling Center', output: 0, upkeep: 2, resource: null, operatingCost: 2500, description: 'Recycling centers reduce the pollution index by 70 per building in this city and can be built up to 3 per city. Each center removes 70 pollution points.' },
+        factory: { label: 'Factory', output: 0, upkeep: 3, resource: null, operatingCost: 0, description: 'Factories support tank production but do not directly produce a tradable resource.' }
+      };
+    }
+    // small helpers to guard against bad data
+    function safeNumber(v, fallback=0){ const n = Number(v); return Number.isFinite(n)?n:fallback; }
+    const MAX_BUILDING_CAP = 10000; // hard cap to avoid runaway values from bad data
+    const OPERATING_COSTS = {
+      coal_power: 120, oil_power: 180, nuclear_power: 10500, wind_power: 500,
+      farm: 300, supermarket: 600, bank: 1800, stadium: 12150, shopping_mall: 5400, subway: 3250,
+      iron_mine: 1600, coal_mine: 400, uranium_mine: 5000, lead_mine: 1200, bauxite_mine: 1000, oil_well: 0,
+      steel_mill: 4000, oil_refinery: 4000, aluminum_refinery: 2500, munitions_factory: 3500,
+      police_station: 750, hospital: 1000, recycling_center: 2500, barracks: 1500,
+      factory: 0, hangar: 0, drydock: 0
+    };
+    function getFacilityOutput(city, profile) {
+      return typeof profile.dynamicOutput === 'function' ? profile.dynamicOutput(city) : profile.output;
+    }
+    function getFarmOutputPerFarm(city) {
+      return Number(city.land || 0) / 500;
+    }
+    function getTotalFarmFood(city) {
+      return getDailyOutput(getFarmOutputPerFarm(city), Number(city.farm || 0), 20);
+    }
+    function getCityFacilities(city) {
+      const profiles = getFacilityProfiles();
+      return [
+        ['Farm', city.farm || 0, profiles.farm],
+        ['Supermarket', city.supermarket || 0, profiles.supermarket],
+        ['Bank', city.bank || 0, profiles.bank],
+        ['Stadium', city.stadium || 0, profiles.stadium],
+        ['Iron Mine', city.iron_mine || 0, profiles.iron_mine],
+        ['Coal Mine', city.coal_mine || 0, profiles.coal_mine],
+        ['Lead Mine', city.lead_mine || 0, profiles.lead_mine],
+        ['Bauxite Mine', city.bauxite_mine || 0, profiles.bauxite_mine],
+        ['Oil Well', city.oil_well || 0, profiles.oil_well],
+        ['Uranium Mine', city.uranium_mine || 0, profiles.uranium_mine],
+        ['Steel Mill', city.steel_mill || 0, profiles.steel_mill],
+        ['Oil Refinery', city.oil_refinery || 0, profiles.oil_refinery],
+        ['Aluminum Refinery', city.aluminum_refinery || 0, profiles.aluminum_refinery],
+        ['Munitions Factory', city.munitions_factory || 0, profiles.munitions_factory],
+        ['Police Station', city.police_station || 0, profiles.police_station],
+        ['Hospital', city.hospital || 0, profiles.hospital],
+        ['Recycling Center', city.recycling_center || 0, profiles.recycling_center],
+        ['Factory', city.factory || 0, profiles.factory]
+      ];
+    }
+    function calculateCityUpkeep(city) {
+      return Object.entries(OPERATING_COSTS).reduce((sum, [building, cost]) => {
+        const safeCount = Math.min(safeNumber(city[building], 0), MAX_BUILDING_CAP);
+        return sum + safeCount * cost;
+      }, 0);
+    }
+    function calculateNetProfit(city, priceMap, population = 0) {
+      const facilities = getCityFacilities(city);
+      // compute per-facility totals with safety
+      const facilityDetails = [];
+      const totalProduction = facilities.reduce((sum, [, count, profile]) => {
+        const safeCount = Math.min(safeNumber(count,0), MAX_BUILDING_CAP);
+        const perTurn = safeNumber(getFacilityOutput(city, profile),0);
+        const price = safeNumber(priceMap[profile.resource],0);
+        const dailyProduction = safeCount * perTurn * 12;
+        const revenue = dailyProduction * price;
+        facilityDetails.push({ name: profile.label || 'unknown', count: safeCount, perTurn, dailyProduction, price, revenue, upkeepPer: safeNumber(profile.operatingCost ?? profile.upkeep ?? 0,0) });
+        return sum + revenue;
+      }, 0);
+      const totalUpkeep = calculateCityUpkeep(city);
+      const inputCost =
+        safeNumber(city.steel_mill, 0) * 12 * (safeNumber(priceMap.iron, 0) + safeNumber(priceMap.coal, 0)) +
+        safeNumber(city.oil_refinery, 0) * 12 * safeNumber(priceMap.oil, 0) +
+        safeNumber(city.aluminum_refinery, 0) * 12 * safeNumber(priceMap.bauxite, 0) +
+        safeNumber(city.munitions_factory, 0) * 12 * safeNumber(priceMap.lead, 0);
+      const powerInputCost =
+        safeNumber(city.oil_power, 0) * safeNumber(city.infrastructure, 0) * 0.001 * 12 * safeNumber(priceMap.oil, 0) +
+        safeNumber(city.nuclear_power, 0) * safeNumber(city.infrastructure, 0) * 0.00025 * 12 * safeNumber(priceMap.uranium, 0);
+      const populationInputCost =
+        safeNumber(population, 0) * (662.24 / 4186213 * safeNumber(priceMap.food, 0) + 26.63 / 4186213 * safeNumber(priceMap.coal, 0) + 70.25 / 4186213 * safeNumber(priceMap.oil, 0) + 26.63 / 4186213 * safeNumber(priceMap.iron, 0)) * 12;
+      const commerceRate = Math.min(100, safeNumber(city.supermarket, 0) * 4 + safeNumber(city.bank, 0) * 6 + safeNumber(city.shopping_mall, 0) * 8 + safeNumber(city.stadium, 0) * 10 + safeNumber(city.subway, 0) * 8);
+      const cityIncome = (((commerceRate / 50) * 0.725) + 0.725) * safeNumber(population, 0);
+      const commerceIncome = cityIncome * (1 - Math.min(1, Math.max(0, safeNumber(city.crime, 0)))) * (1 - Math.min(1, Math.max(0, safeNumber(city.disease, 0))));
+      const net = totalProduction + commerceIncome - totalUpkeep - inputCost - powerInputCost - populationInputCost;
+      // targeted debug for MonopolyGO
+      try{
+        const cityName = String(city?.name || city?.city_name || '').trim();
+        if(normalizeText(cityName) === 'monopolygo'){
+          console.group('MonopolyGO calculateNetProfit');
+          console.log('city raw:', city);
+          console.log('priceMap snapshot:', priceMap);
+          console.table(facilityDetails);
+          console.log('totalProduction:', totalProduction, 'totalUpkeep:', totalUpkeep, 'commerceIncome:', commerceIncome, 'net:', net);
+          console.groupEnd();
+        }
+      }catch(e){ console.warn('MonopolyGO debug failed', e); }
+      // ensure numeric return
+      if(!Number.isFinite(net)) return { net: 0, grossRevenue: 0, commerceIncome: 0 };
+      return { net, grossRevenue: totalProduction + commerceIncome, commerceIncome };
+    }
+    function calculateGroupProfit(city, priceMap, groupKey, population = 0) {
+      const profiles = getFacilityProfiles();
+      const groupFacilities = {
+        Steel: [
+          ['Steel Mill', city.steel_mill || 0, profiles.steel_mill]
+        ],
+        Munitions: [
+          ['Munitions Factory', city.munitions_factory || 0, profiles.munitions_factory]
+        ],
+        Aluminum: [
+          ['Aluminum Refinery', city.aluminum_refinery || 0, profiles.aluminum_refinery]
+        ],
+        Iron: [
+          ['Iron Mine', city.iron_mine || 0, profiles.iron_mine]
+        ],
+        Coal: [
+          ['Coal Mine', city.coal_mine || 0, profiles.coal_mine]
+        ],
+        Lead: [
+          ['Lead Mine', city.lead_mine || 0, profiles.lead_mine]
+        ],
+        Oil: [
+          ['Oil Refinery', city.oil_refinery || 0, profiles.oil_refinery]
+        ],
+        Uranium: [
+          ['Uranium Mine', city.uranium_mine || 0, profiles.uranium_mine]
+        ],
+        Food: [
+          ['Farm', city.farm || 0, profiles.farm],
+          ['Supermarket', city.supermarket || 0, profiles.supermarket]
+        ]
+      };
+      const facilities = groupFacilities[groupKey] || [];
+      const totalProduction = facilities.reduce((sum, [, count, profile]) => sum + Number(count) * getFacilityOutput(city, profile) * 12 * (Number(priceMap[profile.resource]) || 0), 0);
+      const totalUpkeep = facilities.reduce((sum, [, count, profile]) => {
+        const building = Object.entries(getFacilityProfiles()).find(([, candidate]) => candidate === profile)?.[0];
+        return sum + Number(count) * (OPERATING_COSTS[building] || 0);
+      }, 0);
+      const supermarketProfit = getSupermarketDailyProfit(population, Number(city.supermarket || 0));
+      return totalProduction - totalUpkeep + (groupKey === 'Food' ? supermarketProfit : 0);
+    }
+    let loadInFlight = false;
+    async function loadData() {
+      if (loadInFlight) return;
+      loadInFlight = true;
+      try {
+        const query = `query { nations(id: [${NATION_ID}], first: 1) { data { nation_name population num_cities cities { id name infrastructure land powered barracks farm police_station hospital recycling_center subway supermarket bank shopping_mall stadium lead_mine iron_mine bauxite_mine oil_refinery aluminum_refinery steel_mill munitions_factory factory hangar drydock coal_mine oil_well uranium_mine oil_power wind_power coal_power nuclear_power } } } }`;
+        const response = await fetch(`https://api.politicsandwar.com/graphql?api_key=${API_KEY}`, {method:'POST', cache:'no-store', headers:{'Content-Type':'application/json'}, body: JSON.stringify({query})});
+        const json = await response.json();
+        if (json.errors) throw new Error(json.errors[0]?.message || 'GraphQL errors');
+        const marketQuery = `query { tradeprices(first: 10) { data { date food coal oil uranium iron bauxite lead gasoline munitions steel aluminum } } }`;
+        const marketResponse = await fetch(`https://api.politicsandwar.com/graphql?api_key=${API_KEY}`, {method:'POST', cache:'no-store', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ query: marketQuery })});
+        const marketJson = await marketResponse.json();
+        const priceRows = sortMarketRowsNewestFirst(marketJson?.data?.tradeprices?.data);
+        const latestPrices = getLatestMarketRow(priceRows);
+        const priceMap = {
+          iron: Number(latestPrices.iron) || 0,
+          bauxite: Number(latestPrices.bauxite) || 0,
+          lead: Number(latestPrices.lead) || 0,
+          coal: Number(latestPrices.coal) || 0,
+          oil: Number(latestPrices.oil) || 0,
+          uranium: Number(latestPrices.uranium) || 0,
+          steel: Number(latestPrices.steel) || 0,
+          aluminum: Number(latestPrices.aluminum) || 0,
+          munitions: Number(latestPrices.munitions) || 0,
+          gasoline: Number(latestPrices.gasoline) || 0,
+          food: Number(latestPrices.food) || 0
+        };
+        const nation = json.data?.nations?.data?.[0];
+        let cities = Array.isArray(nation?.cities) ? nation.cities : [];
+        const citySheetStats = await fetchCitySheetStats();
+        cities = cities.map(city => ({ ...city, ...(citySheetStats[normalizeText(city.name || city.city_name)] || {}) }));
+        const cityPopulationMap = await fetchCityPopulationMap(cities.map((city) => city.name || city.city_name || ''));
+        const totalInfrastructure = cities.reduce((sum, city) => sum + safeNumber(city.infrastructure, 0), 0);
+        const totalLand = cities.reduce((sum, city) => sum + safeNumber(city.land, 0), 0);
+        const resourceIcons = {
+          coal: 'https://politicsandwar.com/img/resources/coal.png',
+          oil: 'https://politicsandwar.com/img/resources/oil.png',
+          uranium: 'https://politicsandwar.com/img/resources/uranium.png',
+          lead: 'https://politicsandwar.com/img/resources/lead.png',
+          iron: 'https://politicsandwar.com/img/resources/iron.png',
+          bauxite: 'https://politicsandwar.com/img/resources/bauxite.png',
+          gasoline: 'https://politicsandwar.com/img/resources/gasoline.png',
+          munitions: 'https://politicsandwar.com/img/resources/munitions.png',
+          steel: 'https://politicsandwar.com/img/resources/steel.png',
+          aluminum: 'https://politicsandwar.com/img/resources/aluminum.png',
+          food: 'https://politicsandwar.com/img/icons/16/steak_meat.png'
+        };
+
+        function computeResourceValues(city) {
+          const units = {
+                food: getTotalFarmFood(city),
+                iron: Math.min(safeNumber(city.iron_mine,0), MAX_BUILDING_CAP) * getDailyOutput(0.25, safeNumber(city.iron_mine,0), 10),
+                coal: Math.min(safeNumber(city.coal_mine,0), MAX_BUILDING_CAP) * getDailyOutput(0.25, safeNumber(city.coal_mine,0), 10),
+                oil: Math.min(safeNumber(city.oil_well,0), MAX_BUILDING_CAP) * getDailyOutput(0.25, safeNumber(city.oil_well,0), 10),
+                uranium: Math.min(safeNumber(city.uranium_mine,0), MAX_BUILDING_CAP) * getDailyOutput(0.25, safeNumber(city.uranium_mine,0), 5),
+                lead: Math.min(safeNumber(city.lead_mine,0), MAX_BUILDING_CAP) * getDailyOutput(0.25, safeNumber(city.lead_mine,0), 10),
+                bauxite: Math.min(safeNumber(city.bauxite_mine,0), MAX_BUILDING_CAP) * getDailyOutput(0.25, safeNumber(city.bauxite_mine,0), 10),
+                gasoline: Math.min(safeNumber(city.oil_refinery,0), MAX_BUILDING_CAP) * 0.5 * 12,
+                munitions: Math.min(safeNumber(city.munitions_factory,0), MAX_BUILDING_CAP) * 1.5 * 12,
+                steel: Math.min(safeNumber(city.steel_mill,0), MAX_BUILDING_CAP) * 0.75 * 12,
+                aluminum: Math.min(safeNumber(city.aluminum_refinery,0), MAX_BUILDING_CAP) * 0.75 * 12
+          };
+          const values = {};
+              Object.keys(units).forEach(k => { values[k] = safeNumber(units[k],0) * safeNumber(priceMap[k],0); });
+          return { units, values };
+        }
+
+        const cityData = cities.map(city => {
+          try {
+            const cityName = city.name || city.city_name || '';
+            let cityPopulation = Number(cityPopulationMap.get(normalizeText(cityName)) || city.nation?.population || 0);
+            // fallback: if population not available, estimate from nation average or infrastructure
+            if (!Number.isFinite(cityPopulation) || cityPopulation <= 0) {
+              const nationAvg = Math.floor((Number(nation?.population) || 0) / (Number(nation?.num_cities) || cities.length) || 0);
+              const infraEstimate = Math.max(Math.floor(Number(city.infrastructure || 0) * 100), 0);
+              cityPopulation = nationAvg || infraEstimate;
+            }
+            const upkeep = calculateCityUpkeep(city);
+            const profitResult = calculateNetProfit(city, priceMap, cityPopulation);
+            let profit = profitResult;
+            let calculatedGrossProfit = null;
+            if (profitResult && typeof profitResult === 'object') {
+              calculatedGrossProfit = Number(profitResult.grossRevenue);
+              profit = profitResult.net;
+            }
+            // defensive: support calculateNetProfit returning { net, breakdown }
+            if (profit && typeof profit === 'object' && 'net' in profit) profit = profit.net;
+            // defensive: ensure profit is a finite number
+            let calcError = false;
+            const profitNum = Number(profit);
+            if (!Number.isFinite(profitNum)) {
+              console.warn('City profit calc not finite for', cityName, city, 'rawProfit:', profit);
+              profit = 0;
+              calcError = true;
+            } else {
+              profit = profitNum;
+            }
+            // targeted debug: if this is MonopolyGO, log full details to console
+            try{
+              if(normalizeText(cityName) === 'monopolygo'){
+                console.group('DEBUG City MonopolyGO');
+                console.log('city raw:', city);
+                const rv = computeResourceValues(city);
+                console.log('units:', rv.units);
+                console.log('values:', rv.values);
+                console.log('priceMap snapshot:', priceMap);
+                console.log('calculated profit (raw):', profit);
+                console.log('calcError:', calcError);
+                console.groupEnd();
+                // mark for UI visibility
+                city.debugNote = 'MonopolyGO debug logged';
+              }
+            }catch(e){ /* ignore */ }
+            const farmOutputPerFarm = getFarmOutputPerFarm(city);
+            const totalFarmFood = getTotalFarmFood(city);
+            const steelOutputPerMill = 0.75;
+            const totalSteel = 0.75 * Number(city.steel_mill || 0);
+            const aluminumOutputPerRefinery = 0.75;
+            const totalAluminum = 0.75 * Number(city.aluminum_refinery || 0);
+            const munitionsOutputPerFactory = 1.5;
+            const totalMunitions = 1.5 * Number(city.munitions_factory || 0);
+            const gasolineOutputPerRefinery = 0.5;
+            const totalGasoline = 0.5 * Number(city.oil_refinery || 0);
+            const uraniumOutputPerMine = 0.25;
+            const totalUranium = 0.25 * Number(city.uranium_mine || 0);
+            const ironOutputPerMine = 0.25;
+            const totalIron = 0.25 * Number(city.iron_mine || 0);
+            const coalOutputPerMine = 0.25;
+            const totalCoal = 0.25 * Number(city.coal_mine || 0);
+            const leadOutputPerMine = 0.25;
+            const totalLead = 0.25 * Number(city.lead_mine || 0);
+            const bauxiteOutputPerMine = 0.25;
+            const totalBauxite = 0.25 * Number(city.bauxite_mine || 0);
+            const baseIncome = 1.0;
+            const commerceRate = Math.min(100, Number(city.bank || 0) * 6 + Number(city.shopping_mall || 0) * 8 + Number(city.stadium || 0) * 10 + Number(city.subway || 0) * 8);
+            const crimePenalty = Math.min(1, Math.max(0, Number(city.crime) || 0));
+            const diseasePenalty = Math.min(1, Math.max(0, Number(city.disease) || 0));
+            // compute commerce income defensively inside try block
+            let cityCommerceIncome = 0;
+            try {
+              cityCommerceIncome = cityPopulation * (commerceRate / 100) * (1 - crimePenalty) * (1 - diseasePenalty) * TURNS_PER_DAY;
+              if (!Number.isFinite(Number(cityCommerceIncome))) cityCommerceIncome = 0;
+            } catch (e) {
+              console.warn('Failed to compute commerceIncome for', cityName, e);
+              cityCommerceIncome = 0;
+            }
+
+            const grossProfit = Number.isFinite(calculatedGrossProfit) ? calculatedGrossProfit : profit;
+
+            // determine dominant resource by value
+            const { units, values } = computeResourceValues(city);
+            let dominant = 'food';
+            let maxVal = -1;
+            Object.keys(values).forEach(k => { if ((values[k] || 0) > maxVal) { maxVal = values[k] || 0; dominant = k; } });
+
+            return {
+              ...city,
+              profit,
+              farmOutputPerFarm,
+              totalFarmFood,
+              steelOutputPerMill,
+              totalSteel,
+              aluminumOutputPerRefinery,
+              totalAluminum,
+              munitionsOutputPerFactory,
+              totalMunitions,
+              gasolineOutputPerRefinery,
+              totalGasoline,
+              uraniumOutputPerMine,
+              totalUranium,
+              ironOutputPerMine,
+              totalIron,
+              coalOutputPerMine,
+              totalCoal,
+              leadOutputPerMine,
+              totalLead,
+              bauxiteOutputPerMine,
+              totalBauxite,
+              cityPopulation,
+              upkeep,
+              commerceIncome: cityCommerceIncome,
+              grossProfit,
+              dominantResource: dominant,
+              dominantIcon: resourceIcons[dominant],
+              calcError
+            };
+          } catch (err) {
+            console.error('City data mapping failed for', city && (city.name || city.city_name || city.id), err);
+            return { ...city, profit: 0, commerceIncome: 0, grossProfit: 0, cityPopulation: 0, upkeep: 0, calcError: true };
+          }
+        }).sort((a, b) => b.grossProfit - a.grossProfit);
+        const totalNetProfit = cityData.reduce((sum, city) => sum + Number(city.profit || 0), 0);
+        const totalCommerceIncome = cityData.reduce((sum, city) => sum + Number(city.commerceIncome || 0), 0);
+        const trendHistoryMap = updateTrendHistory(cityData);
+        const manufacturedGroups = {
+          Steel: cityData.filter(city => Number(city.steel_mill || 0) > 0).map(city => ({ ...city, groupProfit: calculateGroupProfit(city, priceMap, 'Steel', city.cityPopulation) })).sort((a, b) => b.groupProfit - a.groupProfit),
+          Munitions: cityData.filter(city => Number(city.munitions_factory || 0) > 0).map(city => ({ ...city, groupProfit: calculateGroupProfit(city, priceMap, 'Munitions', city.cityPopulation) })).sort((a, b) => b.groupProfit - a.groupProfit),
+          Aluminum: cityData.filter(city => Number(city.aluminum_refinery || 0) > 0).map(city => ({ ...city, groupProfit: calculateGroupProfit(city, priceMap, 'Aluminum', city.cityPopulation) })).sort((a, b) => b.groupProfit - a.groupProfit),
+          Iron: cityData.filter(city => Number(city.iron_mine || 0) > 0).map(city => ({ ...city, groupProfit: calculateGroupProfit(city, priceMap, 'Iron', city.cityPopulation) })).sort((a, b) => b.groupProfit - a.groupProfit),
+          Coal: cityData.filter(city => Number(city.coal_mine || 0) > 0).map(city => ({ ...city, groupProfit: calculateGroupProfit(city, priceMap, 'Coal', city.cityPopulation) })).sort((a, b) => b.groupProfit - a.groupProfit),
+          Lead: cityData.filter(city => Number(city.lead_mine || 0) > 0).map(city => ({ ...city, groupProfit: calculateGroupProfit(city, priceMap, 'Lead', city.cityPopulation) })).sort((a, b) => b.groupProfit - a.groupProfit),
+          Bauxite: cityData.filter(city => Number(city.bauxite_mine || 0) > 0).map(city => ({ ...city, groupProfit: calculateGroupProfit(city, priceMap, 'Bauxite', city.cityPopulation) })).sort((a, b) => b.groupProfit - a.groupProfit),
+          Oil: cityData.filter(city => Number(city.oil_refinery || 0) > 0).map(city => ({ ...city, groupProfit: calculateGroupProfit(city, priceMap, 'Oil', city.cityPopulation) })).sort((a, b) => b.groupProfit - a.groupProfit),
+          Uranium: cityData.filter(city => Number(city.uranium_mine || 0) > 0).map(city => ({ ...city, groupProfit: calculateGroupProfit(city, priceMap, 'Uranium', city.cityPopulation) })).sort((a, b) => b.groupProfit - a.groupProfit),
+          Food: cityData.filter(city => Number(city.farm || 0) + Number(city.supermarket || 0) > 0).map(city => ({ ...city, groupProfit: calculateGroupProfit(city, priceMap, 'Food', city.cityPopulation) })).sort((a, b) => b.groupProfit - a.groupProfit)
+        };
+        document.getElementById('meta').innerHTML = `<span class="pill">Nation: ${nation?.nation_name || 'Unknown'}</span><span class="pill">Cities: ${cities.length}</span><span class="pill">API: Politics & War</span>`;
+        const buildTable = (groupName, groupKey, items, isTopProfit) => {
+          const groupProfit = items.reduce((sum, city) => sum + Number(city.groupProfit || 0), 0);
+          const rows = items.map(city => {
+            let extraCells = '';
+            if (groupKey === 'Food') extraCells = `<td>${formatDecimal(city.farmOutputPerFarm)}</td><td>${formatDecimal(city.totalFarmFood)}</td>`;
+            if (groupKey === 'Steel') extraCells = `<td>${formatDecimal(city.steelOutputPerMill)}</td><td>${formatDecimal(city.totalSteel)}</td>`;
+            if (groupKey === 'Aluminum') extraCells = `<td>${formatDecimal(city.aluminumOutputPerRefinery)}</td><td>${formatDecimal(city.totalAluminum)}</td>`;
+            if (groupKey === 'Munitions') extraCells = `<td>${formatDecimal(city.munitionsOutputPerFactory)}</td><td>${formatDecimal(city.totalMunitions)}</td>`;
+            if (groupKey === 'Oil') extraCells = `<td>${formatDecimal(city.gasolineOutputPerRefinery)}</td><td>${formatDecimal(city.totalGasoline)}</td>`;
+            if (groupKey === 'Uranium') extraCells = `<td>${formatDecimal(city.uraniumOutputPerMine)}</td><td>${formatDecimal(city.totalUranium)}</td>`;
+            if (groupKey === 'Iron') extraCells = `<td>${formatDecimal(city.ironOutputPerMine)}</td><td>${formatDecimal(city.totalIron)}</td>`;
+            if (groupKey === 'Coal') extraCells = `<td>${formatDecimal(city.coalOutputPerMine)}</td><td>${formatDecimal(city.totalCoal)}</td>`;
+            if (groupKey === 'Lead') extraCells = `<td>${formatDecimal(city.leadOutputPerMine)}</td><td>${formatDecimal(city.totalLead)}</td>`;
+            if (groupKey === 'Bauxite') extraCells = `<td>${formatDecimal(city.bauxiteOutputPerMine)}</td><td>${formatDecimal(city.totalBauxite)}</td>`;
+            const cityCell = renderCityNameCell(city, trendHistoryMap[getTrendHistoryKey(city)]);
+            const netProfitCell = city.calcError ? `<span style="color:#ffb86b;font-weight:700">Error</span>` : formatMoney(city.profit);
+            return `<tr>${cityCell}<td>${formatMoney(city.groupProfit)}</td><td>${netProfitCell}</td><td>${formatNumber(city.infrastructure || 0)}</td><td>${city.powered ? 'Online' : 'Offline'}</td><td>${formatNumber(city.land || 0)}</td><td>${city.powered ? 'Powered' : 'Unpowered'}</td>${extraCells}</tr>`;
+          }).join('');
+          const headerExtra = groupKey === 'Food' ? '<th>Farm Output</th><th>Total Food</th>' :
+                              groupKey === 'Steel' ? '<th>Mill Output</th><th>Total Steel</th>' :
+                              groupKey === 'Aluminum' ? '<th>Refinery Output</th><th>Total Aluminum</th>' :
+                              groupKey === 'Munitions' ? '<th>Factory Output</th><th>Total Munitions</th>' :
+                              groupKey === 'Oil' ? '<th>Refinery Output</th><th>Total Gasoline</th>' :
+                              groupKey === 'Uranium' ? '<th>Mine Output</th><th>Total Uranium</th>' :
+                              groupKey === 'Iron' ? '<th>Mine Output</th><th>Total Iron</th>' :
+                              groupKey === 'Coal' ? '<th>Mine Output</th><th>Total Coal</th>' :
+                              groupKey === 'Lead' ? '<th>Mine Output</th><th>Total Lead</th>' :
+                              groupKey === 'Bauxite' ? '<th>Mine Output</th><th>Total Bauxite</th>' : '';
+          const borderStyle = isTopProfit ? 'border: 1px solid #facc15; box-shadow: 0 0 0 1px rgba(250,204,21,0.25), 0 0 18px rgba(250,204,21,0.15);' : '';
+          const groupHistory = items.map(city => trendHistoryMap[getTrendHistoryKey(city)] || []).flat();
+          const groupHeader = renderGroupHeader(groupName, groupHistory);
+          return `<div class="group" style="${borderStyle}"><h3>${groupName} <span style="color:#4ade80">${formatMoney(groupProfit)}</span>${groupHeader}</h3><table><thead><tr><th>City</th><th>${groupName} Profit</th><th>Infrastructure</th><th>Status</th><th>Land</th><th>Power</th>${headerExtra}</tr></thead><tbody>${rows}</tbody></table></div>`;
+        };
+        const sectionData = [
+          ['Steel Goods', 'Steel', manufacturedGroups.Steel],
+          ['Munitions', 'Munitions', manufacturedGroups.Munitions],
+          ['Aluminum Goods', 'Aluminum', manufacturedGroups.Aluminum],
+          ['Iron Goods', 'Iron', manufacturedGroups.Iron],
+          ['Coal Goods', 'Coal', manufacturedGroups.Coal],
+          ['Lead Goods', 'Lead', manufacturedGroups.Lead],
+          ['Bauxite Goods', 'Bauxite', manufacturedGroups.Bauxite],
+          ['Oil Goods', 'Oil', manufacturedGroups.Oil],
+          ['Uranium Goods', 'Uranium', manufacturedGroups.Uranium],
+          ['Food Goods', 'Food', manufacturedGroups.Food]
+        ].map(([name, key, items]) => ({ name, key, items, profit: items.reduce((sum, city) => sum + Number(city.groupProfit || 0), 0) })).sort((a, b) => b.profit - a.profit);
+        const topProfitValue = sectionData[0]?.profit || 0;
+        const totalGrossProfit = cityData.reduce((sum, city) => sum + Number(city.grossProfit || 0), 0);
+        const totalUpkeep = cityData.reduce((sum, city) => sum + Number(city.upkeep || 0), 0);
+        const overallHistory = Object.values(trendHistoryMap).flat();
+        const overallProjection = getTrendProjection(overallHistory);
+        const overallTrendColor = overallProjection.direction === 'up' ? '#4ade80' : overallProjection.direction === 'down' ? '#f87171' : '#7d8ca8';
+        const overallSpark = buildSparklineSvg(overallHistory, 90, 22, overallTrendColor);
+        const totalRow = `<div>Total Gross Profit: ${formatMoney(totalGrossProfit)}<br>Total Commerce Income: ${formatMoney(totalCommerceIncome)}<br>Total Upkeep: ${formatMoney(-totalUpkeep)}<br>Total Net Profit: ${formatMoney(totalNetProfit)}<br>Infrastructure: ${formatNumber(totalInfrastructure)} • Land: ${formatNumber(totalLand)}</div><div class="summary-trend"><span class="summary-trend-badge" style="color:${overallTrendColor}">${overallProjection.label}</span>${overallSpark}</div>`;
+        const sectionMarkup = sectionData.map(({ name, key, items, profit }) => buildTable(name, key, items, profit === topProfitValue && profit > 0)).join('');
+        const overviewCards = `<div class="war-grid"><div class="war-kpi"><span>Net Profit</span><strong>${formatMoney(totalNetProfit)}</strong></div><div class="war-kpi"><span>Gross Profit</span><strong>${formatMoney(totalGrossProfit)}</strong></div><div class="war-kpi"><span>Commerce Income</span><strong>${formatMoney(totalCommerceIncome)}</strong></div><div class="war-kpi"><span>Total Upkeep</span><strong>${formatMoney(-totalUpkeep)}</strong></div><div class="war-kpi"><span>Infrastructure</span><strong>${formatNumber(totalInfrastructure)}</strong></div></div>`;
+        const groupHighlights = `<div class="war-list">${sectionData.slice(0, 6).map(({ name, profit }) => `<div class="war-list-item"><span>${name}</span><strong>${formatMoney(profit)}</strong></div>`).join('')}</div>`;
+
+        // All Cities table with dominant resource icon and gross profit ranking
+        const allRows = cityData.map(city => {
+          const icon = city.dominantIcon ? `<img src="${city.dominantIcon}" alt="${city.dominantResource}" style="width:20px;height:20px;vertical-align:middle;margin-right:8px;border-radius:3px;">` : '';
+          const upkeep = Number(city.upkeep || 0);
+          const cityCell = renderCityNameCell(city, trendHistoryMap[getTrendHistoryKey(city)]);
+          const netProfitCell = city.calcError ? `<span style="color:#ffb86b;font-weight:700">Error</span>` : formatMoney(city.profit);
+          return `<tr>${cityCell.replace('<td>', `<td>${icon}`)}<td>${formatMoney(city.grossProfit)}</td><td>${netProfitCell}</td><td>${formatMoney(city.commerceIncome)}</td><td>${formatMoney(-upkeep)}</td><td>${formatNumber(city.infrastructure || 0)}</td><td>${city.powered ? 'Online' : 'Offline'}</td></tr>`;
+        }).join('');
+        const allCitiesTable = `<div class="group"><h3>All Cities by Gross Profit</h3><table><thead><tr><th>City</th><th>Gross Profit</th><th>Net Profit</th><th>Commerce Income (est)</th><th>Total Upkeep</th><th>Infrastructure</th><th>Status</th></tr></thead><tbody>${allRows}</tbody></table></div>`;
+
+        document.getElementById('summary').innerHTML = totalRow;
+        document.getElementById('content').innerHTML = `${overviewCards}${allCitiesTable}${sectionMarkup}`;
+        document.getElementById('groupsContent').innerHTML = `<div class="war-card"><h3>Resource Group Highlights</h3>${groupHighlights}</div>`;
+      } catch (error) {
+        document.getElementById('content').innerHTML = `<p>${error.message}</p>`;
+      } finally {
+        loadInFlight = false;
+      }
+    }
+    function activateWarTab(tabName) {
+      document.querySelectorAll('.war-tab').forEach((button) => {
+        const isActive = button.dataset.warTab === tabName;
+        button.classList.toggle('active', isActive);
+      });
+      document.querySelectorAll('.war-pane').forEach((pane) => {
+        pane.classList.toggle('hidden', pane.id !== `${tabName === 'groups' ? 'warGroupsPane' : 'warOverviewPane'}`);
+      });
+    }
+    document.querySelectorAll('.war-tab').forEach((button) => {
+      button.addEventListener('click', () => activateWarTab(button.dataset.warTab));
+    });
+    document.getElementById('openCitiesListBtn').addEventListener('click', () => {
+      window.open('cities-list.html', '_blank');
+    });
+    document.getElementById('viewTrendLogBtn').addEventListener('click', openTrendLogModal);
+    document.getElementById('closeTrendLogBtn').addEventListener('click', closeTrendLogModal);
+    document.getElementById('trendLogModal').addEventListener('click', (event) => {
+      if (event.target.id === 'trendLogModal') closeTrendLogModal();
+    });
+    loadData();
+    setInterval(loadData, 60 * 1000);
+  </script>
+</body>
+</html>

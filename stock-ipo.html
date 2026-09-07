@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>STOCK IPO - Market Orders</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    body{background:#030717;color:#eaf2ff;font-family:Space Grotesk, sans-serif;margin:0;padding:28px}
+    .wrap{max-width:1200px;margin:0 auto}
+    header{display:flex;justify-content:space-between;align-items:center}
+    h1{letter-spacing:0.12em}
+    .live{display:inline-flex;gap:8px;align-items:center}
+    .dot{width:10px;height:10px;border-radius:50%;background:#6dd0ad}
+    .grid{display:grid;grid-template-columns:1fr 420px;gap:18px;margin-top:18px}
+    .panel{background:rgba(6,12,20,0.9);padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.03)}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:8px;border-bottom:1px solid rgba(255,255,255,0.04);font-size:13px}
+    th{color:#9fb0c8;text-transform:uppercase;font-size:11px}
+    .muted{color:#9fb0c8}
+    .tag{padding:6px 8px;border-radius:8px;background:rgba(209,173,74,0.06);color:#d1ad4a}
+    #orders-list{max-height:720px;overflow:auto}
+    .controls{display:flex;gap:8px;align-items:center}
+    .resource-filter{display:flex;gap:6px;flex-wrap:wrap}
+    .btn{padding:6px 10px;border-radius:8px;background:transparent;border:1px solid rgba(255,255,255,0.04);color:#cfe8ff}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>STOCK IPO — Live Market Orders</h1>
+        <div class="muted">Live polling of buy & sell orders for each resource (uses P&amp;W GraphQL where available)</div>
+      </div>
+      <div class="live">
+        <div class="dot"></div>
+        <div id="last-update" class="muted">Last update: pending</div>
+      </div>
+    </header>
+
+    <div class="grid">
+      <div class="panel">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <div class="controls">
+            <button id="refresh-now" class="btn">Refresh now</button>
+            <button id="download-json" class="btn">Download JSON</button>
+            <label style="margin-left:8px;color:#9fb0c8">Poll interval:</label>
+            <select id="poll-interval" style="background:transparent;color:#cfe8ff;border:1px solid rgba(255,255,255,0.04);padding:6px 8px;border-radius:6px;">
+              <option value="5000">5s</option>
+              <option value="10000" selected>10s</option>
+              <option value="30000">30s</option>
+              <option value="60000">60s</option>
+            </select>
+          </div>
+          <div>
+            <label class="muted">Resources:</label>
+            <div class="resource-filter" id="resource-filter"></div>
+          </div>
+        </div>
+
+        <div id="orders-list"></div>
+      </div>
+
+      <div class="panel" id="order-detail">
+        <h3 style="margin-top:0">Order Detail</h3>
+        <div id="detail-body" class="muted">Select an order to view details here.</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="market-utils.js"></script>
+  <script src="stock-ipo.js"></script>
+</body>
+</html>

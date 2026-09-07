@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Cities List</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root{color-scheme:dark;--space:#0d1a1b;--space-deep:#061011;--panel:#122123;--panel-raised:#1a3030;--ink:#effcf6;--muted:#9eb8b2;--blue:#79d9e1;--mint:#87e7ad;--coral:#f5c875;--line:#2d4a48;--line-bright:#5c827b;--loss:#ff928b;--warm:#d7b681}
+    *{box-sizing:border-box}
+    body{--period-label:'day';font-family:"Manrope","Segoe UI",sans-serif;background:var(--space-deep);color:var(--ink);margin:0;padding:34px 24px;min-height:100vh;position:relative;isolation:isolate;overflow-x:hidden}
+    .visual-backdrop{position:fixed;inset:0;z-index:0;overflow:hidden;background:#060d10;pointer-events:none}
+    .visual-backdrop::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(6,16,17,.48),rgba(6,16,17,.72));pointer-events:none}
+    .visual-backdrop img{position:absolute;inset:-4%;width:108%;height:108%;object-fit:cover;opacity:0;filter:saturate(.72) brightness(.5);transform:scale(1.02);transition:opacity 1.4s ease,transform 10s ease}
+    .visual-backdrop img.active{opacity:.3;transform:scale(1.08)}
+    .wrap{max-width:1360px;margin:0 auto;position:relative;z-index:1}
+    .wrap::before{content:'NMR  /  NATIONAL LIFE SYSTEMS';display:block;color:var(--warm);font-family:"IBM Plex Mono",Consolas,monospace;font-size:.63rem;letter-spacing:.12em;margin-bottom:24px}
+    .visual-strip{position:relative;height:96px;margin:16px 0 22px;overflow:hidden;border:1px solid var(--line-bright);border-left:4px solid var(--mint);border-radius:14px;background:#0b1518;box-shadow:0 12px 30px rgba(0,0,0,.22)}
+    .visual-strip img{width:100%;height:100%;object-fit:cover;opacity:.72;filter:saturate(1.1) brightness(.95);animation:signalDrift 12s ease-in-out infinite alternate}
+    .visual-strip::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,rgba(6,13,16,.68),rgba(6,13,16,.08),rgba(6,13,16,.38));pointer-events:none}
+    .visual-strip-label{position:absolute;z-index:1;left:18px;top:50%;transform:translateY(-50%);color:var(--ink);font:800 .72rem/1.5 "Cascadia Mono",Consolas,monospace;letter-spacing:.12em;text-transform:uppercase}.visual-strip-label span{display:block;color:var(--mint);font-size:.6rem;margin-top:4px}
+    @keyframes signalDrift{from{transform:scale(1.02) translateX(-1%)}to{transform:scale(1.1) translateX(1%)}}
+    a.back{color:var(--blue);text-decoration:none;display:inline-flex;align-items:center;gap:8px;margin-bottom:20px;font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+    a.back::before{content:'←';font-size:1rem}
+    h1{font-family:"Manrope","Segoe UI",sans-serif;color:var(--ink);font-size:clamp(2.5rem,6vw,4.2rem);letter-spacing:-.04em;line-height:1.02;font-weight:800;margin:0 0 8px}
+    h1::after{content:'  /  NATIONAL VITAL SIGNS';color:var(--coral);font-family:"IBM Plex Mono",Consolas,monospace;font-size:.58rem;letter-spacing:.1em;vertical-align:middle}
+    #status{color:var(--muted);font-family:"Cascadia Mono",Consolas,monospace;font-size:.7rem;border-left:2px solid var(--blue);padding-left:10px;margin-bottom:22px}
+    #tableWrap{overflow-x:auto;border:1px solid var(--line);border-radius:18px;background:var(--panel);box-shadow:0 20px 60px rgba(0,0,0,.28)}
+    table{width:100%;min-width:1180px;border-collapse:collapse;background:var(--panel)}
+    th,td{padding:14px 13px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+    th{color:var(--muted);background:#172526;font-family:"IBM Plex Mono",Consolas,monospace;font-size:.61rem;letter-spacing:.1em;text-transform:uppercase;white-space:nowrap}
+    td{font-family:"IBM Plex Mono",Consolas,monospace;font-size:.76rem;font-variant-numeric:tabular-nums;line-height:1.6}
+    tbody tr:not(.city-detail):nth-child(even) td{background:#0f1114}
+    tbody tr:not(.city-detail):hover td{background:#1c252c}
+    .city-link{color:var(--blue);font-family:"Manrope","Segoe UI",sans-serif;font-size:.9rem;font-weight:800}
+    .toolbar{display:flex;flex-wrap:wrap;gap:9px;margin:18px 0 12px;padding:13px;border:1px solid var(--line);border-radius:18px;background:rgba(16,28,33,.9);box-shadow:0 12px 30px rgba(0,0,0,.16)}
+    .toolbar select,.toolbar input,.toolbar button{box-sizing:border-box;border:1px solid var(--line-bright);border-radius:12px;background:#0d1217;color:var(--ink);padding:11px 13px;font:inherit;font-size:.76rem;min-height:42px}
+    .toolbar select:focus,.toolbar input:focus{outline:2px solid var(--blue);outline-offset:1px}
+    .toolbar button{cursor:pointer;background:var(--blue);border-color:var(--blue);color:#071017;font-weight:800}
+    .toolbar button:hover{background:#c2edff;border-color:#c2edff}
+    .period-toggle{display:inline-flex;gap:4px;padding:4px;border:1px solid var(--line-bright);border-radius:12px;background:#0d1217;min-height:42px}
+    .period-toggle button{border:0;border-radius:8px;background:transparent;color:var(--muted);padding:7px 10px;min-height:32px}
+    .period-toggle button.active{background:var(--blue);color:#071017}
+    .summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:16px 0}
+    .summary-card{min-width:0;padding:15px;border:1px solid var(--line);border-radius:14px;background:rgba(23,39,45,.92);box-shadow:inset 0 1px 0 rgba(255,255,255,.03)}
+    .summary-card:nth-child(1){border-top:2px solid var(--blue)}.summary-card:nth-child(2){border-top:2px solid var(--coral)}.summary-card:nth-child(3){border-top:2px solid var(--muted)}.summary-card:nth-child(4){border-top:2px solid var(--mint)}
+    .summary-label{display:block;color:var(--muted);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;margin-bottom:7px}
+    .summary-value{font-family:"IBM Plex Mono",Consolas,monospace;font-size:1.05rem;font-weight:600}
+    .market-note{color:var(--muted);font-size:.7rem;margin:6px 0 8px}
+    .profit-positive{color:var(--mint)}.profit-negative{color:var(--loss)}
+    .expand-button{border:1px solid var(--coral);border-radius:9px;background:#241d16;color:var(--coral);cursor:pointer;font-size:.8rem;line-height:1.1;margin-right:6px;width:24px;height:24px}
+    .city-detail td{padding:15px;background:#17272d;font-size:.72rem}
+    .city-detail.hidden{display:none}
+    .detail-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+    .detail-grid>div{padding:11px;border-left:2px solid var(--blue);border-radius:9px;background:#111820}
+    .detail-grid strong{color:var(--blue)}
+    .detail-lead{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px;padding:12px;border:1px solid var(--line-bright);border-radius:12px;background:#202a35}
+    .detail-lead strong{display:block;color:var(--muted);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px}
+    .detail-lead span{font-family:"Cascadia Mono",Consolas,monospace;font-size:1rem;font-weight:700}
+    .sparkline{width:120px;height:32px;display:block;background:#0a0c0f;border:1px solid #252c32;border-bottom:1px solid var(--mint);border-radius:4px}
+    .dependency-sparkline{width:180px;height:38px;display:block;background:#0a0c0f;border:1px solid #252c32;border-bottom:1px solid var(--blue);border-radius:4px;margin-top:6px}
+    .history-note{color:var(--muted);font-size:.74rem;margin:8px 0 12px}
+    .life-brief{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:20px 0 14px}
+    .life-organ{padding:14px 16px;border:1px solid var(--line);border-radius:12px;background:rgba(18,39,39,.86)}
+    .life-organ strong{display:block;color:var(--mint);font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;margin-bottom:5px}
+    .life-organ span{display:none}
+    .life-organ::before{content:'';display:block;width:34px;height:3px;margin-bottom:12px;background:var(--coral);border-radius:3px;animation:organPulse 2.8s ease-in-out infinite}
+    @keyframes organPulse{0%,100%{width:22px;opacity:.45}50%{width:70px;opacity:1}}
+    .regional-pattern{padding:16px 18px;margin:20px 0 16px;border:1px solid var(--line);border-left:3px solid var(--mint);border-radius:12px;background:rgba(18,39,39,.88)}
+    .regional-pattern h2{margin:0 0 5px;font-size:.86rem;letter-spacing:.08em;text-transform:uppercase;color:var(--mint)}
+    .regional-pattern p{margin:0;color:var(--muted);font-size:.84rem;line-height:1.55}.regional-pattern strong{color:var(--ink)}
+    .city-type{display:inline-block;margin:6px 0 0;padding:3px 7px;border:1px solid currentColor;border-radius:999px;font:600 .62rem "IBM Plex Mono",Consolas,monospace;letter-spacing:.04em;line-height:1.2}
+    .city-type.self{color:var(--mint)}.city-type.intercity{color:var(--blue)}.city-type.global{color:var(--coral)}
+    .city-self{border-top-color:var(--mint)}.city-intercity{border-top-color:var(--blue)}.city-global{border-top-color:var(--coral)}
+    .page-enter{animation:pageEnter .8s cubic-bezier(.2,.75,.25,1) both}
+    @keyframes pageEnter{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+    @media (prefers-reduced-motion:reduce){.visual-backdrop img,.page-enter{transition:none;animation:none}.visual-backdrop img.active{transform:none}}
+    @media (max-width:700px){
+      body{padding:16px 12px}
+      h1{font-size:1.7rem;margin:12px 0 4px}
+      .wrap{width:100%}
+      #status{font-size:.85rem;color:#aab6d3;margin-bottom:10px}
+      #tableWrap{border:0;box-shadow:none;background:transparent;overflow:visible}
+      table,tbody{display:block;width:100%;background:transparent;border:0;overflow:visible;min-width:0}
+      thead{display:none}
+      tr{display:block;margin-bottom:12px;padding:10px 11px;background:var(--panel);border:1px solid var(--line);border-top:3px solid var(--blue);border-radius:14px}
+      tr:hover td{background:transparent}
+      td{display:grid;grid-template-columns:42% 58%;gap:8px;padding:7px 0;border-bottom:1px solid var(--line);font-size:.78rem;overflow-wrap:anywhere}
+      td:last-child{border-bottom:0}
+      td::before{color:var(--muted);font-size:.66rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;align-self:start}
+      td:nth-child(1)::before{content:'City'}
+      td:nth-child(2)::before{content:'Infrastructure'}
+      td:nth-child(3)::before{content:'Land'}
+      td:nth-child(4)::before{content:'Production / ' var(--period-label)}
+      td:nth-child(5)::before{content:'Resource use / ' var(--period-label)}
+      td:nth-child(6)::before{content:'Production value / ' var(--period-label)}
+      td:nth-child(7)::before{content:'Consumption cost / ' var(--period-label)}
+      td:nth-child(8)::before{content:'Net profit / ' var(--period-label)}
+      td:nth-child(9)::before{content:'Operating cost / ' var(--period-label)}
+      td:nth-child(10)::before{content:'Best resource'}
+      td:nth-child(11)::before{content:'Worst resource'}
+      td:nth-child(12)::before{content:'Profit history'}
+      td:nth-child(4),td:nth-child(5),td:nth-child(9),td:nth-child(10),td:nth-child(11),td:nth-child(12){display:none}
+      td:nth-child(6),td:nth-child(7),td:nth-child(8){font-size:.82rem;font-weight:600}
+      td:nth-child(4),td:nth-child(5){line-height:1.45}
+      .city-link{font-size:.95rem}
+      .summary{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .life-brief{grid-template-columns:1fr;gap:8px;margin:16px 0 12px}
+      .life-organ{padding:12px 14px}
+      .toolbar>*{flex:1 1 140px;min-width:0}
+      .period-toggle{flex:1 1 100%;}
+      .period-toggle button{flex:1}
+      .detail-grid{grid-template-columns:1fr}
+      .detail-lead{grid-template-columns:1fr}
+      .city-detail td{display:block}
+    }
+  </style>
+</head>
+<body>
+  <div class="visual-backdrop" id="visualBackdrop" aria-hidden="true">
+    <img class="active" src="images/market-grid.svg" alt="">
+    <img src="images/price-pulse.svg" alt="">
+    <img src="images/supply-network.svg" alt="">
+    <img src="images/industrial-horizon.svg" alt="">
+    <img src="images/mint-ledger.svg" alt="">
+    <img src="images/amber-forecast.svg" alt="">
+    <img src="images/cyan-terminal.svg" alt="">
+    <img src="images/resource-rings.svg" alt="">
+    <img src="images/downtrend-watch.svg" alt="">
+    <img src="images/city-matrix.svg" alt="">
+    <img src="images/golden-spread.svg" alt="">
+    <img src="images/stable-market.svg" alt="">
+    <img src="images/alliance-flow.svg" alt="">
+    <img src="images/data-radar.svg" alt="">
+    <img src="images/night-exchange.svg" alt="">
+  </div>
+  <div class="wrap page-enter">
+    <a class="back" href="cities-hud.html">← Back to Cities HUD</a>
+    <h1>Cities List</h1>
+    <div class="visual-strip"><img id="visualFeature" src="images/market-grid.svg" alt=""><div class="visual-strip-label">LIVE MARKET SIGNAL<span>Production / consumption intelligence</span></div></div>
+    <div id="status">Loading...</div>
+    <div class="life-brief" aria-label="National life systems">
+      <div class="life-organ"><strong>Circulation</strong></div>
+      <div class="life-organ"><strong>Metabolism</strong></div>
+      <div class="life-organ"><strong>Reserves</strong></div>
+    </div>
+    <section class="regional-pattern" id="regionalPattern" aria-live="polite"><h2>Regional pattern</h2><p>Mapping how each city is fed, supported, and sustained...</p></section>
+    <div class="toolbar">
+      <select id="sortBy" aria-label="Sort cities"><option value="operatingCost">Most expensive to operate</option><option value="netProfit">Highest net profit</option><option value="productionValue">Highest production value</option><option value="consumptionCost">Highest daily resource demand</option><option value="name">City name</option></select>
+      <select id="resourceFilter" aria-label="Filter by resource"><option value="all">All resources</option></select>
+      <input id="citySearch" type="search" placeholder="Search cities" aria-label="Search cities" />
+      <button id="exportCsv" type="button">Export CSV</button>
+      <div class="period-toggle" role="group" aria-label="Value display period">
+        <button type="button" data-period="turn" aria-pressed="false">Per Turn</button>
+        <button type="button" data-period="day" class="active" aria-pressed="true">Per Day</button>
+      </div>
+    </div>
+    <div class="summary" id="summary"></div>
+    <div class="market-note" id="marketNote"></div>
+    <div class="history-note" id="historyNote">Historical tracking is loading...</div>
+    <div id="tableWrap"></div>
+  </div>
+  <script>
+    const API_KEY = '5bc5a81f4c67e52b148c';
+    const NATION_ID = Number(new URLSearchParams(window.location.search).get('nationId')) || 768640;
+    const TURNS_PER_DAY = 12;
+    const GLOBAL_WAR_START = new Date('2026-12-01T00:00:00');
+    const RESOURCE_TYPES = ['food', 'coal', 'oil', 'uranium', 'iron', 'bauxite', 'lead', 'gasoline', 'munitions', 'steel', 'aluminum'];
+    const POPULATION_RESOURCE_USE_PER_TURN = { food: 662.24 / 4186213, coal: 26.63 / 4186213, oil: 70.25 / 4186213, iron: 26.63 / 4186213 };
+    const POWER_RESOURCE_USE_PER_INFRA_PER_TURN = { oil: 0.001, uranium: 0.00025 };
+    const IMPORT_ONLY_RESOURCES = new Set(['oil', 'bauxite', 'lead']);
+    const IMPORT_ONLY_FACILITIES = new Set(['oil_well', 'bauxite_mine', 'lead_mine']);
+    const OPERATING_COSTS = { coal_power: 120, oil_power: 180, nuclear_power: 10500, wind_power: 500, farm: 300, supermarket: 600, bank: 1800, stadium: 12150, shopping_mall: 5400, subway: 3250, iron_mine: 1600, coal_mine: 400, uranium_mine: 5000, steel_mill: 4000, oil_refinery: 4000, aluminum_refinery: 2500, munitions_factory: 3500, police_station: 750, hospital: 1000, recycling_center: 2500, barracks: 1500, factory: 0, hangar: 0, drydock: 0 };
+    const BUILDING_LIMITS = { farm: 20, supermarket: 4, bank: 5, stadium: 3, shopping_mall: 4, subway: 1, lead_mine: 10, iron_mine: 10, bauxite_mine: 10, coal_mine: 10, oil_well: 10, uranium_mine: 5, steel_mill: 5, oil_refinery: 5, aluminum_refinery: 5, munitions_factory: 5, police_station: 5, hospital: 5, recycling_center: 3, barracks: 5, factory: 5, hangar: 5, drydock: 3 };
+    const FACILITIES = {
+      farm: { resource: 'food', output: city => (Number(city.land) || 0) / 500 },
+      lead_mine: { resource: 'lead', output: city => bonusOutput(0.25, city.lead_mine, 10) },
+      iron_mine: { resource: 'iron', output: city => bonusOutput(0.25, city.iron_mine, 10) },
+      bauxite_mine: { resource: 'bauxite', output: city => bonusOutput(0.25, city.bauxite_mine, 10) },
+      coal_mine: { resource: 'coal', output: city => bonusOutput(0.25, city.coal_mine, 10) },
+      oil_well: { resource: 'oil', output: city => bonusOutput(0.25, city.oil_well, 10) },
+      uranium_mine: { resource: 'uranium', output: city => bonusOutput(0.25, city.uranium_mine, 5) },
+      steel_mill: { resource: 'steel', output: () => 0.75, inputs: { iron: 1, coal: 1 } },
+      oil_refinery: { resource: 'gasoline', output: () => 0.5, inputs: { oil: 1 } },
+      aluminum_refinery: { resource: 'aluminum', output: () => 0.75, inputs: { bauxite: 1 } },
+      munitions_factory: { resource: 'munitions', output: () => 1.5, inputs: { lead: 1 } }
+    };
+    const BUILDING_DATA_SOURCE = 'building data/ (reference images: civil, commerce, manufacturing, military, power plants, raw resources)';
+    let rankedCities = [];
+    let marketStats = {};
+    let historyByCity = {};
+    let historyDbPromise;
+    let refreshTimer;
+    let displayPeriod = 'day';
+    const REFRESH_INTERVAL_MS = 60 * 1000;
+    function getStrategyMode(){ return new Date() >= GLOBAL_WAR_START ? 'war' : 'peace'; }
+    function getStrategyLabel(){ return getStrategyMode() === 'war' ? 'WAR ECONOMY / ALUMINUM ALLIANCE SUPPLY' : 'PEACE ECONOMY / GASOLINE ALLIANCE SUPPLY'; }
+    function getStrategicResourceValue(resource){
+      if (getStrategyMode() === 'war') return resource === 'aluminum' ? 1.35 : resource === 'steel' ? 1.1 : resource === 'gasoline' ? 0.35 : 0;
+      return resource === 'gasoline' ? 1.35 : resource === 'steel' ? 1.1 : resource === 'aluminum' ? 0.25 : 0;
+    }
+    function getProtectedFacilities(){ return getStrategyMode() === 'war' ? new Set(['steel_mill', 'aluminum_refinery']) : new Set(['steel_mill', 'oil_refinery']); }
+    function formatStaticMoney(v){const n=Number(v);return Number.isFinite(n)?`$${n.toLocaleString(undefined,{maximumFractionDigits:2})}`:'—'}
+    function formatMoney(v){return formatStaticMoney(Number(v) / periodScale())}
+    function formatNumber(v){const n=Number(v);return Number.isFinite(n)?n.toLocaleString(undefined,{maximumFractionDigits:2}):'—'}
+    function periodScale(){return displayPeriod === 'day' ? 1 : TURNS_PER_DAY}
+    function periodLabel(){return displayPeriod === 'day' ? 'day' : 'turn'}
+    function periodMoney(v){return formatMoney(v)}
+    function periodNumber(v){return formatNumber(Number(v) / periodScale())}
+    function periodUnits(v){return `${periodNumber(v)} units/${periodLabel()}`}
+    function sortMarketRowsNewestFirst(rows){return (Array.isArray(rows) ? rows : []).slice().sort((left, right) => (Date.parse(right?.date || '') || 0) - (Date.parse(left?.date || '') || 0))}
+    function getLatestMarketRow(rows){return sortMarketRowsNewestFirst(rows)[0] || {}}
+    function normalizeCityLabel(value){return String(value || '').replace(/&[^;]+;/g, ' ').replace(/\s+\d+(?:\.\d+)?\s*days?/gi, '').replace(/[^a-z0-9 ]/gi, ' ').replace(/\s+/g, ' ').trim().toLowerCase()}
+    const SHEET_STAT_KEYS = {
+      'infrastructure':'infrastructure', 'land':'land', 'population':'city_population', 'disease':'disease', 'crime':'crime', 'pollution':'pollution', 'commerce':'sheetCommerce', 'powered':'powered',
+      'coal power plant':'coal_power', 'oil power plant':'oil_power', 'nuclear power plant':'nuclear_power', 'wind power plant':'wind_power',
+      'iron mine':'iron_mine', 'oil well':'oil_well', 'coal mine':'coal_mine', 'bauxite mine':'bauxite_mine', 'lead mine':'lead_mine', 'uranium mine':'uranium_mine', 'farm':'farm',
+      'oil refinery':'oil_refinery', 'steel mill':'steel_mill', 'aluminum refinery':'aluminum_refinery', 'munitions factory':'munitions_factory',
+      'police station':'police_station', 'hospital':'hospital', 'recycling center':'recycling_center', 'subway':'subway', 'supermarket':'supermarket', 'bank':'bank', 'shopping mall':'shopping_mall', 'stadium':'stadium',
+      'barracks':'barracks', 'factory':'factory', 'hangar':'hangar', 'drydock':'drydock'
+    };
+    async function fetchCitySheetStats(){
+      try{
+        const url = 'https://docs.google.com/spreadsheets/d/1KlXsnU_OEzTpefr3bPHqs8YAT3MlqaT3X-ITxrIE6ys/gviz/tq?gid=1972996458&tqx=out:json&range=A1:Z50';
+        const text = await fetch(url).then(response => response.text());
+        const match = text.match(/google\.visualization\.Query\.setResponse\(([^]+)\);?/);
+        if (!match) return {};
+        const data = JSON.parse(match[1]);
+        const headers = (data.table?.cols || []).map(column => normalizeCityLabel(column.label));
+        const rows = data.table?.rows || [];
+        const values = {};
+        rows.forEach(entry => {
+          const metric = normalizeCityLabel(entry.c?.[1]?.v);
+          const key = SHEET_STAT_KEYS[metric];
+          if (!key) return;
+          headers.forEach((header, index) => {
+            if (index > 1 && header) values[header] = { ...(values[header] || {}), [key]: Number(entry.c?.[index]?.v) || 0 };
+          });
+        });
+        return values;
+      }catch(error){
+        console.warn('City crime/disease sheet unavailable.', error);
+        return {};
+      }
+    }
+    function bonusOutput(base, count, maxCount){const safeCount=Math.min(Math.max(Number(count)||0,0),maxCount);return base*(1+(safeCount/maxCount)*0.5)}
+    function calculateCity(city, prices){
+      const production = {}, consumption = {}, manufacturingConsumption = {};
+      let productionValue = 0, inputCost = 0, operatingCost = 0;
+      Object.entries(FACILITIES).forEach(([key, facility]) => {
+        const count = Number(city[key]) || 0;
+        if (!count) return;
+        const units = count * facility.output(city) * TURNS_PER_DAY;
+        production[facility.resource] = (production[facility.resource] || 0) + units;
+        productionValue += units * (Number(prices[facility.resource]) || 0);
+        Object.entries(facility.inputs || {}).forEach(([resource, perTurn]) => {
+          const unitsConsumed = count * perTurn * TURNS_PER_DAY;
+          manufacturingConsumption[resource] = (manufacturingConsumption[resource] || 0) + unitsConsumed;
+          consumption[resource] = (consumption[resource] || 0) + unitsConsumed;
+          inputCost += unitsConsumed * (Number(prices[resource]) || 0);
+        });
+      });
+      const population = Number(city.city_population || city.population || 0);
+      const populationConsumption = {};
+      Object.entries(POPULATION_RESOURCE_USE_PER_TURN).forEach(([resource, rate]) => {
+        const units = population * rate * TURNS_PER_DAY;
+        populationConsumption[resource] = units;
+        consumption[resource] = (consumption[resource] || 0) + units;
+      });
+      const powerConsumption = {};
+      Object.entries({ oil_power: 'oil', nuclear_power: 'uranium' }).forEach(([building, resource]) => {
+        const units = (Number(city[building]) || 0) * (Number(city.infrastructure) || 0) * (POWER_RESOURCE_USE_PER_INFRA_PER_TURN[resource] || 0) * TURNS_PER_DAY;
+        if (units > 0) { powerConsumption[resource] = units; consumption[resource] = (consumption[resource] || 0) + units; }
+      });
+      const consumptionCost = Object.entries(consumption).reduce((sum, [resource, units]) => sum + units * (Number(prices[resource]) || 0), 0);
+      Object.entries(OPERATING_COSTS).forEach(([key, cost]) => operatingCost += (Number(city[key]) || 0) * cost);
+      const commerceRate = Math.min(100,
+        (Number(city.supermarket) || 0) * 4 +
+        (Number(city.bank) || 0) * 6 +
+        (Number(city.shopping_mall) || 0) * 8 +
+        (Number(city.stadium) || 0) * 10 +
+        (Number(city.subway) || 0) * 8);
+      const crimeRate = Math.min(1, Math.max(0, Number(city.crime) || 0));
+      const diseaseRate = Math.min(1, Math.max(0, Number(city.disease) || 0));
+      const cityIncome = (((commerceRate / 50) * 0.725) + 0.725) * population;
+      const commerceIncome = cityIncome * (1 - crimeRate) * (1 - diseaseRate);
+      const resourceBalances = Object.keys({ ...production, ...consumption }).map(resource => ({ resource, produced: production[resource] || 0, consumed: consumption[resource] || 0, net: (production[resource] || 0) - (consumption[resource] || 0), price: Number(prices[resource]) || 0 }));
+      const grossRevenue = productionValue + commerceIncome;
+      const totalExpenses = consumptionCost + operatingCost;
+      return { production, consumption, manufacturingConsumption, populationConsumption, powerConsumption, resourceBalances, productionValue, consumptionCost, inputCost, operatingCost, grossRevenue, totalExpenses, profitMargin: grossRevenue ? (grossRevenue - totalExpenses) / grossRevenue : 0, netProfit: grossRevenue - totalExpenses, commerceIncome, commerceRate, crimeRate, diseaseRate, population };
+    }
+    function getMarketStats(rows){
+      const stats = {};
+      const resources = RESOURCE_TYPES;
+      resources.forEach(resource => {
+        const values = rows.map(row => Number(row[resource])).filter(Number.isFinite);
+        const current = values[0] || 0;
+        const average = values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : 0;
+        const volatility = average ? Math.sqrt(values.reduce((sum, value) => sum + (value - average) ** 2, 0) / values.length) / average : 0;
+        stats[resource] = { current, average, volatility };
+      });
+      return stats;
+    }
+    function getBestNextFacility(item){
+      const candidates = Object.keys(FACILITIES).filter(key => {
+        const limit = BUILDING_LIMITS[key];
+        return !IMPORT_ONLY_FACILITIES.has(key) && (!Number.isFinite(limit) || Number(item.cityWithPopulation[key] || 0) < limit);
+      }).map(key => {
+        const nextCity = { ...item.cityWithPopulation, [key]: (Number(item.cityWithPopulation[key]) || 0) + 1 };
+        const next = calculateCity(nextCity, item.prices);
+        return { key, delta: next.netProfit - item.totals.netProfit };
+      }).sort((left, right) => right.delta - left.delta);
+      return candidates[0] || { key: 'None', delta: 0 };
+    }
+    function getPriceSensitivity(item){
+      return [-50, -25, -10, 10, 25, 50].map(percent => {
+        const factor = 1 + percent / 100;
+        const adjustedPrices = Object.fromEntries(Object.entries(item.prices).map(([key, value]) => [key, Number(value) * factor]));
+        return { percent, netProfit: calculateCity(item.cityWithPopulation, adjustedPrices).netProfit };
+      });
+    }
+    function getBuildingRecommendation(item){
+      const currentProfit = item.totals.netProfit;
+      const protectedFacilities = getProtectedFacilities();
+      const occupied = Object.keys(FACILITIES).filter(key => !IMPORT_ONLY_FACILITIES.has(key) && !protectedFacilities.has(key) && (Number(item.cityWithPopulation[key]) || 0) > 0);
+      if (!occupied.length) return { text: 'No production buildings are currently available to remove.' };
+      let best = null;
+      const excludedAtLimit = new Set();
+      occupied.forEach(removeKey => {
+        const afterRemoveCity = { ...item.cityWithPopulation, [removeKey]: (Number(item.cityWithPopulation[removeKey]) || 0) - 1 };
+        const afterRemove = calculateCity(afterRemoveCity, item.prices);
+        Object.keys(FACILITIES).filter(key => !IMPORT_ONLY_FACILITIES.has(key)).forEach(addKey => {
+          if (addKey === removeKey) return;
+          const limit = BUILDING_LIMITS[addKey];
+          if (Number.isFinite(limit) && Number(afterRemoveCity[addKey] || 0) >= limit) { excludedAtLimit.add(addKey); return; }
+          const afterReplaceCity = { ...afterRemoveCity, [addKey]: (Number(afterRemoveCity[addKey]) || 0) + 1 };
+          const afterReplace = calculateCity(afterReplaceCity, item.prices);
+          const profitChange = afterReplace.netProfit - currentProfit;
+          const strategicChange = Object.keys(FACILITIES).reduce((sum, key) => {
+            const resource = FACILITIES[key].resource;
+            if (!resource) return sum;
+            const beforeUnits = (item.totals.production[resource] || 0) - (item.totals.consumption[resource] || 0);
+            const afterUnits = (afterReplace.production[resource] || 0) - (afterReplace.consumption[resource] || 0);
+            return sum + (afterUnits - beforeUnits) * (Number(item.prices[resource]) || 0) * getStrategicResourceValue(resource);
+          }, 0);
+          const historyPenalty = Object.values(marketStats).reduce((sum, stats) => sum + (stats.volatility || 0), 0) > 0 ? Math.abs(strategicChange) * 0.1 : 0;
+          const score = profitChange + strategicChange - historyPenalty;
+          if (!best || score > best.score) best = { removeKey, addKey, afterRemove, afterReplace, improvement: profitChange, score, strategicChange };
+        });
+      });
+      if (!best) return { text: 'No legal one-for-one replacement is available: all eligible replacement buildings are at their city limits.' };
+      const label = key => key.replace(/_/g, ' ').replace(/\b\w/g, character => character.toUpperCase());
+      const changeLines = Object.keys({ ...best.afterReplace.production, ...best.afterReplace.consumption }).map(resource => {
+        const before = (item.totals.production[resource] || 0) - (item.totals.consumption[resource] || 0);
+        const after = (best.afterReplace.production[resource] || 0) - (best.afterReplace.consumption[resource] || 0);
+        const change = after - before;
+        return Math.abs(change) > 0.001 ? `${resource} net ${change >= 0 ? '+' : ''}${periodUnits(change)}` : '';
+      }).filter(Boolean).slice(0, 4).join(', ');
+      const reason = best.improvement > 0 ? `modeled net profit rises ${periodMoney(best.improvement)}/${periodLabel()}` : 'no tested one-for-one replacement improves modeled profit';
+      const limitsNote = excludedAtLimit.size ? ` Excluded at-limit buildings: ${[...excludedAtLimit].map(label).join(', ')}.` : '';
+      return { text: `Remove 1 ${label(best.removeKey)} and replace it with 1 ${label(best.addKey)}: ${reason}. Strategic score ${periodMoney(best.strategicChange)}/${periodLabel()} under ${getStrategyMode()} policy. Change: ${changeLines || 'no resource-flow change'}. The replacement stays within the ${BUILDING_LIMITS[best.addKey] || 'known'}-building city limit.${limitsNote} Protected alliance-flow buildings are not removed. This uses current prices plus historical volatility and should be reassessed after a market refresh.` };
+    }
+    function openHistoryDb(){
+      if (historyDbPromise) return historyDbPromise;
+      historyDbPromise = new Promise((resolve, reject) => {
+        const request = indexedDB.open('cityEconomicsHistory', 1);
+        request.onupgradeneeded = event => { const db = event.target.result; if (!db.objectStoreNames.contains('snapshots')) db.createObjectStore('snapshots', { keyPath: 'id', autoIncrement: true }); };
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+      return historyDbPromise;
+    }
+    async function getCityHistory(cityId){
+      const db = await openHistoryDb();
+      return new Promise((resolve, reject) => {
+        const request = db.transaction('snapshots', 'readonly').objectStore('snapshots').openCursor();
+        const rows = [];
+        request.onsuccess = event => { const cursor = event.target.result; if (cursor) { if (cursor.value.cityId === String(cityId)) rows.push(cursor.value); cursor.continue(); } else resolve(rows.sort((left, right) => left.ts - right.ts)); };
+        request.onerror = () => reject(request.error);
+      });
+    }
+    async function recordCitySnapshot(item){
+      const snapshot = { cityId: String(item.city.id || item.key), city: item.name, ts: Date.now(), production: item.totals.production, consumption: item.totals.consumption, prices: item.prices, productionValue: item.totals.productionValue, consumptionCost: item.totals.consumptionCost, operatingCost: item.totals.operatingCost, netProfit: item.totals.netProfit };
+      const previous = (historyByCity[snapshot.cityId] || []).at(-1);
+      const signature = JSON.stringify({ production: snapshot.production, consumption: snapshot.consumption, prices: snapshot.prices, productionValue: snapshot.productionValue, consumptionCost: snapshot.consumptionCost, operatingCost: snapshot.operatingCost, netProfit: snapshot.netProfit });
+      if (previous && previous.signature === signature) return false;
+      snapshot.signature = signature;
+      const db = await openHistoryDb();
+      await new Promise((resolve, reject) => { const transaction = db.transaction('snapshots', 'readwrite'); transaction.objectStore('snapshots').add(snapshot); transaction.oncomplete = resolve; transaction.onerror = () => reject(transaction.error); });
+      historyByCity[snapshot.cityId] = [...(historyByCity[snapshot.cityId] || []), snapshot];
+      return true;
+    }
+    function drawSparkline(canvas, values){
+      const ratio = window.devicePixelRatio || 1;
+      const width = canvas.clientWidth || 120;
+      const height = canvas.clientHeight || 32;
+      canvas.width = width * ratio; canvas.height = height * ratio;
+      const context = canvas.getContext('2d'); context.scale(ratio, ratio); context.clearRect(0, 0, width, height);
+      if (!values.length) return;
+      const min = Math.min(...values), max = Math.max(...values), range = Math.max(1, max - min);
+      context.strokeStyle = values.at(-1) >= 0 ? '#4ade80' : '#fb7185'; context.lineWidth = 1.5; context.beginPath();
+      values.forEach((value, index) => { const x = values.length === 1 ? width / 2 : index * (width - 4) / (values.length - 1) + 2; const y = height - 3 - ((value - min) / range) * (height - 6); if (index === 0) context.moveTo(x, y); else context.lineTo(x, y); });
+      context.stroke();
+    }
+    function renderSparklines(){ document.querySelectorAll('.sparkline').forEach(canvas => drawSparkline(canvas, (historyByCity[canvas.dataset.cityId] || []).map(snapshot => Number(snapshot.netProfit) || 0))); }
+    function renderDependencySparklines(){ document.querySelectorAll('.dependency-sparkline').forEach(canvas => { const item = rankedCities.find(city => String(city.city.id || city.key) === canvas.dataset.cityId); if (item) drawSparkline(canvas, getDependencyHistory(item)); }); }
+    async function loadHistory(){
+      await Promise.all(rankedCities.map(item => getCityHistory(item.city.id || item.key).then(history => { historyByCity[String(item.city.id || item.key)] = history; })));
+      document.getElementById('historyNote').textContent = `Tracking every changed snapshot locally for ${Object.values(historyByCity).reduce((sum, history) => sum + history.length, 0)} historical records. Next quiet refresh in 5 minutes.`;
+      renderSparklines();
+      renderDependencySparklines();
+    }
+    async function recordCurrentSnapshot(){
+      const changed = (await Promise.all(rankedCities.map(recordCitySnapshot))).some(Boolean);
+      if (changed) { document.getElementById('historyNote').textContent = `Historical tracking updated at ${new Date().toLocaleString()}. Records are stored locally on this device.`; renderSparklines(); renderDependencySparklines(); }
+    }
+    function getIntercityAnalysis(item){
+      const otherCities = rankedCities.filter(other => other.key !== item.key);
+      const flows = item.totals.resourceBalances.map(balance => {
+        const outsideProduction = otherCities.reduce((sum, other) => sum + (other.totals.production[balance.resource] || 0), 0);
+        const outsideConsumption = otherCities.reduce((sum, other) => sum + (other.totals.consumption[balance.resource] || 0), 0);
+        const outsideNet = outsideProduction - outsideConsumption;
+        const coveredUnits = Math.min(balance.consumed, outsideProduction);
+        const coverage = balance.consumed ? coveredUnits / balance.consumed : null;
+        const suppliers = otherCities.map(other => ({ name: other.name, units: other.totals.production[balance.resource] || 0 })).filter(supplier => supplier.units > 0).sort((left, right) => right.units - left.units).slice(0, 2);
+        return { resource: balance.resource, consumed: balance.consumed, outsideProduction, outsideConsumption, outsideNet, coverage, suppliers };
+      }).filter(flow => flow.consumed > 0 || flow.outsideProduction > 0);
+      return flows;
+    }
+    const CITY_TYPES = {
+      self: { label: 'Self-sustaining', className: 'self' },
+      intercity: { label: 'Inter-city dependent', className: 'intercity' },
+      global: { label: 'Global-market dependent', className: 'global' }
+    };
+    function classifyCityType(item, allCities){
+      const otherCities = allCities.filter(other => other.key !== item.key);
+      let hasDeficit = false;
+      let fullyCoveredByCities = true;
+      item.totals.resourceBalances.forEach(balance => {
+        if (balance.consumed <= 0) return;
+        const ownDeficit = Math.max(0, balance.consumed - balance.produced);
+        if (!ownDeficit) return;
+        hasDeficit = true;
+        const outsideProduction = otherCities.reduce((sum, other) => sum + (other.totals.production[balance.resource] || 0), 0);
+        if (outsideProduction + 0.001 < ownDeficit) fullyCoveredByCities = false;
+      });
+      if (!hasDeficit) return CITY_TYPES.self;
+      return fullyCoveredByCities ? CITY_TYPES.intercity : CITY_TYPES.global;
+    }
+    function cityTypeBadgeFor(item){
+      const type = classifyCityType(item, rankedCities);
+      const badge = `<span class="city-type ${type.className}">${type.label}</span>`;
+      return type.className === 'global' ? `<a href="city-classifications.html?focus=${encodeURIComponent(item.city.id || item.key)}" title="View all city classifications and dependency web">${badge}</a>` : badge;
+    }
+    function renderRegionalPattern(items){
+      const counts = Object.fromEntries(Object.keys(CITY_TYPES).map(type => [type, 0]));
+      items.forEach(item => { const type = classifyCityType(item, items); const key = Object.keys(CITY_TYPES).find(candidate => CITY_TYPES[candidate] === type); counts[key] += 1; });
+      const ordered = Object.entries(counts).sort((left, right) => right[1] - left[1]);
+      const [leader, leaderCount] = ordered[0] || ['self', 0];
+      const tied = ordered.filter(([, count]) => count === leaderCount && count > 0).length > 1;
+      const node = document.getElementById('regionalPattern');
+      if (!node) return;
+      const total = items.length || 1;
+      if (!tied && leaderCount > total / 2) {
+        node.innerHTML = `<h2>Regional pattern</h2><p><strong>${CITY_TYPES[leader].label}</strong> is the dominant mapped pattern, present in ${leaderCount} of ${items.length} cities. Other city types remain visible at the individual-city level.</p>`;
+      } else {
+        const breakdown = ordered.filter(([, count]) => count).map(([type, count]) => `${CITY_TYPES[type].label}: ${count}`).join(' · ');
+        node.innerHTML = `<h2>Regional pattern</h2><p><strong>Mixed region.</strong> No city type is dominant enough to define the whole mapped area. ${breakdown}.</p>`;
+      }
+    }
+    function getCityDependencies(item){
+      const otherCities = rankedCities.filter(other => other.key !== item.key);
+      return item.totals.resourceBalances.filter(balance => balance.consumed > 0).map(balance => {
+        const suppliers = otherCities.map(other => ({ name: other.name, units: other.totals.production[balance.resource] || 0 })).filter(supplier => supplier.units > 0).sort((left, right) => right.units - left.units);
+        const price = Number(item.prices[balance.resource]) || 0;
+        const outsideProduction = suppliers.reduce((sum, supplier) => sum + supplier.units, 0);
+        return { resource: balance.resource, needed: balance.consumed, price, dailyValue: balance.consumed * price, coverage: balance.consumed ? Math.min(100, outsideProduction / balance.consumed * 100) : 0, suppliers };
+      });
+    }
+    function getDependencyHistory(item){
+      return (historyByCity[String(item.city.id || item.key)] || []).map(snapshot => Object.entries(snapshot.consumption || {}).reduce((sum, [resource, units]) => sum + Number(units || 0) * Number(snapshot.prices?.[resource] || 0), 0));
+    }
+    function escapeHtml(value){return String(value).replace(/[&<>"']/g, character => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[character]))}
+    function setDisplayPeriod(period){
+      displayPeriod = period === 'turn' ? 'turn' : 'day';
+      document.body.style.setProperty('--period-label', `'${periodLabel()}'`);
+      document.querySelectorAll('[data-period]').forEach(button => {
+        const active = button.dataset.period === displayPeriod;
+        button.classList.toggle('active', active);
+        button.setAttribute('aria-pressed', String(active));
+      });
+      renderTable();
+    }
+    function renderSummary(items){
+      const totals = items.reduce((sum, item) => { sum.productionValue += item.totals.productionValue; sum.consumptionCost += item.totals.consumptionCost; sum.operatingCost += item.totals.operatingCost; sum.netProfit += item.totals.netProfit; return sum; }, { productionValue:0, consumptionCost:0, operatingCost:0, netProfit:0 });
+      const cards = [[`Production value / ${periodLabel()}`, periodMoney(totals.productionValue)], [`Resource-use cost / ${periodLabel()}`, periodMoney(totals.consumptionCost)], [`Operating cost / ${periodLabel()}`, periodMoney(totals.operatingCost)], [`Net profit / ${periodLabel()}`, periodMoney(totals.netProfit)]];
+      document.getElementById('summary').innerHTML = cards.map(([label,value], index) => `<div class="summary-card"><span class="summary-label">${label}</span><span class="summary-value ${index === 3 ? (totals.netProfit >= 0 ? 'profit-positive' : 'profit-negative') : ''}">${value}</span></div>`).join('');
+    }
+    function renderTable(){
+      const sortBy = document.getElementById('sortBy').value;
+      const resource = document.getElementById('resourceFilter').value;
+      const search = document.getElementById('citySearch').value.trim().toLowerCase();
+      const visible = rankedCities.filter(item => (!search || item.name.toLowerCase().includes(search)) && (resource === 'all' || item.totals.resourceBalances.some(balance => balance.resource === resource && (balance.produced > 0 || balance.consumed > 0))));
+      visible.sort((left, right) => sortBy === 'name' ? left.name.localeCompare(right.name) : right.totals[sortBy] - left.totals[sortBy]);
+      renderSummary(visible);
+      renderRegionalPattern(rankedCities);
+      const rows = visible.map((item, index) => {
+        const { city, name, infra, land, totals } = item;
+        const cityType = classifyCityType(item, rankedCities);
+        const cityTypeBadge = `<span class="city-type ${cityType.className}">${cityType.label}</span>`;
+        const productionDetails = Object.entries(totals.production).filter(([, units]) => units > 0).map(([key, units]) => `${escapeHtml(key)}: ${periodUnits(units)} (${periodMoney(units * (Number(item.prices[key]) || 0))})`).join('<br>') || 'None';
+          const manufacturingDemandDetails = Object.entries(totals.manufacturingConsumption).filter(([, units]) => units > 0).map(([key, units]) => `${escapeHtml(key)}: ${periodUnits(units)} (${periodMoney(units * (Number(item.prices[key]) || 0))})`).join('<br>') || 'None';
+          const operatingResourceDetails = Object.entries(totals.consumption).filter(([, units]) => units > 0).map(([key, units]) => {
+            const produced = Number(totals.production[key] || 0);
+            const price = Number(item.prices[key] || 0);
+            const source = produced >= units ? `covered by this city (${periodNumber(produced)} produced)` : produced > 0 ? `partly covered here (${periodNumber(produced)} produced)` : 'requires stockpile, alliance, or market supply';
+            return `${escapeHtml(key)}: ${periodUnits(units)} (${periodMoney(units * price)}) — ${source}`;
+          }).join('<br>') || 'None';
+          const consumptionDetails = `<strong>Operating resource use:</strong><br>${operatingResourceDetails}`;
+        const balanceDetails = totals.resourceBalances.map(balance => `${balance.resource}: net ${periodUnits(balance.net)} (${periodMoney(balance.net * balance.price)})`).join('<br>') || 'None';
+        const bestResource = [...totals.resourceBalances].sort((left, right) => (right.net * right.price) - (left.net * left.price))[0];
+        const worstResource = [...totals.resourceBalances].sort((left, right) => (left.net * left.price) - (right.net * right.price))[0];
+        const bestLabel = bestResource ? `${bestResource.resource}: ${periodMoney(bestResource.net * bestResource.price)}` : 'None';
+        const worstLabel = worstResource ? `${worstResource.resource}: ${periodMoney(worstResource.net * worstResource.price)}` : 'None';
+        const nextFacility = getBestNextFacility(item);
+        const buildingRecommendation = getBuildingRecommendation(item);
+        const sensitivityDetails = getPriceSensitivity(item).map(result => `${result.percent > 0 ? '+' : ''}${result.percent}% prices: ${periodMoney(result.netProfit)}`).join('<br>');
+        const marketDetails = totals.resourceBalances.map(balance => { const stats = marketStats[balance.resource] || {}; return `${balance.resource}: now ${formatStaticMoney(stats.current)} | avg ${formatStaticMoney(stats.average)} | volatility ${formatNumber((stats.volatility || 0) * 100)}%`; }).join('<br>') || 'No market data';
+        const selfSufficiency = totals.resourceBalances.filter(balance => balance.consumed > 0).map(balance => `${balance.resource}: ${formatNumber(Math.min(100, balance.produced / balance.consumed * 100))}%`).join('<br>') || 'No consumption';
+        let intercityDetails = getIntercityAnalysis(item).map(flow => {
+          const coverage = flow.coverage === null ? 'No city demand' : `${formatNumber(flow.coverage * 100)}% covered by other cities`;
+          const status = flow.outsideNet >= 0 ? `outside surplus ${formatNumber(flow.outsideNet)}` : `outside deficit ${formatNumber(Math.abs(flow.outsideNet))}`;
+          const suppliers = flow.suppliers.length ? `top suppliers: ${flow.suppliers.map(supplier => `${escapeHtml(supplier.name)} (${formatNumber(supplier.units)})`).join(', ')}` : 'no outside production';
+          return `${flow.resource}: needs ${periodUnits(flow.consumed)} | ${coverage} | ${status} | ${suppliers}`;
+        }).join('<br>') || 'No cross-city resource flows';
+        const dependencyRows = getCityDependencies(item).map(dependency => {
+          const suppliers = dependency.suppliers.length ? dependency.suppliers.slice(0, 4).map(supplier => `${escapeHtml(supplier.name)} (${periodUnits(supplier.units)})`).join(', ') : 'No in-nation supplier; import required';
+          return `${dependency.resource}: needs ${periodUnits(dependency.needed)} | ${formatStaticMoney(dependency.price)}/unit | ${periodMoney(dependency.dailyValue)}/${periodLabel()} | outside coverage ${formatNumber(dependency.coverage)}% | supplied by ${suppliers}`;
+        }).join('<br>') || 'No modeled resource requirements';
+        const dependencyPanel = `<div><strong>City resource dependencies (live):</strong><br>${dependencyRows}<canvas class="dependency-sparkline" data-city-id="${escapeHtml(item.city.id || item.key)}" aria-label="Historical ${periodLabel()} dependency cost for ${escapeHtml(name)}"></canvas><small>Dependency cost history uses recorded consumption and market prices.</small></div>`;
+        intercityDetails += `<br>${dependencyPanel}`;
+        const detailLead = `<div class="detail-lead"><div><strong>Commerce income / ${periodLabel()}</strong><span class="profit-positive">${periodMoney(totals.commerceIncome)} (${formatNumber(totals.commerceRate)}%)</span><small>Crime ${formatNumber(totals.crimeRate * 100)}% • Disease ${formatNumber(totals.diseaseRate * 100)}%</small></div><div><strong>Gross revenue / ${periodLabel()}</strong><span>${periodMoney(totals.grossRevenue)}</span></div><div><strong>Net profit / ${periodLabel()}</strong><span class="${totals.netProfit >= 0 ? 'profit-positive' : 'profit-negative'}">${periodMoney(totals.netProfit)}</span></div></div>`;
+        const profitClass = totals.netProfit >= 0 ? 'profit-positive' : 'profit-negative';
+        return `<tr><td><button class="expand-button" type="button" aria-expanded="false" data-city-index="${item.key}">+</button><strong>#${index + 1}</strong> <a class="city-link" href="city-details.html?cityId=${encodeURIComponent(city.id||'')}&cityName=${encodeURIComponent(name)}">${escapeHtml(name)}</a></td><td>${formatNumber(infra)}</td><td>${formatNumber(land)}</td><td>${productionDetails}</td><td>${consumptionDetails}</td><td>${formatMoney(totals.productionValue)}</td><td>${formatMoney(totals.consumptionCost)}</td><td class="${profitClass}">${formatMoney(totals.netProfit)}</td><td>${formatMoney(totals.operatingCost)}</td><td class="profit-positive">${bestLabel}</td><td class="${worstResource && worstResource.net * worstResource.price < 0 ? 'profit-negative' : ''}">${worstLabel}</td><td><canvas class="sparkline" data-city-id="${escapeHtml(item.city.id || item.key)}" aria-label="Net profit history for ${escapeHtml(name)}"></canvas></td></tr><tr class="city-detail hidden" data-detail-index="${item.key}"><td colspan="12"><div class="detail-grid"><div><strong>Gross revenue / day:</strong> ${formatMoney(totals.grossRevenue)}</div><div><strong>Total expenses / day:</strong> ${formatMoney(totals.totalExpenses)}</div><div><strong>Profit margin:</strong> ${formatNumber(totals.profitMargin * 100)}%</div><div><strong>Best resource:</strong> ${bestLabel}</div><div><strong>Worst resource:</strong> ${worstLabel}</div><div><strong>Best next facility:</strong> ${escapeHtml(nextFacility.key)} (+${formatMoney(nextFacility.delta)} / day)<br><small>Payback: build cost not supplied by API</small></div><div><strong>Building recommendation:</strong> ${escapeHtml(buildingRecommendation.text)}</div><div><strong>Self-sufficiency:</strong><br>${selfSufficiency}</div><div><strong>Net resource balance:</strong><br>${balanceDetails}</div><div><strong>Inter-city comparison:</strong><br>${intercityDetails}</div><div><strong>Price sensitivity:</strong><br>${sensitivityDetails}</div><div><strong>Market now / average / volatility:</strong><br>${marketDetails}</div><div><strong>Weekly net profit:</strong> ${formatMoney(totals.netProfit * 7)}</div><div><strong>Monthly net profit:</strong> ${formatMoney(totals.netProfit * 30)}</div><div><strong>Population:</strong> ${formatNumber(totals.population)}</div></div></td></tr>`;
+      }).join('');
+      document.getElementById('status').textContent = `Showing ${visible.length} of ${rankedCities.length} cities`;
+      document.getElementById('tableWrap').innerHTML = `<table><thead><tr><th>City (ranked)</th><th>Infrastructure</th><th>Land</th><th>Production / ${periodLabel()}</th><th>Resource use / ${periodLabel()}</th><th>Production Value / ${periodLabel()}</th><th>Resource-use cost / ${periodLabel()}</th><th>Net Profit / ${periodLabel()}</th><th>Operating Cost / ${periodLabel()}</th><th>Best Resource</th><th>Worst Resource</th><th>Profit History</th></tr></thead><tbody>${rows || '<tr><td colspan="12">No cities match these filters.</td></tr>'}</tbody></table>`;
+      document.querySelectorAll('#tableWrap tbody tr:not(.city-detail)').forEach((row, index) => { const item = visible[index]; if (item) { const type = classifyCityType(item, rankedCities); row.classList.add(`city-${type.className}`); row.firstElementChild.insertAdjacentHTML('beforeend', `<br>${cityTypeBadgeFor(item)}`); } });
+      document.querySelectorAll('.city-detail').forEach(detail => { const item = rankedCities.find(city => String(city.key) === detail.dataset.detailIndex); if (item) detail.querySelector('td').insertAdjacentHTML('afterbegin', `<div class="detail-lead"><div><strong>Commerce income / ${periodLabel()}</strong><span class="profit-positive">${periodMoney(item.totals.commerceIncome)}</span></div><div><strong>Gross revenue / ${periodLabel()}</strong><span>${periodMoney(item.totals.grossRevenue)}</span></div><div><strong>Net profit / ${periodLabel()}</strong><span class="${item.totals.netProfit >= 0 ? 'profit-positive' : 'profit-negative'}">${periodMoney(item.totals.netProfit)}</span></div></div>`); });
+      renderSparklines();
+    }
+    async function load(){
+      try{
+        const q = `query { nations(id: [${NATION_ID}], first: 1) { data { nation_name population num_cities cities { id name infrastructure land powered barracks farm police_station hospital recycling_center subway supermarket bank stadium shopping_mall lead_mine iron_mine bauxite_mine oil_refinery aluminum_refinery steel_mill munitions_factory factory hangar drydock coal_mine oil_well uranium_mine oil_power wind_power coal_power nuclear_power } } } }`;
+        let cities = [];
+        let liveNation = {};
+        try {
+          const r = await fetch(`https://api.politicsandwar.com/graphql?api_key=${API_KEY}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:q})});
+          const j = await r.json();
+          if (j?.errors?.length) throw new Error(j.errors.map(error => error.message).join('; '));
+          liveNation = j?.data?.nations?.data?.[0] || {};
+          cities = liveNation.cities || [];
+        } catch (error) {
+          console.warn('Live city data unavailable; using local city data.', error);
+        }
+        const marketQuery = `query { tradeprices(first: 10) { data { date food coal oil uranium iron bauxite lead gasoline munitions steel aluminum } } }`;
+        const marketResponse = await fetch(`https://api.politicsandwar.com/graphql?api_key=${API_KEY}`,{method:'POST',cache:'no-store',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:marketQuery})});
+        const marketJson = await marketResponse.json();
+        const marketRows = sortMarketRowsNewestFirst(marketJson?.data?.tradeprices?.data);
+        const prices = marketRows[0] || {};
+        marketStats = getMarketStats(marketRows);
+        const localData = await fetch('cities_parsed_enriched_merged.json').then(response => response.ok ? response.json() : { cities: [] }).catch(() => ({ cities: [] }));
+        const localCities = Array.isArray(localData.cities) ? localData.cities : [];
+        const citySheetStats = await fetchCitySheetStats();
+        if (!cities.length) cities = localCities.map(city => ({ ...city, ...(city.facilities || {}) }));
+        const sheetMatchedCities = cities.filter(city => citySheetStats[normalizeCityLabel(city.name || city.city_name)]).length;
+        const cityDataSource = sheetMatchedCities === cities.length ? 'PROVIDED GOOGLE SHEET (INDIVIDUAL CITY COLUMNS)' : `${cities.length ? 'PROVIDED GOOGLE SHEET + LIVE API FALLBACK' : 'LOCAL SNAPSHOT'} (${sheetMatchedCities}/${cities.length} Sheet columns matched)`;
+        rankedCities = cities.map((city, key) => {
+          const name = city.name || city.city_name || 'Unnamed';
+          const localCity = localCities.find(item => String(item.id || item.city_id || '') === String(city.id)) || localCities.find(item => item.name === name) || {};
+          const liveAveragePopulation = Number(liveNation.population || 0) / Math.max(1, Number(liveNation.num_cities) || cities.length);
+          const localPopulation = Number(localCity.city_population || localCity.population) || 0;
+          const sheetStats = citySheetStats[normalizeCityLabel(name)] || {};
+          const cityWithPopulation = { ...city, ...sheetStats, crime: Number(sheetStats.crime) || Number(city.crime) || 0, disease: Number(sheetStats.disease) || Number(city.disease) || 0, city_population: Number(sheetStats.city_population) || Number(city.population) || localPopulation || liveAveragePopulation || 0 };
+          const infra = Number(city.infrastructure||0);
+          const land = Number(city.land||0);
+          const totals = calculateCity(cityWithPopulation, prices);
+          return { city, cityWithPopulation, name, infra, land, totals, prices, key };
+        });
+        const resources = [...new Set(rankedCities.flatMap(item => item.totals.resourceBalances.map(balance => balance.resource)))].sort();
+        document.getElementById('resourceFilter').querySelectorAll('option:not(:first-child)').forEach(option => option.remove());
+        document.getElementById('resourceFilter').insertAdjacentHTML('beforeend', resources.map(resource => `<option value="${resource}">${resource.charAt(0).toUpperCase() + resource.slice(1)}</option>`).join(''));
+        const marketDate = marketRows[0]?.date ? new Date(marketRows[0].date).toLocaleString() : 'unknown';
+        document.getElementById('marketNote').textContent = `${cityDataSource}. Individual city buildings, infrastructure, population, crime, and disease come from the provided Sheet (${sheetMatchedCities}/${cities.length} city columns matched); API data is used as fallback. ACTIVE POLICY: ${getStrategyLabel()}. ${getStrategyMode() === 'war' ? 'Aluminum is donated to the alliance; steel remains cash-generating except aluminum purchases; commerce supports alliance supply.' : 'Gasoline is donated to the alliance; steel is sold for cash; bauxite is bought and hoarded; steel proceeds and commerce buy more gasoline.'} Market prices: current snapshot ${marketDate}; averages and volatility use ${marketRows.length} snapshots. Oil, bauxite, and lead are import-only for North America. Data loaded ${new Date().toLocaleString()}.`;
+        renderTable();
+        await loadHistory();
+        await recordCurrentSnapshot();
+        if (!refreshTimer) refreshTimer = setInterval(async () => { await load(); }, REFRESH_INTERVAL_MS);
+      }catch(e){document.getElementById('status').textContent = 'Error: '+(e.message||e)}
+    }
+    ['sortBy', 'resourceFilter', 'citySearch'].forEach(id => document.getElementById(id).addEventListener('input', renderTable));
+    document.querySelectorAll('[data-period]').forEach(button => button.addEventListener('click', () => setDisplayPeriod(button.dataset.period)));
+    document.getElementById('tableWrap').addEventListener('click', event => {
+      const button = event.target.closest('.expand-button');
+      if (!button) return;
+      const detail = document.querySelector(`[data-detail-index="${button.dataset.cityIndex}"]`);
+      const expanded = !detail.classList.toggle('hidden');
+      button.textContent = expanded ? '−' : '+';
+      button.setAttribute('aria-expanded', String(expanded));
+    });
+    document.getElementById('exportCsv').addEventListener('click', () => {
+      const headers = ['Rank', 'City', 'Infrastructure', 'Land', `Production Value / ${periodLabel()}`, `Consumption Cost / ${periodLabel()}`, `Operating Cost / ${periodLabel()}`, `Commerce Income / ${periodLabel()}`, `Net Profit / ${periodLabel()}`];
+      const sortBy = document.getElementById('sortBy').value;
+      const rows = [...rankedCities].sort((left, right) => sortBy === 'name' ? left.name.localeCompare(right.name) : right.totals[sortBy] - left.totals[sortBy]).map((item, index) => [index + 1, item.name, item.infra, item.land, item.totals.productionValue / periodScale(), item.totals.consumptionCost / periodScale(), item.totals.operatingCost / periodScale(), item.totals.commerceIncome / periodScale(), item.totals.netProfit / periodScale()]);
+      const csv = [headers, ...rows].map(row => row.map(value => `"${String(value).replace(/"/g, '""')}"`).join(',')).join('\n');
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+      link.download = 'city-profitability.csv';
+      link.click();
+      URL.revokeObjectURL(link.href);
+    });
+    const backdropImages = [...document.querySelectorAll('#visualBackdrop img')];
+    let backdropIndex = 0;
+    setInterval(() => {
+      if (backdropImages.length < 2) return;
+      backdropImages[backdropIndex].classList.remove('active');
+      backdropIndex = (backdropIndex + 1) % backdropImages.length;
+      backdropImages[backdropIndex].classList.add('active');
+      const feature = document.getElementById('visualFeature');
+      if (feature) feature.src = backdropImages[backdropIndex].src;
+    }, 9000);
+    load();
+  </script>
+</body>
+</html>

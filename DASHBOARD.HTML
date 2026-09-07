@@ -1,0 +1,1525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NewMerica Trade Command</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-deep: #03040a;
+            --surface: rgba(9, 12, 25, 0.7);
+            --surface-strong: rgba(6, 10, 25, 0.95);
+            --green-glow: #4ade80;
+            --red-glow: #f87171;
+            --purple-accent: #a855f7;
+            --text-main: #e2e8f0;
+            --text-muted: #64748b;
+            --cyan-accent: #00f0ff;
+            --pink-accent: #ff8fcf;
+            --accent-soft: rgba(0, 240, 255, 0.1);
+            --border-light: rgba(0, 240, 255, 0.25);
+            --neon-shadow: 0 0 10px rgba(0, 240, 255, 0.2), inset 0 0 10px rgba(0, 240, 255, 0.05);
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            color: var(--text-main);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background: radial-gradient(circle at center, #0a0f25 0%, var(--bg-deep) 100%);
+            overflow-x: hidden;
+        }
+
+        .scanlines {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.15) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+            background-size: 100% 4px, 3px 100%;
+            z-index: 9998;
+            pointer-events: none;
+        }
+
+        .site-content {
+            position: relative;
+            z-index: 3;
+            width: min(1400px, 100%);
+            padding: 24px;
+            background: var(--surface);
+            border: 1px solid var(--border-light);
+            border-radius: 12px;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8), var(--neon-shadow);
+        }
+
+        .nav-menu {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 30px;
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid var(--border-light);
+            border-radius: 8px;
+        }
+
+        .nav-link {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-decoration: none;
+            padding: 8px 20px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border: 1px solid transparent;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+
+        .nav-link:hover { color: var(--cyan-accent); background: rgba(0, 240, 255, 0.05); border-color: rgba(0, 240, 255, 0.2); }
+        .nav-link.active {
+            background: var(--accent-soft);
+            color: var(--cyan-accent);
+            border-color: var(--cyan-accent);
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.3);
+            text-shadow: 0 0 5px var(--cyan-accent);
+        }
+
+        .nav-link.protected { color: var(--pink-accent); border-color: rgba(255, 143, 207, 0.3); }
+
+        .header-box { text-align: center; margin-bottom: 30px; position: relative; }
+
+        .grand-total-link, .grand-total-badge {
+            position: absolute;
+            top: 24px;
+            left: 24px;
+            padding: 16px 20px;
+            border-radius: 14px;
+            background: rgba(248, 113, 113, 0.12);
+            border: 1px solid rgba(248, 113, 113, 0.2);
+            color: var(--pink-accent);
+            text-align: left;
+            min-width: 220px;
+            backdrop-filter: blur(14px);
+            box-shadow: 0 0 20px rgba(255, 143, 207, 0.12);
+            display: inline-block;
+            text-decoration: none;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            z-index: 10001;
+        }
+        .grand-total-link:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 28px rgba(255, 143, 207, 0.24);
+        }
+        .grand-total-label {
+            font-size: 0.75rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: rgba(255, 143, 207, 0.9);
+            margin-bottom: 6px;
+            font-weight: 700;
+        }
+        .grand-total-value {
+            font-size: 1.5rem;
+            color: #fff;
+            font-family: 'Share Tech Mono', monospace;
+            font-weight: 800;
+            margin-bottom: 4px;
+        }
+        .grand-total-change {
+            font-size: 0.85rem;
+            color: rgba(255, 143, 207, 0.95);
+            opacity: 0.85;
+        }
+
+        .glitch-title {
+            margin: 0; font-size: 2.5rem; color: #fff; text-transform: uppercase;
+            letter-spacing: 4px; font-weight: 800; text-shadow: 0 0 10px rgba(0,240,255,0.5);
+            position: relative;
+        }
+        .glitch-title::before, .glitch-title::after {
+            content: "NEWMERICA STRATEGIC COMMAND";
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: transparent;
+        }
+        .glitch-title::before {
+            left: 2px; text-shadow: -2px 0 var(--red-glow); clip: rect(24px, 550px, 90px, 0);
+            animation: glitch-anim-2 3s infinite linear alternate-reverse;
+        }
+        .glitch-title::after {
+            left: -2px; text-shadow: -2px 0 var(--cyan-accent); clip: rect(85px, 550px, 140px, 0);
+            animation: glitch-anim 2.5s infinite linear alternate-reverse;
+        }
+
+        @keyframes glitch-anim { 0%, 20%, 100% { clip: rect(10px, 9999px, 10px, 0); } 5% { clip: rect(70px, 9999px, 86px, 0); } 10% { clip: rect(20px, 9999px, 14px, 0); } 15% { clip: rect(90px, 9999px, 10px, 0); } }
+        @keyframes glitch-anim-2 { 0%, 20%, 100% { clip: rect(10px, 9999px, 10px, 0); } 5% { clip: rect(10px, 9999px, 20px, 0); } 10% { clip: rect(40px, 9999px, 80px, 0); } 15% { clip: rect(90px, 9999px, 10px, 0); } }
+
+        .header-box p { color: var(--text-muted); max-width: 800px; margin: 10px auto 0; line-height: 1.5; font-family: 'Share Tech Mono', monospace; font-size: 0.9rem; }
+
+        .classified-stamp {
+            position: absolute; top: -10px; right: 20px; color: rgba(248, 113, 113, 0.4); border: 2px solid rgba(248, 113, 113, 0.4);
+            padding: 4px 12px; font-size: 0.75rem; font-weight: 800; letter-spacing: 4px; transform: rotate(12deg); pointer-events: none;
+        }
+
+        .meta-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        .meta-pill {
+            padding: 6px 12px;
+            border: 1px solid rgba(0, 240, 255, 0.2);
+            border-radius: 999px;
+            background: rgba(0, 240, 255, 0.06);
+            color: var(--cyan-accent);
+            font-size: 0.75rem;
+            font-family: 'Share Tech Mono', monospace;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .stats-bar {
+            display: flex; justify-content: space-between; background: rgba(0, 0, 0, 0.6);
+            border: 1px solid var(--border-light); border-radius: 6px; padding: 16px; margin-bottom: 24px;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.8), 0 0 10px rgba(0, 240, 255, 0.05);
+        }
+        .stat-box { display: flex; flex-direction: column; align-items: center; justify-content: center; border-right: 1px solid rgba(0, 240, 255, 0.1); padding: 0 20px; flex: 1; }
+        .stat-box:last-child { border-right: none; }
+        .stat-label { font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 4px; font-weight: 700;}
+        .stat-value { font-size: 1.3rem; color: #fff; font-family: 'Share Tech Mono', monospace; font-weight: 700; text-shadow: 0 0 5px rgba(255,255,255,0.3); }
+
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .kpi-card {
+            background: rgba(0, 0, 0, 0.55);
+            border: 1px solid rgba(0, 240, 255, 0.2);
+            border-radius: 8px;
+            padding: 16px;
+            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.3);
+        }
+        .kpi-label {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 8px;
+        }
+        .kpi-value {
+            font-size: 1.15rem;
+            color: var(--cyan-accent);
+            font-family: 'Share Tech Mono', monospace;
+            font-weight: 700;
+        }
+        .kpi-subtext {
+            margin-top: 6px;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .stockpile-card {
+            margin-bottom: 20px;
+        }
+        .stockpile-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 12px;
+        }
+        .stockpile-item {
+            background: rgba(2, 6, 23, 0.75);
+            border: 1px solid rgba(0, 240, 255, 0.18);
+            border-radius: 8px;
+            padding: 12px;
+            min-height: 94px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            box-shadow: inset 0 0 16px rgba(0, 0, 0, 0.3);
+        }
+        .stockpile-label {
+            font-size: 0.68rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 6px;
+        }
+        .stockpile-value {
+            font-size: 1rem;
+            color: var(--cyan-accent);
+            font-family: 'Share Tech Mono', monospace;
+            font-weight: 700;
+            overflow-wrap: anywhere;
+        }
+        .stockpile-meta {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            margin-top: 6px;
+        }
+
+        .nation-intel-section {
+            margin-bottom: 20px;
+        }
+        .nation-intel-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 12px;
+        }
+        .intel-card {
+            display: block;
+            cursor: pointer;
+            text-decoration: none;
+            color: inherit;
+            background: rgba(0, 0, 0, 0.55);
+            border: 1px solid rgba(0, 240, 255, 0.2);
+            border-radius: 8px;
+            padding: 12px;
+            min-height: 104px;
+            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.3);
+        }
+        .intel-label {
+            font-size: 0.68rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 6px;
+        }
+        .intel-value {
+            font-size: 0.95rem;
+            color: var(--cyan-accent);
+            font-family: 'Share Tech Mono', monospace;
+            font-weight: 700;
+            line-height: 1.35;
+            overflow-wrap: anywhere;
+            word-break: break-word;
+        }
+        .intel-subtext {
+            margin-top: 6px;
+            font-size: 0.74rem;
+            color: var(--text-muted);
+        }
+        .intel-card:hover {
+            border-color: rgba(0, 240, 255, 0.45);
+            box-shadow: 0 0 18px rgba(0, 240, 255, 0.16);
+            transform: translateY(-1px);
+            cursor: pointer;
+        }
+        .intel-card.active {
+            border-color: var(--cyan-accent);
+            box-shadow: 0 0 20px rgba(0, 240, 255, 0.25);
+        }
+
+        .detail-drawer {
+            display: none;
+            margin-top: 12px;
+            padding: 14px;
+            border-radius: 8px;
+            border: 1px solid rgba(0, 240, 255, 0.25);
+            background: rgba(2, 6, 23, 0.9);
+            color: var(--text-main);
+        }
+        .detail-drawer.active { display: block; }
+        .detail-title {
+            font-size: 0.72rem;
+            color: var(--cyan-accent);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 6px;
+        }
+        .detail-body {
+            font-size: 0.88rem;
+            line-height: 1.55;
+            color: var(--text-muted);
+            font-family: 'Share Tech Mono', monospace;
+        }
+
+        .dashboard-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; }
+        .card { background: var(--surface-strong); padding: 24px; border-radius: 8px; border: 1px solid var(--border-light); position: relative; overflow: hidden; box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.5); }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid rgba(0, 240, 255, 0.15); padding-bottom: 12px; }
+        .card-header h3 { margin: 0; font-size: 1rem; color: var(--cyan-accent); text-transform: uppercase; letter-spacing: 2px; }
+
+        .live-indicator { display: flex; align-items: center; gap: 8px; font-size: 0.75rem; font-weight: 700; color: var(--green-glow); text-transform: uppercase; letter-spacing: 1px; }
+        .dot { width: 8px; height: 8px; background-color: var(--green-glow); border-radius: 50%; animation: pulse 1.5s infinite; }
+
+        .table-container { width: 100%; background: var(--surface-strong); border-radius: 8px; border: 1px solid var(--border-light); overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        table { width: 100%; border-collapse: collapse; text-align: left; }
+        th { background: rgba(0, 240, 255, 0.05); padding: 16px; font-size: 0.75rem; color: var(--cyan-accent); text-transform: uppercase; letter-spacing: 2px; }
+        td { padding: 16px; border-bottom: 1px solid rgba(255,255,255,0.03); font-size: 0.95rem; font-weight: 600; transition: background 0.2s; }
+        tbody tr { cursor: pointer; } tbody tr:hover { background: rgba(0, 240, 255, 0.05); }
+
+        .tag { padding: 4px 10px; border-radius: 4px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; white-space: nowrap; }
+        .tag.buy { background: rgba(74, 222, 128, 0.1); color: var(--green-glow); border: 1px solid rgba(74, 222, 128, 0.4); text-shadow: 0 0 5px var(--green-glow); box-shadow: 0 0 8px rgba(74, 222, 128, 0.2); }
+        .tag.sell { background: rgba(248, 113, 113, 0.1); color: var(--red-glow); border: 1px solid rgba(248, 113, 113, 0.4); text-shadow: 0 0 5px var(--red-glow); box-shadow: 0 0 8px rgba(248, 113, 113, 0.2); }
+        .tag.hold { background: rgba(100, 116, 139, 0.2); color: var(--text-muted); border: 1px solid rgba(100, 116, 139, 0.5); }
+        .tag.import-critical { background: rgba(168, 85, 247, 0.15); color: #d8b4fe; border: 1px solid var(--purple-accent); animation: import-pulse 2s infinite; margin-left: 10px; font-size: 0.6rem; }
+
+        @keyframes import-pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(168, 85, 247, 0); } 70% { box-shadow: 0 0 0 4px rgba(168, 85, 247, 0); } }
+
+        .terminal { background: #02040a; padding: 16px; border-radius: 6px; border: 1px solid rgba(0,240,255,0.2); font-family: 'Share Tech Mono', monospace; font-size: 0.85rem; color: var(--cyan-accent); height: 180px; overflow-y: auto; line-height: 1.6; word-break: break-word; box-shadow: inset 0 0 20px rgba(0,0,0,1); }
+        .terminal-cursor::after { content: "█"; animation: blink 1s step-start infinite; }
+        @keyframes blink { 50% { opacity: 0; } }
+
+        .chart-container { width: 100px; height: 30px; }
+        .sparkline { stroke: var(--cyan-accent); stroke-width: 2; fill: none; filter: drop-shadow(0 0 2px var(--cyan-accent)); }
+        .cap-text { text-transform: uppercase; letter-spacing: 1px; font-family: 'Share Tech Mono', monospace; }
+
+        .alert-card {
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+        .alert-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .alert-item {
+            padding: 12px 14px;
+            border-radius: 6px;
+            border: 1px solid rgba(0, 240, 255, 0.15);
+            background: rgba(0, 240, 255, 0.04);
+            color: var(--text-main);
+            font-size: 0.9rem;
+        }
+        .alert-item.critical {
+            border-color: rgba(168, 85, 247, 0.4);
+            color: #d8b4fe;
+        }
+        .alert-item.buy {
+            border-color: rgba(74, 222, 128, 0.35);
+            color: var(--green-glow);
+        }
+        .alert-item.sell {
+            border-color: rgba(248, 113, 113, 0.35);
+            color: var(--red-glow);
+        }
+        .alert-item.quiet {
+            color: var(--text-muted);
+            border-style: dashed;
+        }
+
+        #seasonal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 9999; overflow: hidden; }
+        .live-weather-particle { position: absolute; top: -10vh; user-select: none; font-family: monospace; color: var(--particle-color); text-shadow: 0 0 8px var(--particle-color); font-weight: bold; animation: dynamic-weather-fall linear infinite; }
+        @keyframes dynamic-weather-fall { 0% { transform: translate(0, 0); opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { transform: translate(var(--wind-drift), 120vh); opacity: 0; } }
+
+        @media (max-width: 768px) {
+            body { padding: 5px; } .site-content { padding: 12px; border-radius: 8px; }
+            .glitch-title { font-size: 1.4rem; } .header-box p { font-size: 0.75rem; }
+            .nav-menu { padding: 8px; gap: 6px; } .nav-link { font-size: 0.7rem; padding: 6px 10px; }
+            .stats-bar { flex-wrap: wrap; gap: 10px; padding: 12px; } .stat-box { border-right: none; border-bottom: 1px solid rgba(0, 240, 255, 0.1); padding: 10px 0; min-width: 45%; } .stat-box:nth-last-child(-n+2) { border-bottom: none; }
+            .dashboard-grid { grid-template-columns: 1fr; gap: 12px; margin-bottom: 12px; } .card { padding: 12px; }
+            .kpi-grid { grid-template-columns: 1fr; }
+            table { min-width: max-content; } th, td { padding: 10px 8px; font-size: 0.8rem; }
+            .terminal { font-size: 0.75rem; padding: 10px; height: 150px; } .classified-stamp { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div id="barrows-lock" style="display:none; position:fixed; inset:0; z-index:10002; align-items:center; justify-content:center; padding:20px; background:rgba(3,4,10,0.96);">
+        <form id="barrows-lock-form" style="width:min(360px,100%); padding:28px; text-align:center; background:var(--surface-strong); border:1px solid var(--pink-accent); border-radius:10px; box-shadow:0 0 30px rgba(255,143,207,0.16);">
+            <div style="color:var(--pink-accent); font:700 0.72rem 'Share Tech Mono', monospace; letter-spacing:2px; text-transform:uppercase;">Restricted Account</div>
+            <h2 style="margin:12px 0 8px; color:#fff;">Barrows Estate &amp; Trust</h2>
+            <p style="margin:0 0 18px; color:var(--text-muted); font-family:'Share Tech Mono',monospace; font-size:0.8rem;">Authorization required.</p>
+            <input id="barrows-password" type="password" inputmode="numeric" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Account password" required style="width:100%; padding:11px 12px; border:1px solid rgba(255,143,207,0.4); border-radius:5px; background:rgba(0,0,0,0.45); color:#fff; font:700 1rem 'Share Tech Mono',monospace; text-align:center; letter-spacing:0.25em;">
+            <button type="submit" style="width:100%; margin-top:12px; padding:11px; border:1px solid var(--pink-accent); border-radius:5px; background:rgba(255,143,207,0.1); color:var(--pink-accent); font:700 0.75rem 'Share Tech Mono',monospace; letter-spacing:1px; text-transform:uppercase; cursor:pointer;">Unlock Account</button>
+            <div id="barrows-lock-error" role="alert" style="min-height:1.2em; margin-top:12px; color:var(--red-glow); font:0.75rem 'Share Tech Mono',monospace;"></div>
+        </form>
+    </div>
+    <div id="titan-search" style="position:fixed;top:18px;left:18px;z-index:10000;">
+        <input id="titan-input" placeholder="Search..." style="padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:rgba(0,0,0,0.4);color:var(--text-main);width:180px;box-shadow:0 6px 18px rgba(0,0,0,0.6);" />
+    </div>
+
+    <div class="scanlines"></div>
+    <div id="seasonal-overlay"></div>
+
+    <div class="site-content">
+        <div class="nav-menu">
+            <a href="DASHBOARD.HTML" class="nav-link">Global Command</a>
+            <a href="MarketAi.HTML" class="nav-link">Market Trends</a>
+            <a href="ALLIANCE.HTML" class="nav-link">Alliance Intel</a>
+            <a href="MILITARY.HTML" class="nav-link">Theater Command</a>
+            <a href="LIVE_TRADES.HTML" class="nav-link">Live Trade Feed</a>
+            <a href="GODVIEW.HTML" class="nav-link">God View (API)</a>
+            <a href="finance-hub.html" class="nav-link">Finance Hub</a>
+            <a href="cities-hud.html" class="nav-link">Cities</a>
+            <a href="resource-detail.html?resource=food" class="nav-link">Resources</a>
+            <a href="cities-list.html" class="nav-link">City List</a>
+            <a href="avg-city-hud.html" class="nav-link">Avg / City</a>
+            <a href="soldiers-hud.html" class="nav-link">Soldiers</a>
+            <a href="tanks-hud.html" class="nav-link">Tanks</a>
+            <a href="aircraft-hud.html" class="nav-link">Aircraft</a>
+            <a href="ships-hud.html" class="nav-link">Ships</a>
+            <a href="treasury-hud.html" class="nav-link">Treasury</a>
+            <a href="infrastructure-hud.html" class="nav-link">Infrastructure</a>
+            <a href="BARROWS%20ESTATE%20%26%20TRUST.HTML" class="nav-link protected">Barrows Trust</a>
+        </div>
+
+        <div class="header-box">
+            <div class="classified-stamp">TOP SECRET // EYES ONLY</div>
+            <a class="grand-total-link" href="finance-hub.html" title="Open financial calculators and economic planning hub">
+                <div class="grand-total-label">Economic Control Hub</div>
+                <div class="grand-total-value" id="grand-total-value">--</div>
+                <div class="grand-total-change" id="grand-total-change">24h change unavailable</div>
+            </a>
+            <h1 class="glitch-title">NEWMERICA STRATEGIC COMMAND</h1>
+            <p>SECURE LINK ESTABLISHED. Real-time resource intelligence fused from live API feeds and strategic trade data. Manufacturing supply chain priorities actively tracked.</p>
+        </div>
+
+        <div class="meta-row">
+            <span class="meta-pill" id="data-status">LIVE API</span>
+            <span class="meta-pill" id="last-updated">Last Update: --</span>
+            <span class="meta-pill">Signal Type: Live + Calculated</span>
+        </div>
+
+        <div class="stats-bar" id="nation-stats">
+            <div class="stat-box">
+                <span class="stat-label">TELEMETRY</span>
+                <span class="stat-value" style="color: var(--text-muted); font-size: 1rem;">SYNCING...</span>
+            </div>
+        </div>
+
+        <div class="card stockpile-card">
+            <div class="card-header">
+                <h3>National Stockpile Holdings</h3>
+                <div class="live-indicator"><div class="dot"></div> Live nation inventory</div>
+            </div>
+            <div class="stockpile-grid" id="stockpile-grid">
+                <div class="stockpile-item"><div class="stockpile-label">Syncing</div><div class="stockpile-value">--</div><div class="stockpile-meta">Resource holdings</div></div>
+            </div>
+        </div>
+
+        <div class="kpi-grid">
+            <div class="kpi-card">
+                <div class="kpi-label">Critical Exposure</div>
+                <div class="kpi-value" id="kpi-exposure">--</div>
+                <div class="kpi-subtext">Critical imports under watch</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">Market Volatility</div>
+                <div class="kpi-value" id="kpi-volatility">--</div>
+                <div class="kpi-subtext">Avg spread vs 10d mean</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">Weather Risk</div>
+                <div class="kpi-value" id="kpi-weather">--</div>
+                <div class="kpi-subtext">Ops corridor conditions</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">Recommended Action</div>
+                <div class="kpi-value" id="kpi-action">--</div>
+                <div class="kpi-subtext">Priority posture</div>
+            </div>
+        </div>
+
+        <div class="card nation-intel-section">
+            <div class="card-header">
+                <h3>Nation Intelligence Core</h3>
+                <div class="live-indicator"><div class="dot"></div> Strategic State Layer</div>
+            </div>
+            <div class="nation-intel-grid" id="nation-intel-grid">
+                <a class="intel-card" href="#" role="button" tabindex="0" data-detail="Alliance status and bloc alignment for the current sovereign state.">
+                    <div class="intel-label">Alliance</div>
+                    <div class="intel-value">SYNCING...</div>
+                </a>
+                <a class="intel-card" href="#" role="button" tabindex="0" data-detail="Military manpower and readiness posture across the nation.">
+                    <div class="intel-label">Military</div>
+                    <div class="intel-value">SYNCING...</div>
+                </a>
+                <a class="intel-card" href="#" role="button" tabindex="0" data-detail="Armored capacity and heavy-force coverage for the nation.">
+                    <div class="intel-label">Armor</div>
+                    <div class="intel-value">SYNCING...</div>
+                </a>
+                <a class="intel-card" href="#" role="button" tabindex="0" data-detail="Air and naval assets currently controlled by the nation.">
+                    <div class="intel-label">Air / Navy</div>
+                    <div class="intel-value">SYNCING...</div>
+                </a>
+                <a class="intel-card" href="#" role="button" tabindex="0" data-detail="Urban distribution and municipal reach across the nation.">
+                    <div class="intel-label">Cities</div>
+                    <div class="intel-value">SYNCING...</div>
+                </a>
+                <a class="intel-card" href="#" role="button" tabindex="0" data-detail="Demographic scale and population concentration across the state.">
+                    <div class="intel-label">Population</div>
+                    <div class="intel-value">SYNCING...</div>
+                </a>
+                <a class="intel-card" href="#" role="button" tabindex="0" data-detail="Strategic scoring and relative standing in the broader geopolitical theater.">
+                    <div class="intel-label">Net Score</div>
+                    <div class="intel-value">SYNCING...</div>
+                </a>
+                <a class="intel-card" href="#" role="button" tabindex="0" data-detail="Population density per municipality used to estimate urban strain and resilience.">
+                    <div class="intel-label">Avg / City</div>
+                    <div class="intel-value">SYNCING...</div>
+                </a>
+                <a class="intel-card" href="#" role="button" tabindex="0" data-detail="Command authority and executive leadership designation for the nation.">
+                    <div class="intel-label">Commander</div>
+                    <div class="intel-value">SYNCING...</div>
+                </a>
+                <a class="intel-card" href="#" role="button" tabindex="0" data-detail="Top city overview and urban distribution snapshot for the nation.">
+                    <div class="intel-label">City Overview</div>
+                    <div class="intel-value">SYNCING...</div>
+                </a>
+                <a class="intel-card" href="#" role="button" tabindex="0" data-detail="Projected force balance and massed mobilization capacity for the state.">
+                    <div class="intel-label">Force Mix</div>
+                    <div class="intel-value">SYNCING...</div>
+                </a>
+                <a class="intel-card" href="#" role="button" tabindex="0" data-detail="Current apparatus posture and operational reach across the nation.">
+                    <div class="intel-label">Posture</div>
+                    <div class="intel-value">SYNCING...</div>
+                </a>
+            </div>
+            <div class="detail-drawer" id="hud-detail-drawer">
+                <div class="detail-title" id="hud-detail-title">Selection Detail</div>
+                <div class="detail-body" id="hud-detail-body">Click any HUD to reveal exclusive strategic detail.</div>
+            </div>
+        </div>
+
+        <div class="dashboard-grid">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Tactical Trade Executions</h3>
+                    <div class="live-indicator"><div class="dot"></div> Auto-Router Active</div>
+                </div>
+                <div class="table-container" style="border:none; border-radius: 0; background: transparent;">
+                    <table>
+                        <thead>
+                            <tr><th>Asset</th><th>Order Volume</th><th>Action Params</th></tr>
+                        </thead>
+                        <tbody id="active-orders-body">
+                            <tr><td colspan="3" style="text-align:center; color: var(--text-muted); font-weight: 400; font-family: 'Share Tech Mono', monospace;">Awaiting market anomalies...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3>Cortex Terminal</h3>
+                    <div class="live-indicator"><div class="dot"></div> Signal Feed Online</div>
+                </div>
+                <div class="terminal" id="ai-terminal">
+                    <span id="terminal-content">
+                        > AUTHENTICATING COMMANDER...<br>
+                        > Initializing neural handshake with P&W API...<br>
+                        > Securing supply chain routes for critical imports...<br>
+                    </span><span class="terminal-cursor"></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="card alert-card">
+            <div class="card-header">
+                <h3>Command Alert Board</h3>
+                <div class="live-indicator"><div class="dot"></div> Dynamic Risk Watch</div>
+            </div>
+            <div class="alert-list" id="alert-list">
+                <div class="alert-item quiet">Awaiting market anomalies...</div>
+            </div>
+        </div>
+
+        <div class="card" id="commerce-breakdown-card">
+            <div class="card-header">
+                <h3>Commerce & Resource Revenue Breakdown</h3>
+                <div class="live-indicator"><div class="dot"></div> Calculated economics</div>
+            </div>
+            <div style="padding: 12px 0 0;">
+                <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:8px;">
+                    <div style="font-family: 'Share Tech Mono', monospace; font-weight:700; color:var(--cyan-accent);">Daily Gross Income:</div>
+                    <div id="commerce-total" style="font-family: 'Share Tech Mono', monospace; font-weight:800;">--</div>
+                    <div style="margin-left:12px; font-size:0.8rem; color:var(--text-muted);">(Calculated with the published Nation Formula)</div>
+                </div>
+
+                <div class="table-container" style="margin-top:8px;">
+                    <table id="commerce-breakdown-table">
+                        <thead>
+                            <tr><th>Item</th><th>Estimate / Day</th><th>Notes</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>Daily Gross Income</td><td id="commerce-tax">--</td><td>Nation Formula: (((Commerce / 50) × 0.725) + 0.725) × Population</td></tr>
+                            <tr><td>Resource Production Revenue</td><td id="resource-revenue-total">--</td><td>Sum of estimated production × market price</td></tr>
+                            <tr><td>Resource Consumption (per day)</td><td id="resource-consumption-summary">--</td><td>Per-capita consumption estimates</td></tr>
+                            <tr><td>Estimated Building Upkeep</td><td id="building-upkeep-total">--</td><td>Upkeep cost per building × counts</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div style="margin-top:10px; font-size:0.85rem; color:var(--text-muted); font-family: 'Share Tech Mono', monospace;">
+                    <strong>Assumptions:</strong> Per-capita commerce, consumption rates and building upkeep are estimates used to produce a usable breakdown where raw API fields are incomplete. Values and formulas are shown in the detailed breakdown below.
+                </div>
+
+                <div style="margin-top:8px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                    <label style="font-size:0.85rem; color:var(--text-muted);">Tax rate:</label>
+                    <input id="input-tax-rate" type="number" step="0.01" min="0" max="1" value="0.15" style="width:84px; padding:6px; border-radius:6px; border:1px solid rgba(255,255,255,0.06); background:rgba(0,0,0,0.45); color:var(--text-main);" />
+                    <label style="font-size:0.85rem; color:var(--text-muted);">Per-capita commerce:</label>
+                    <input id="input-per-capita-commerce" type="number" step="0.001" min="0" value="0.02" style="width:84px; padding:6px; border-radius:6px; border:1px solid rgba(255,255,255,0.06); background:rgba(0,0,0,0.45); color:var(--text-main);" />
+                    <button id="apply-commerce-settings" style="padding:6px 10px; border-radius:6px; background:rgba(0,240,255,0.06); border:1px solid rgba(0,240,255,0.12); color:var(--cyan-accent); font-weight:700;">Apply</button>
+                    <button id="reset-commerce-settings" style="padding:6px 10px; border-radius:6px; background:transparent; border:1px solid rgba(255,255,255,0.04); color:var(--text-muted);">Reset</button>
+                    <button id="toggle-advanced-commerce" style="padding:6px 10px; border-radius:6px; background:transparent; border:1px solid rgba(255,255,255,0.04); color:var(--text-muted);">Advanced</button>
+                </div>
+
+                <div id="commerce-advanced" style="display:none; margin-top:8px; padding:12px; border:1px solid rgba(0,240,255,0.06); border-radius:8px; background:rgba(0,0,0,0.35);">
+                    <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:flex-start;">
+                        <div style="flex:1; min-width:240px;">
+                            <div style="font-weight:800; color:var(--cyan-accent); margin-bottom:8px;">Upkeep per building (editable)</div>
+                            <div id="upkeep-list" style="display:grid; grid-template-columns:1fr 90px; gap:6px; align-items:center;"></div>
+                        </div>
+                        <div style="flex:1; min-width:240px;">
+                            <div style="font-weight:800; color:var(--cyan-accent); margin-bottom:8px;">Consumption per-capita (editable)</div>
+                            <div id="consumption-list" style="display:grid; grid-template-columns:1fr 90px; gap:6px; align-items:center;"></div>
+                        </div>
+                    </div>
+                    <div style="margin-top:10px; display:flex; gap:8px;">
+                        <button id="apply-advanced-settings" style="padding:6px 10px; border-radius:6px; background:rgba(0,240,255,0.06); border:1px solid rgba(0,240,255,0.12); color:var(--cyan-accent); font-weight:700;">Apply Advanced</button>
+                        <button id="reset-advanced-settings" style="padding:6px 10px; border-radius:6px; background:transparent; border:1px solid rgba(255,255,255,0.04); color:var(--text-muted);">Reset Advanced</button>
+                        <button id="save-commerce-defaults" style="padding:6px 10px; border-radius:6px; background:rgba(168,85,247,0.08); border:1px solid rgba(168,85,247,0.12); color:#d8b4fe; font-weight:700;">Save Defaults</button>
+                        <button id="load-commerce-defaults" style="padding:6px 10px; border-radius:6px; background:transparent; border:1px solid rgba(255,255,255,0.04); color:var(--text-muted);">Load Defaults</button>
+                    </div>
+                </div>
+
+                <div id="commerce-detailed" style="margin-top:12px; font-size:0.9rem; color:var(--text-main); font-family: 'Share Tech Mono', monospace; overflow:auto; max-height:220px;"></div>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <div class="card-header" style="padding: 20px 24px 0; border: none; margin-bottom: 0;">
+                <h3>Global Resource Matrix</h3>
+                <div style="font-size: 0.75rem; color: var(--text-muted); font-family: 'Share Tech Mono', monospace;">CLICK ROW FOR DETAILED MARKET AUDIT</div>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Asset Type</th>
+                        <th>10-Day Moving Avg</th>
+                        <th>Live Market Value</th>
+                        <th>Vector (10d)</th>
+                        <th>Command Directive</th>
+                    </tr>
+                </thead>
+                <tbody id="arbitrage-body">
+                    <tr><td colspan="5" style="text-align:center; color: var(--red-glow); font-weight: 400; font-family: 'Share Tech Mono', monospace;">[ WARN ] Engine Offline: Awaiting Data...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src="common.js"></script>
+    <script>
+        (function(){
+            const input = document.getElementById('titan-input');
+            if (!input) return;
+            input.addEventListener('keydown', (ev) => {
+                if (ev.key === 'Enter') {
+                    const v = String(input.value || '').trim().toUpperCase();
+                    if (v === 'TITAN') {
+                        window.open('titan-compare.html','_blank');
+                    }
+                }
+            });
+        })();
+
+        const API_KEY = "5bc5a81f4c67e52b148c";
+        const RESOURCES = ["food", "coal", "oil", "uranium", "iron", "bauxite", "lead", "gasoline", "munitions", "steel", "aluminum", "credits"];
+        const CRITICAL_IMPORTS = ["food", "oil", "lead", "bauxite"];
+        let globalMarketData = {};
+        let lastWeatherData = null;
+        let currentNationData = null;
+        let currentCityList = [];
+        let currentAllianceMembers = [];
+
+        Object.defineProperties(window, {
+            currentNationData: { get: () => currentNationData },
+            currentCityList: { get: () => currentCityList },
+            globalMarketData: { get: () => globalMarketData }
+        });
+
+        function formatMoney(num) {
+            return "$" + Math.round(num).toLocaleString();
+        }
+
+        function generateSparkline(dataPoints) {
+            if (!Array.isArray(dataPoints) || dataPoints.length === 0) return '';
+            const validPoints = dataPoints.filter(v => Number.isFinite(v));
+            if (validPoints.length === 0) return '';
+            const min = Math.min(...validPoints);
+            const max = Math.max(...validPoints);
+            const range = max - min || 1;
+            const stepX = 100 / (validPoints.length - 1);
+            let pathD = validPoints.map((val, i) => ` ${i === 0 ? 'M' : 'L'} ${i * stepX} ${30 - (((val - min) / range) * 30)}`).join('');
+            return `<svg class="chart-container" viewBox="0 -5 100 40"><path class="sparkline" d="${pathD}"></path></svg>`;
+        }
+
+        function setDashboardMeta(status, timestampText) {
+            const statusEl = document.getElementById('data-status');
+            const lastEl = document.getElementById('last-updated');
+            if (statusEl) statusEl.textContent = status;
+            if (lastEl) lastEl.textContent = `Last Update: ${timestampText}`;
+        }
+
+        function getWeatherRiskLabel(weatherData) {
+            if (!weatherData) return 'STABLE';
+            if (weatherData.isFallback) return 'STABLE';
+            const code = weatherData.weathercode;
+            if (code <= 3) return 'LOW';
+            if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82)) {
+                return weatherData.windspeed > 15 ? 'HIGH' : 'MODERATE';
+            }
+            if ((code >= 71 && code <= 77) || (code >= 85 && code <= 86)) return 'HIGH';
+            if (code >= 95) return 'SEVERE';
+            return 'MODERATE';
+        }
+
+        function updateAlertBoard() {
+            const alertList = document.getElementById('alert-list');
+            if (!alertList) return;
+
+            const alerts = [];
+
+            Object.entries(globalMarketData).forEach(([resource, data]) => {
+                const icon = typeof getResourceIconHtml === 'function' ? getResourceIconHtml(resource, 14) : '';
+                if (data.directive === 'STRONG BUY') {
+                    const cssClass = CRITICAL_IMPORTS.includes(resource) ? 'critical' : 'buy';
+                    alerts.push(`<div class="alert-item ${cssClass}">${icon}<strong>${resource.toUpperCase()}</strong> is trading below its 10-day average and is flagged for acquisition.</div>`);
+                }
+                if (data.directive === 'STRONG SELL') {
+                    const cssClass = CRITICAL_IMPORTS.includes(resource) ? 'critical' : 'sell';
+                    alerts.push(`<div class="alert-item ${cssClass}">${icon}<strong>${resource.toUpperCase()}</strong> is above its 10-day average and is flagged for liquidation.</div>`);
+                }
+            });
+
+            const weatherLabel = getWeatherRiskLabel(lastWeatherData);
+            if (weatherLabel === 'HIGH' || weatherLabel === 'SEVERE') {
+                alerts.unshift(`<div class="alert-item critical">Weather risk is ${weatherLabel.toLowerCase()} in the Denver corridor. Logistics confidence is under stress.</div>`);
+            }
+
+            if (!alerts.length) {
+                alertList.innerHTML = '<div class="alert-item quiet">No active anomalies. Command posture remains stable.</div>';
+                return;
+            }
+
+            alertList.innerHTML = alerts.join('');
+        }
+
+        function renderKpisAndAlerts() {
+            const exposureEl = document.getElementById('kpi-exposure');
+            const volatilityEl = document.getElementById('kpi-volatility');
+            const weatherEl = document.getElementById('kpi-weather');
+            const actionEl = document.getElementById('kpi-action');
+
+            const entries = Object.entries(globalMarketData);
+            if (!entries.length) return;
+
+            const criticalExposure = entries
+                .filter(([resource]) => CRITICAL_IMPORTS.includes(resource))
+                .reduce((sum, [, data]) => sum + (data.current || 0), 0);
+
+            const avgVolatility = entries.reduce((sum, [, data]) => {
+                const safeAvg = data.avg || data.current || 1;
+                const percentDiff = ((data.current - safeAvg) / safeAvg) * 100;
+                return sum + Math.abs(percentDiff);
+            }, 0) / entries.length;
+
+            const buyCount = entries.filter(([, data]) => data.directive === 'STRONG BUY').length;
+            const sellCount = entries.filter(([, data]) => data.directive === 'STRONG SELL').length;
+            const weatherLabel = getWeatherRiskLabel(lastWeatherData);
+
+            if (exposureEl) exposureEl.textContent = `$${Math.round(criticalExposure).toLocaleString()}`;
+            if (volatilityEl) volatilityEl.textContent = `${avgVolatility.toFixed(1)}%`;
+            if (weatherEl) weatherEl.textContent = weatherLabel;
+            if (actionEl) actionEl.textContent = buyCount > sellCount ? `BUY ${buyCount}` : sellCount > buyCount ? `SELL ${sellCount}` : 'HOLD';
+
+            updateAlertBoard();
+        }
+
+        function formatHudNumber(value, digits = 0) {
+            const num = Number(value);
+            if (!Number.isFinite(num)) return '—';
+            return num.toLocaleString(undefined, { maximumFractionDigits: digits });
+        }
+
+        function getResourceMarketEstimate(quantity, resourceName) {
+            const price = Number(globalMarketData?.[resourceName]?.current);
+            const qty = Number(quantity);
+            if (!Number.isFinite(price) || price <= 0 || !Number.isFinite(qty)) return null;
+            return qty * price;
+        }
+
+        function getPreviousResourceMarketEstimate(quantity, resourceName) {
+            const previousPrice = Number(globalMarketData?.[resourceName]?.previous);
+            const qty = Number(quantity);
+            if (!Number.isFinite(previousPrice) || previousPrice <= 0 || !Number.isFinite(qty)) return null;
+            return qty * previousPrice;
+        }
+
+        function renderGrandTotal() {
+            const totalEl = document.getElementById('grand-total-value');
+            const changeEl = document.getElementById('grand-total-change');
+            if (!totalEl || !changeEl || !currentNationData) return;
+
+            let totalValue = 0;
+            let previousValue = 0;
+            RESOURCES.forEach(resource => {
+                const quantity = Number(currentNationData?.[resource]);
+                if (!Number.isFinite(quantity)) return;
+                const current = getResourceMarketEstimate(quantity, resource);
+                const previous = getPreviousResourceMarketEstimate(quantity, resource);
+                if (Number.isFinite(current)) totalValue += current;
+                if (Number.isFinite(previous)) previousValue += previous;
+            });
+
+            const cashBalance = Number(currentNationData?.money);
+            if (Number.isFinite(cashBalance)) {
+                totalValue += cashBalance;
+                previousValue += cashBalance;
+            }
+
+            totalEl.textContent = formatMoney(totalValue);
+            if (Number.isFinite(previousValue) && previousValue > 0) {
+                const pctChange = ((totalValue - previousValue) / previousValue) * 100;
+                const sign = pctChange >= 0 ? '+' : '';
+                changeEl.textContent = `${sign}${pctChange.toFixed(2)}% vs 24h`;
+                changeEl.style.color = pctChange >= 0 ? 'var(--green-glow)' : 'var(--red-glow)';
+            } else {
+                changeEl.textContent = '24h change unavailable';
+                changeEl.style.color = 'var(--text-muted)';
+            }
+        }
+
+        function renderStockpileHoldings(nation) {
+            const container = document.getElementById('stockpile-grid');
+            if (!container) return;
+
+            const rows = [
+                ['Food', nation?.food],
+                ['Coal', nation?.coal],
+                ['Oil', nation?.oil],
+                ['Uranium', nation?.uranium],
+                ['Iron', nation?.iron],
+                ['Bauxite', nation?.bauxite],
+                ['Lead', nation?.lead],
+                ['Gasoline', nation?.gasoline],
+                ['Munitions', nation?.munitions],
+                ['Steel', nation?.steel],
+                ['Aluminum', nation?.aluminum],
+                ['Credits', nation?.credits],
+                ['Money', nation?.money],
+                ['Arms Stockpile', nation?.arms_stockpile]
+            ];
+
+            container.innerHTML = rows.map(([label, value]) => {
+                const numericValue = Number(value);
+                const isMonetary = label === 'Money' || label === 'Credits';
+                const displayValue = Number.isFinite(numericValue)
+                    ? (isMonetary ? formatMoney(numericValue) : numericValue.toLocaleString())
+                    : 'N/A';
+                const creditsMarketValue = label === 'Credits' ? getResourceMarketEstimate(numericValue, 'credits') : null;
+                const meta = label === 'Money'
+                    ? 'Treasury'
+                    : label === 'Credits'
+                        ? (Number.isFinite(creditsMarketValue) ? `Credits owned • worth ${formatMoney(creditsMarketValue)}` : 'Credits owned')
+                        : label === 'Arms Stockpile'
+                            ? 'Military reserve'
+                            : 'On hand';
+                const icon = typeof getResourceIconHtml === 'function' && label !== 'Money' && label !== 'Arms Stockpile'
+                    ? getResourceIconHtml(label === 'Credits' ? 'credits' : label.toLowerCase(), 16)
+                    : '';
+                const safeResource = String(label).toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+                const detailUrl = `resource-detail.html?resource=${encodeURIComponent(safeResource)}`;
+                return `
+                    <a class="stockpile-item" href="${detailUrl}">
+                        <div class="stockpile-label">${icon}${label}</div>
+                        <div class="stockpile-value">${displayValue}</div>
+                        <div class="stockpile-meta">${meta}</div>
+                    </a>
+                `;
+            }).join('');
+        }
+
+        function appendTerminalLine(text, tone = 'info') {
+            const terminal = document.getElementById('terminal-content');
+            const scrollContainer = document.getElementById('ai-terminal');
+            if (!terminal || !scrollContainer) return;
+
+            const colorMap = {
+                info: 'var(--cyan-accent)',
+                warning: 'var(--red-glow)',
+                success: 'var(--green-glow)'
+            };
+            const color = colorMap[tone] || colorMap.info;
+            terminal.innerHTML += `<br><span style="color: ${color};">${text}</span>`;
+            scrollContainer.scrollTop = scrollContainer.scrollHeight;
+        }
+
+        function showHudDetail(title, body) {
+            const drawer = document.getElementById('hud-detail-drawer');
+            const titleEl = document.getElementById('hud-detail-title');
+            const bodyEl = document.getElementById('hud-detail-body');
+            if (!drawer || !titleEl || !bodyEl) return;
+            titleEl.textContent = title;
+            bodyEl.innerHTML = body;
+            drawer.classList.add('active');
+        }
+
+        function buildCityDetailHtml(cityName, cityData, marketContext) {
+            const population = cityData?.city_population || cityData?.population || 'N/A';
+            const buildings = cityData?.buildings || cityData?.buildings_made || 'No building detail available';
+            const commerce = cityData?.commerce || 'N/A';
+            const upkeep = cityData?.upkeep || 'N/A';
+            const production = cityData?.production || cityData?.daily_production || 'N/A';
+            const costEffectiveness = marketContext ? `${marketContext}` : 'Market context unavailable';
+            return `
+                <strong>${cityName}</strong><br>
+                Population: ${population}<br>
+                Buildings: ${buildings}<br>
+                Commerce: ${commerce}<br>
+                Daily Production: ${production}<br>
+                Daily Upkeep: ${upkeep}<br>
+                Cost Effectiveness: ${costEffectiveness}
+            `;
+        }
+
+        function bindHudClicks() {
+            document.querySelectorAll('.intel-card').forEach(card => {
+                card.addEventListener('click', event => {
+                    const pageTarget = card.getAttribute('data-page');
+                    if (!pageTarget) {
+                        event.preventDefault();
+                    }
+                    document.querySelectorAll('.intel-card').forEach(item => item.classList.remove('active'));
+                    card.classList.add('active');
+                    const title = card.querySelector('.intel-label')?.textContent || 'HUD Detail';
+                    const label = title.toLowerCase();
+                    let detail = card.getAttribute('data-detail') || 'Exclusive intelligence detail unavailable.';
+                    if (pageTarget) {
+                        return;
+                    }
+
+                    const cityRoster = Array.isArray(currentCityList) && currentCityList.length
+                        ? currentCityList.slice(0, 6).map(city => `${city.city_name || city.name || 'Unknown'} (${formatHudNumber(city.city_population || city.population || 0)})`).join('<br>')
+                        : 'No city roster available.';
+                    const population = currentNationData?.population || 0;
+                    const cityCount = currentNationData?.num_cities || currentCityList.length || 0;
+                    const avgPerCity = cityCount > 0 ? Math.round(population / cityCount) : 0;
+                    const militaryPower = (currentNationData?.soldiers || 0) + (currentNationData?.tanks || 0) + (currentNationData?.aircraft || 0) + (currentNationData?.ships || 0);
+
+                    if (label.includes('nation')) {
+                        detail = `<strong>Nation profile</strong><br>Nation: ${currentNationData?.nation_name || 'NewMerica'}<br>Commander: ${currentNationData?.leader_name || 'Unknown'}<br>Cities: ${cityCount}<br>Population: ${formatHudNumber(population)}<br>Score: ${formatHudNumber(currentNationData?.score, 2)}<br>Alliance: ${currentNationData?.alliance?.name || currentNationData?.alliance_id ? currentNationData.alliance?.name || `ID ${currentNationData.alliance_id}` : 'Independent'}`;
+                    } else if (label.includes('commander')) {
+                        detail = `<strong>Commander profile</strong><br>Executive: ${currentNationData?.leader_name || 'Unknown'}<br>Primary nation: ${currentNationData?.nation_name || 'Unknown'}<br>Population base: ${formatHudNumber(population)}<br>Municipal count: ${cityCount}<br>Strategic posture: ${currentNationData?.alliance?.name ? `Alliance-linked (${currentNationData.alliance.name})` : 'Independent posture'}`;
+                    } else if (label.includes('cities')) {
+                        detail = `<strong>City roster</strong><br>${cityRoster}`;
+                    } else if (label.includes('population')) {
+                        detail = `<strong>Population pressure</strong><br>Population: ${formatHudNumber(population)}<br>Average per city: ${formatHudNumber(avgPerCity)}<br>Municipal nodes: ${cityCount}<br>Military manpower: ${formatHudNumber(currentNationData?.soldiers || 0)}`;
+                    } else if (label.includes('avg / city')) {
+                        detail = `<strong>Average city profile</strong><br>Avg population / city: ${formatHudNumber(avgPerCity)}<br>Tracked cities: ${cityCount}<br>Population concentration: ${cityCount ? (population / cityCount).toFixed(1) : '0'} per node<br>Local mobility: ${formatHudNumber(militaryPower)}`;
+                    } else if (label.includes('net score')) {
+                        detail = `<strong>Net score context</strong><br>Score: ${formatHudNumber(currentNationData?.score, 2)}<br>Population factor: ${formatHudNumber(population)}<br>City factor: ${cityCount}<br>Military factor: ${formatHudNumber(militaryPower)}<br>Alliance posture: ${currentNationData?.alliance?.name ? currentNationData.alliance.name : 'Independent'}`;
+                    } else if (label.includes('alliance')) {
+                        detail = `<strong>Alliance posture</strong><br>Alliance: ${currentNationData?.alliance?.name || (currentNationData?.alliance_id ? `ID ${currentNationData.alliance_id}` : 'None')}<br>Position: ${currentNationData?.alliance_position || 'Independent'}<br>Members visible: ${Array.isArray(currentAllianceMembers) && currentAllianceMembers.length ? currentAllianceMembers.slice(0, 5).map(member => member.nation_name || 'Unknown').join(', ') : 'Member list unavailable in current API response'}`;
+                    } else if (label.includes('soldiers') || label.includes('tanks') || label.includes('aircraft') || label.includes('ships')) {
+                        detail = `<strong>Military readiness</strong><br>Soldiers: ${formatHudNumber(currentNationData?.soldiers || 0)}<br>Tanks: ${formatHudNumber(currentNationData?.tanks || 0)}<br>Aircraft: ${formatHudNumber(currentNationData?.aircraft || 0)}<br>Ships: ${formatHudNumber(currentNationData?.ships || 0)}<br>Total force index: ${formatHudNumber(militaryPower)}`;
+                    } else if (label.includes('city overview')) {
+                        const cityHighlights = Array.isArray(currentCityList) && currentCityList.length
+                            ? currentCityList.slice(0, 4).map(city => `${city.name || 'Unknown City'} • infra ${city.infrastructure || 0} • power ${city.powered ? 'online' : 'offline'} • ${city.buildingSummary || 'no building profile'}`).join('<br>')
+                            : `No city data returned from the API for ${currentNationData?.nation_name || 'this nation'}. The dashboard is using a fallback view until richer city fields are available.`;
+                        detail = `<strong>City overview</strong><br>${cityHighlights}<br><br>Command guidance: hold high-population nodes, review low-density districts, and rebalance production toward critical imports.`;
+                    }
+                    showHudDetail(title, detail);
+                });
+            });
+        }
+
+        function normalizeCityData(city) {
+            const buildingFields = [
+                ['barracks', city.barracks],
+                ['farm', city.farm],
+                ['police_station', city.police_station],
+                ['hospital', city.hospital],
+                ['recycling_center', city.recycling_center],
+                ['subway', city.subway],
+                ['supermarket', city.supermarket],
+                ['bank', city.bank],
+                ['shopping_mall', city.shopping_mall],
+                ['stadium', city.stadium],
+                ['lead_mine', city.lead_mine],
+                ['iron_mine', city.iron_mine],
+                ['bauxite_mine', city.bauxite_mine],
+                ['oil_refinery', city.oil_refinery],
+                ['aluminum_refinery', city.aluminum_refinery],
+                ['steel_mill', city.steel_mill],
+                ['munitions_factory', city.munitions_factory],
+                ['factory', city.factory],
+                ['hangar', city.hangar],
+                ['drydock', city.drydock],
+                ['coal_mine', city.coal_mine],
+                ['oil_well', city.oil_well],
+                ['uranium_mine', city.uranium_mine]
+            ];
+            const buildingSummary = buildingFields
+                .filter(([, value]) => Number(value) > 0)
+                .slice(0, 6)
+                .map(([name]) => name.replace(/_/g, ' '))
+                .join(', ');
+
+            return {
+                id: city.id || city.city_id || city.cityId || null,
+                name: city.name || city.city_name || city.cityName || 'Unnamed City',
+                infrastructure: Number(city.infrastructure) || 0,
+                land: Number(city.land) || 0,
+                powered: city.powered === true || city.powered === 1 || city.powered === 'true',
+                oilPower: Number(city.oil_power) || 0,
+                windPower: Number(city.wind_power) || 0,
+                coalPower: Number(city.coal_power) || 0,
+                nuclearPower: Number(city.nuclear_power) || 0,
+                buildingSummary: buildingSummary || 'No building profile returned',
+                city_population: Number(city.city_population) || Number(city.population) || 0,
+                city_name: city.name || city.city_name || city.cityName || 'Unnamed City',
+                city_id: city.id || city.city_id || city.cityId || null
+            };
+        }
+
+        function buildCitySummary(nation) {
+            const cityData = Array.isArray(nation?.cities?.data)
+                ? nation.cities.data.map(normalizeCityData)
+                : Array.isArray(nation?.cities)
+                    ? nation.cities.map(normalizeCityData)
+                    : [];
+            const cityCount = Number(nation?.num_cities || cityData.length || 0);
+            const topCities = cityData
+                .slice(0, 3)
+                .map(city => `${city.name} (infra ${city.infrastructure})`)
+                .join(' • ');
+            const avgPerCity = cityCount > 0 ? Math.round(Number(nation?.population || 0) / cityCount) : 0;
+
+            return {
+                cityCount,
+                cityList: topCities || `${cityCount} municipal nodes tracked`,
+                avgPerCity,
+                cityData
+            };
+        }
+
+        async function fetchNationStats() {
+            try {
+                const primaryQuery = `query { nations(id: [768640], first: 1) { data { nation_name leader_name population num_cities score food coal oil uranium iron bauxite lead gasoline munitions steel aluminum money credits arms_stockpile alliance_id alliance_position soldiers tanks aircraft ships cities { data { id name infrastructure land powered commerce oil_power wind_power coal_power nuclear_power coal_mine oil_well uranium_mine barracks farm police_station hospital recycling_center subway supermarket bank shopping_mall stadium lead_mine iron_mine bauxite_mine oil_refinery aluminum_refinery steel_mill munitions_factory factory hangar drydock } } alliance { id name acronym score color accept_members forum_link discord_link flag } } } }`;
+                const fallbackQuery = `query { nations(id: [768640], first: 1) { data { nation_name leader_name population num_cities score food coal oil uranium iron bauxite lead gasoline munitions steel aluminum money credits arms_stockpile alliance_id alliance_position soldiers tanks aircraft ships } } }`;
+
+                let nation = null;
+                let lastError = null;
+                for (const query of [primaryQuery, fallbackQuery]) {
+                    try {
+                        const response = await fetch(`https://api.politicsandwar.com/graphql?api_key=${API_KEY}`, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ query })
+                        });
+
+                        const json = await response.json();
+                        if (!json.errors && json.data?.nations?.data?.length) {
+                            nation = json.data.nations.data[0];
+                            break;
+                        }
+                        lastError = json.errors?.[0]?.message || 'No nation data returned';
+                    } catch (error) {
+                        lastError = error.message;
+                    }
+                }
+
+                if (!nation) {
+                    throw new Error(lastError || 'Stats Sync Failed');
+                }
+
+                currentNationData = nation;
+                currentCityList = Array.isArray(nation?.cities?.data)
+                    ? nation.cities.data.map(normalizeCityData)
+                    : Array.isArray(nation?.cities)
+                        ? nation.cities.map(normalizeCityData)
+                        : [];
+
+                if (!currentCityList.length && Number(nation?.num_cities || 0) > 0) {
+                    currentCityList = Array.from({ length: Math.min(Number(nation.num_cities || 0), 4) }, (_, index) => ({
+                        name: `City ${index + 1}`,
+                        infrastructure: 0,
+                        powered: false,
+                        buildingSummary: 'City profile unavailable from current API payload',
+                        city_population: 0,
+                        city_name: `City ${index + 1}`
+                    }));
+                }
+                currentAllianceMembers = Array.isArray(nation?.alliance?.members)
+                    ? nation.alliance.members
+                    : [];
+
+                const nationStatsEl = document.getElementById('nation-stats');
+                const intelGridEl = document.getElementById('nation-intel-grid');
+                const citySummary = buildCitySummary(nation);
+                renderStockpileHoldings(nation);
+
+                if (nationStatsEl) {
+                    nationStatsEl.innerHTML = `
+                        <div class="stat-box">
+                            <span class="stat-label">NATION</span>
+                            <span class="stat-value" style="color: var(--cyan-accent); text-shadow: 0 0 8px var(--cyan-accent);">${(nation.nation_name || 'UNKNOWN').toUpperCase()}</span>
+                        </div>
+                        <div class="stat-box">
+                            <span class="stat-label">COMMANDER</span>
+                            <span class="stat-value">${(nation.leader_name || 'UNKNOWN').toUpperCase()}</span>
+                        </div>
+                        <div class="stat-box">
+                            <span class="stat-label">CITIES</span>
+                            <span class="stat-value">${citySummary.cityCount}</span>
+                        </div>
+                        <div class="stat-box">
+                            <span class="stat-label">POPULATION</span>
+                            <span class="stat-value">${formatHudNumber(nation.population)}</span>
+                        </div>
+                        <div class="stat-box">
+                            <span class="stat-label">NET SCORE</span>
+                            <span class="stat-value">${formatHudNumber(nation.score, 2)}</span>
+                        </div>
+                        <div class="stat-box">
+                            <span class="stat-label">SYSTEM LINK</span>
+                            <span class="stat-value" style="color: var(--green-glow); text-shadow: 0 0 8px var(--green-glow);">SECURE</span>
+                        </div>
+                    `;
+                }
+
+                if (intelGridEl) {
+                    const creditsMarketValue = getResourceMarketEstimate(nation?.credits, 'credits');
+                    const hudCards = [
+                        { label: 'Nation', value: (nation.nation_name || 'UNKNOWN').toUpperCase(), subtext: 'Primary sovereign entity', detail: 'The sovereign identity currently under command and observation.', page: 'nation-hud.html' },
+                        { label: 'Commander', value: (nation.leader_name || 'UNKNOWN').toUpperCase(), subtext: 'Executive authority', detail: 'The executive authority steering the nation’s strategic posture.', page: 'commander-hud.html' },
+                        { label: 'Cities', value: citySummary.cityCount.toString(), subtext: 'Municipal nodes tracked', detail: 'The number of urban centers currently linked to the state’s infrastructure network.', page: 'cities-hud.html' },
+                        { label: 'Population', value: formatHudNumber(nation.population), subtext: 'Active citizen base', detail: 'The total population base used to estimate manpower, consumption, and internal resilience.', page: 'cities-hud.html' },
+                        { label: 'Avg / City', value: formatHudNumber(citySummary.avgPerCity), subtext: 'Population per municipality', detail: 'Average demographic pressure per city, useful for gauging urban strain and development spread.', page: 'avg-city-hud.html' },
+                        { label: 'Net Score', value: formatHudNumber(nation.score, 2), subtext: 'Strategic standing', detail: 'Overall strategic standing used as a high-level comparator across nations.', page: 'net-score-hud.html' },
+                        { label: 'Alliance', value: nation.alliance?.name ? nation.alliance.name.toUpperCase() : (nation.alliance_id ? `ID ${nation.alliance_id}` : 'NONE'), subtext: nation.alliance_position || 'Independent posture', detail: 'Alliance posture and coalition affiliation for the nation.', page: 'alliance-hud.html' },
+                        { label: 'Soldiers', value: formatHudNumber(nation.soldiers), subtext: 'Active military personnel', detail: 'Human-force capacity available for defensive and offensive operations.', page: 'soldiers-hud.html' },
+                        { label: 'Tanks', value: formatHudNumber(nation.tanks), subtext: 'Armored force', detail: 'Heavy armor inventory and force projection capabilities.', page: 'tanks-hud.html' },
+                        { label: 'Aircraft', value: formatHudNumber(nation.aircraft), subtext: 'Air assets', detail: 'Air assets available for rapid interception, bombardment, and strategic mobility.', page: 'aircraft-hud.html' },
+                        { label: 'Ships', value: formatHudNumber(nation.ships), subtext: 'Naval assets', detail: 'Naval inventory and maritime reach available to the state.', page: 'ships-hud.html' },
+                        { label: 'Credits', value: formatHudNumber(nation.credits), subtext: Number.isFinite(creditsMarketValue) ? `Worth ${formatMoney(creditsMarketValue)}` : 'Credits owned', detail: `Credits currently owned by the nation: ${formatHudNumber(nation.credits)}${Number.isFinite(creditsMarketValue) ? ` • Market value: ${formatMoney(creditsMarketValue)}` : ''}`, page: 'resource-detail.html?resource=credits' },
+                        { label: 'Infrastructure', value: 'N/A', subtext: 'City infrastructure overview', detail: 'A dedicated infrastructure view for the city manager data.', page: 'infrastructure-hud.html' },
+                        { label: 'Treasury', value: formatHudNumber(nation.money), subtext: 'Money on hand', detail: `Treasury balance currently reported for the nation: ${formatHudNumber(nation.money)}`, page: 'treasury-hud.html' },
+                        { label: 'City Overview', value: citySummary.cityList, subtext: 'Top urban centers', detail: citySummary.cityList ? `Urban distribution snapshot: ${citySummary.cityList}` : 'No city detail returned by the API.', page: 'city-overview-hud.html' }
+                    ];
+
+                    intelGridEl.innerHTML = hudCards.map(card => `
+                        <a class="intel-card" href="${card.page ? card.page.replace(/"/g, '&quot;') : '#'}" data-detail="${(card.detail || '').replace(/"/g, '&quot;')}" data-page="${(card.page || '').replace(/"/g, '&quot;')}" ${card.page ? '' : 'role="button" tabindex="0"'}>
+                            <div class="intel-label">${card.label}</div>
+                            <div class="intel-value">${card.value}</div>
+                            <div class="intel-subtext">${card.subtext}</div>
+                        </a>
+                    `).join('');
+                    bindHudClicks();
+                }
+            } catch (error) {
+                console.error('Nation stats failed:', error);
+                const nationStatsEl = document.getElementById('nation-stats');
+                if (nationStatsEl) {
+                    nationStatsEl.innerHTML = `
+                        <div class="stat-box"><span class="stat-label">SYSTEM LINK</span><span class="stat-value" style="color: var(--red-glow);">OFFLINE</span></div>
+                        <div class="stat-box"><span class="stat-label">ERROR</span><span class="stat-value" style="font-size: 0.85rem; color: var(--red-glow);">${(error.message || 'Unknown').substring(0, 80)}</span></div>
+                    `;
+                }
+                const intelGridEl = document.getElementById('nation-intel-grid');
+                if (intelGridEl) {
+                    intelGridEl.innerHTML = `
+                        <a class="intel-card" href="#" role="button" tabindex="0"><div class="intel-label">INTEL</div><div class="intel-value">OFFLINE</div><div class="intel-subtext">${error.message || 'National data unavailable'}</div></a>
+                    `;
+                }
+            }
+        }
+
+        async function fetchMarketData() {
+            const terminal = document.getElementById('terminal-content');
+            const scrollContainer = document.getElementById('ai-terminal');
+
+            try {
+                terminal.innerHTML += `<br>> Querying global trade servers...`;
+                const query = `query { tradeprices(first: 10) { data { date food coal oil uranium iron bauxite lead gasoline munitions steel aluminum credits } } }`;
+                const historicalData = typeof fetchMarketRows === 'function'
+                    ? await fetchMarketRows(query)
+                    : [];
+                if (!historicalData.length) throw new Error('No current market rows returned.');
+                let arbitrageHtml = "";
+                let ordersHtml = "";
+                let orderCount = 0;
+
+                terminal.innerHTML += `<br>> Data acquired. Running V3 Arbitrage Matrix...`;
+
+                RESOURCES.forEach(res => {
+                    let history = historicalData
+                        .map(day => Number(day[res]))
+                        .filter(value => Number.isFinite(value))
+                        .reverse();
+
+                    let currentPrice = history[history.length - 1] || 0;
+                    let avgPrice = history.length ? history.reduce((a, b) => a + b, 0) / history.length : currentPrice;
+                    let directive = "HOLD";
+                    let tagClass = "hold";
+                    let targetQty = 0;
+
+                    if (currentPrice < (avgPrice * 0.95)) {
+                        directive = "STRONG BUY";
+                        tagClass = "buy";
+                        targetQty = Math.floor(1000000 / currentPrice);
+                    } else if (currentPrice > (avgPrice * 1.05)) {
+                        directive = "STRONG SELL";
+                        tagClass = "sell";
+                        targetQty = Math.floor(1000000 / currentPrice);
+                    }
+
+                    globalMarketData[res] = {
+                        current: currentPrice,
+                        previous: history[history.length - 2] || 0,
+                        avg: avgPrice,
+                        directive,
+                        history
+                    };
+
+                    let isCritical = CRITICAL_IMPORTS.includes(res);
+                    let importBadge = isCritical ? `<span class="tag import-critical">CRITICAL IMPORT</span>` : "";
+
+                    const resIcon = typeof getResourceIconHtml === 'function' ? getResourceIconHtml(res, 18) : '';
+                    arbitrageHtml += `
+                        <tr onclick="updateTerminal('${res}')">
+                            <td class="cap-text" style="color: var(--cyan-accent);">${resIcon}${res.toUpperCase()} ${importBadge}</td>
+                            <td style="font-family: 'Share Tech Mono', monospace;">${formatMoney(avgPrice)}</td>
+                            <td style="color: #fff; font-family: 'Share Tech Mono', monospace;">${formatMoney(currentPrice)}</td>
+                            <td>${generateSparkline(history)}</td>
+                            <td><span class="tag ${tagClass}">${directive}</span></td>
+                        </tr>
+                    `;
+
+                    if (directive !== "HOLD" && orderCount < 5) {
+                        ordersHtml += `<tr><td class="cap-text" style="color: var(--cyan-accent);">${res}</td><td style="font-family: 'Share Tech Mono', monospace;">${targetQty.toLocaleString()} U</td><td><span class="tag ${tagClass}">${directive} @ ${formatMoney(currentPrice)}</span></td></tr>`;
+                        orderCount++;
+                    }
+                });
+
+                const creditsHistory = historicalData
+                    .map(day => Number(day.credits))
+                    .filter(value => Number.isFinite(value))
+                    .reverse();
+                const creditsCurrentPrice = creditsHistory[creditsHistory.length - 1] || 0;
+                const creditsAvgPrice = creditsHistory.length ? creditsHistory.reduce((a, b) => a + b, 0) / creditsHistory.length : creditsCurrentPrice;
+                globalMarketData.credits = {
+                    current: creditsCurrentPrice,
+                    previous: creditsHistory[creditsHistory.length - 2] || 0,
+                    avg: creditsAvgPrice,
+                    directive: 'HOLD',
+                    history: creditsHistory
+                };
+
+                document.getElementById('arbitrage-body').innerHTML = arbitrageHtml;
+                document.getElementById('active-orders-body').innerHTML = ordersHtml || `<tr><td colspan="3" style="text-align:center; font-family: 'Share Tech Mono', monospace; color: var(--text-muted);">No immediate tactical actions required.</td></tr>`;
+                renderKpisAndAlerts();
+                renderGrandTotal();
+
+                const buyCount = Object.values(globalMarketData).filter(data => data.directive === 'STRONG BUY').length;
+                const sellCount = Object.values(globalMarketData).filter(data => data.directive === 'STRONG SELL').length;
+                const weatherLabel = getWeatherRiskLabel(lastWeatherData);
+                terminal.innerHTML += `<br>> Matrix compilation complete. Monitoring critical supply lines. Awaiting command input.`;
+                appendTerminalLine(`Strategic posture update: ${buyCount} buy signals, ${sellCount} sell signals, and ${weatherLabel} weather exposure.`, 'info');
+                scrollContainer.scrollTop = scrollContainer.scrollHeight;
+
+            } catch (error) {
+                console.error(error);
+                terminal.innerHTML += `<br><span style="color: var(--red-glow);">> FATAL SYSTEM ERROR: ${error.message}</span>`;
+            }
+        }
+
+        function updateTerminal(resource) {
+            const data = globalMarketData[resource];
+            const terminal = document.getElementById('terminal-content');
+            const scrollContainer = document.getElementById('ai-terminal');
+
+            if (!data || !terminal || !scrollContainer) return;
+
+            const percentDiff = Math.abs(((data.current - data.avg) / data.avg) * 100).toFixed(1);
+            const isCritical = CRITICAL_IMPORTS.includes(resource);
+
+            let logicText = `> [${resource.toUpperCase()}] selected for tactical audit.<br>`;
+            if (isCritical) logicText += `> <span style="color: #d8b4fe;">NOTE: This asset is flagged as a CRITICAL IMPORT for NewMerica manufacturing.</span><br>`;
+            logicText += `> Current Valuation: $${data.current.toLocaleString()} (10-Day Avg: $${Math.round(data.avg).toLocaleString()})<br>`;
+
+            if (data.directive === "STRONG BUY") {
+                logicText += `> ALERT: Asset is trading ${percentDiff}% BELOW historical resistance.<br>> MARKET DIRECTIVE: Initiating acquisition protocols.<br>`;
+            } else if (data.directive === "STRONG SELL") {
+                logicText += `> ALERT: Asset is trading ${percentDiff}% ABOVE historical resistance.<br>> MARKET DIRECTIVE: Liquidating surplus stockpiles to maximize margins.<br>`;
+            } else {
+                logicText += `> STATUS: Asset is stable within ${percentDiff}% of moving average.<br>> MARKET DIRECTIVE: Conserving capital. HOLD.<br>`;
+            }
+
+            terminal.innerHTML += `<br>${logicText}`;
+            scrollContainer.scrollTop = scrollContainer.scrollHeight;
+        }
+
+        const LAT = 39.7294;
+        const LON = -104.8319;
+
+        async function fetchLiveWeather() {
+            const overlay = document.getElementById('seasonal-overlay');
+            if (!overlay) return;
+
+            try {
+                const response = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}&current_weather=true&windspeed_unit=mph`);
+                if (!response.ok) throw new Error("API call failed");
+                const data = await response.json();
+                lastWeatherData = data.current_weather;
+                updateWeatherHUD(lastWeatherData, overlay);
+            } catch (error) {
+                console.warn("Live weather blocked or offline. Booting fallback Matrix Data Rain...", error);
+                lastWeatherData = { weathercode: 51, windspeed: 5, winddirection: 0, isFallback: true };
+                updateWeatherHUD(lastWeatherData, overlay);
+            }
+
+            renderKpisAndAlerts();
+        }
+
+        function updateWeatherHUD(weather, overlay) {
+            overlay.innerHTML = '';
+            const root = document.documentElement;
+            const radians = weather.winddirection * (Math.PI / 180);
+            const windDriftX = -Math.sin(radians) * weather.windspeed * 1.5;
+            root.style.setProperty('--wind-drift', `${windDriftX}vw`);
+
+            const code = weather.weathercode;
+            let particleCount = 0;
+            let chars = [];
+            let color = '';
+
+            if (weather.isFallback) {
+                particleCount = 100;
+                chars = ['0', '1', '|', 'Ξ'];
+                color = 'rgba(0, 240, 255, 0.4)';
+            } else if (code <= 3) {
+                particleCount = 50;
+                chars = ['.', '+', '°'];
+                color = 'rgba(255, 255, 255, 0.2)';
+            } else if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82)) {
+                particleCount = weather.windspeed > 15 ? 150 : 90;
+                chars = ['|', ':', '.', "'"];
+                color = 'rgba(0, 240, 255, 0.5)';
+            } else if ((code >= 71 && code <= 77) || (code >= 85 && code <= 86)) {
+                particleCount = 80;
+                chars = ['*', '.', '❄'];
+                color = 'rgba(226, 232, 240, 0.6)';
+            } else if (code >= 95) {
+                particleCount = 180;
+                chars = ['|', '/', '\\', '⚡'];
+                color = 'rgba(168, 85, 247, 0.6)';
+            } else {
+                particleCount = 60;
+                chars = ['-'];
+                color = 'rgba(101, 116, 139, 0.4)';
+            }
+
+            root.style.setProperty('--particle-color', color);
+
+            for (let i = 0; i < particleCount; i++) {
+                let particle = document.createElement('div');
+                particle.className = 'live-weather-particle';
+                particle.innerText = chars[Math.floor(Math.random() * chars.length)];
+                particle.style.left = `${Math.random() * 200 - 50}%`;
+                particle.style.fontSize = `${Math.random() * 12 + 10}px`;
+                particle.style.animationDuration = `${Math.random() * 2.0 + 1.2}s`;
+                particle.style.animationDelay = `${Math.random() * 4}s`;
+                overlay.appendChild(particle);
+            }
+        }
+
+        const REVERSE_TITAN_URL = 'https://script.google.com/macros/s/AKfycbyUAVvGGrN_IhWDauT98ZLEoA-1CdIwsN7sG8l_4RkAxoH9gakiDQB_CIc6zCPTRBso/exec';
+        const REVERSE_TITAN_SPREADSHEET_ID = '1KlXsnU_OEzTpefr3bPHqs8YAT3MlqaT3X-ITxrIE6ys';
+        const REVERSE_TITAN_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes
+
+        async function refreshDashboard() {
+            setDashboardMeta('SYNCING...', 'Refreshing...');
+            try {
+                await fetchNationStats();
+                await fetchMarketData();
+                await fetchLiveWeather();
+                await writeReverseTitanSnapshot();
+            } finally {
+                const now = new Date();
+                setDashboardMeta('LIVE API SIGNAL', now.toLocaleTimeString());
+            }
+        }
+
+        async function writeReverseTitanSnapshot() {
+            if (!currentNationData || !globalMarketData) return;
+
+            const snapshot = {
+                timestamp: new Date().toISOString(),
+                nation: {
+                    name: currentNationData.nation_name || null,
+                    leader: currentNationData.leader_name || null,
+                    population: currentNationData.population || null,
+                    score: currentNationData.score || null,
+                    money: currentNationData.money || null,
+                    credits: currentNationData.credits || null,
+                    arms_stockpile: currentNationData.arms_stockpile || null,
+                    soldiers: currentNationData.soldiers || null,
+                    tanks: currentNationData.tanks || null,
+                    aircraft: currentNationData.aircraft || null,
+                    ships: currentNationData.ships || null
+                },
+                market: Object.fromEntries(Object.entries(globalMarketData).map(([resource, data]) => [resource, {
+                    current: data.current,
+                    previous: data.previous,
+                    avg: data.avg,
+                    directive: data.directive,
+                    history: data.history || []
+                }])),
+                citySummary: currentCityList.slice(0, 5).map(city => ({
+                    name: city.name || city.city_name || city.cityName || 'Unknown',
+                    population: city.city_population || city.population || 0,
+                    infrastructure: city.infrastructure || 0,
+                    powered: city.powered || false
+                })),
+                alliance: {
+                    id: currentNationData.alliance_id || null,
+                    name: currentNationData.alliance?.name || null,
+                    position: currentNationData.alliance_position || null,
+                    score: currentNationData.alliance?.score || null
+                }
+            };
+
+            try {
+                await fetch(REVERSE_TITAN_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'reverseTitanSnapshot',
+                        snapshot,
+                        spreadsheetId: REVERSE_TITAN_SPREADSHEET_ID
+                    }),
+                    cache: 'no-store'
+                });
+            } catch (error) {
+                console.warn('Reverse Titan snapshot failed:', error);
+            }
+        }
+
+        // render commerce breakdown after each refresh so values update with market and nation data
+        const __orig_refreshDashboard = typeof refreshDashboard === 'function' ? refreshDashboard : null;
+
+        refreshDashboard = async function() {
+            if (typeof __orig_refreshDashboard === 'function') await __orig_refreshDashboard();
+            try { renderCommerceBreakdown(); } catch (e) { console.warn('Render commerce failed', e); }
+        };
+
+        refreshDashboard();
+        bindHudClicks();
+        setInterval(refreshDashboard, 60 * 1000);
+        setInterval(writeReverseTitanSnapshot, REVERSE_TITAN_INTERVAL_MS);
+    </script>
+    <script src="scripts/commerce-revenue.js"></script>
+</body>
+</html>

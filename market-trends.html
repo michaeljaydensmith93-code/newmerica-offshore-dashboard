@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NewMerica | Market Trends</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root{--bg:#091116;--panel:#101b20;--panel-2:#16252b;--ink:#edf7f4;--muted:#91a7a8;--line:#294047;--mint:#77e0b5;--cyan:#75cfe2;--gold:#f4c36a;--red:#ff8f86;--shadow:0 22px 60px rgba(0,0,0,.28)}
+    *{box-sizing:border-box}
+    body{margin:0;min-height:100vh;background:radial-gradient(circle at 12% 0,#18383a 0,transparent 34%),linear-gradient(145deg,#071014,#0d171b 55%,#081013);color:var(--ink);font-family:"Aptos","Segoe UI Variable","Segoe UI",sans-serif;padding:24px}
+    .wrap{max-width:1440px;margin:auto}
+    .topline{color:var(--muted);font:700 .68rem/1.4 "Cascadia Mono",Consolas,monospace;letter-spacing:.14em;text-transform:uppercase;margin-bottom:24px}
+    .back{color:var(--cyan);font-size:.75rem;font-weight:800;letter-spacing:.08em;text-decoration:none;text-transform:uppercase}
+    header{display:flex;justify-content:space-between;align-items:end;gap:24px;margin:18px 0 28px}
+    h1{font-size:clamp(2rem,5vw,4rem);line-height:1;margin:0 0 10px;letter-spacing:-.02em} header p{color:var(--muted);margin:0;max-width:680px;line-height:1.55}
+    .live{display:flex;align-items:center;gap:8px;color:var(--mint);font:800 .72rem "Cascadia Mono",Consolas,monospace;text-transform:uppercase;white-space:nowrap}.dot{width:8px;height:8px;border-radius:50%;background:var(--mint);box-shadow:0 0 0 5px rgba(119,224,181,.1)}
+    .toolbar{display:flex;flex-wrap:wrap;gap:10px;padding:12px;margin-bottom:18px;border:1px solid var(--line);border-radius:14px;background:rgba(16,27,32,.88)}
+    select,button{border:1px solid #46616a;border-radius:9px;background:#0b1519;color:var(--ink);padding:11px 13px;font:700 .78rem inherit;min-height:42px}button{cursor:pointer;background:var(--cyan);color:#071216;border-color:var(--cyan)}button:hover{filter:brightness(1.08)}
+    .stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:18px}.stat,.panel{background:linear-gradient(145deg,rgba(22,37,43,.96),rgba(12,23,28,.96));border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow)}.stat{padding:16px}.stat small{display:block;color:var(--muted);font:700 .65rem "Cascadia Mono",Consolas,monospace;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}.stat strong{font:800 1.35rem "Cascadia Mono",Consolas,monospace}.positive{color:var(--mint)}.negative{color:var(--red)}
+    .layout{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(300px,.85fr);gap:18px}.panel{padding:20px}.panel h2{font-size:1rem;margin:0 0 5px}.panel h2,.panel h3{letter-spacing:.04em}.panel-sub{color:var(--muted);font-size:.8rem;margin:0 0 16px}.chart-box{height:390px;position:relative}.analysis{display:grid;gap:10px}.insight{padding:13px;border-left:3px solid var(--gold);background:rgba(244,195,106,.06);line-height:1.45;font-size:.86rem}.insight strong{color:var(--gold)}
+    .table-wrap{overflow:auto;margin-top:18px}.prices{width:100%;border-collapse:collapse;min-width:600px}.prices th,.prices td{text-align:left;padding:12px;border-bottom:1px solid var(--line);font-size:.78rem}.prices th{color:var(--muted);font:700 .65rem "Cascadia Mono",Consolas,monospace;text-transform:uppercase;letter-spacing:.1em}.prices td:nth-child(n+2){font-family:"Cascadia Mono",Consolas,monospace}.resource{font-weight:800}.resource::first-letter{text-transform:uppercase}
+    .footer-note{color:var(--muted);font-size:.72rem;line-height:1.5;margin-top:18px}.error{color:var(--red);padding:12px;border:1px solid rgba(255,143,134,.35);border-radius:9px;background:rgba(255,143,134,.06)}
+    @media(max-width:900px){body{padding:16px}.layout{grid-template-columns:1fr}.chart-box{height:330px}header{align-items:start;flex-direction:column}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:520px){.stats{grid-template-columns:1fr 1fr;gap:8px}.stat{padding:12px}.stat strong{font-size:1rem}.toolbar>*{flex:1 1 140px}.chart-box{height:280px}.panel{padding:15px}h1{font-size:2.2rem}}
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <div class="topline">NMR / NATIONAL ECONOMIC INTELLIGENCE</div>
+    <a class="back" href="MarketAi.html">← Market</a>
+    <header>
+      <div><h1>Market Trends</h1><p>Track live resource prices against your historical market record, then use momentum and volatility to guide alliance supply decisions.</p></div>
+      <div class="live"><span class="dot"></span><span id="liveStatus">Loading market data</span></div>
+    </header>
+    <div class="toolbar">
+      <select id="resourceSelect" aria-label="Select resource"></select>
+      <select id="rangeSelect" aria-label="Select chart range"><option value="all">All history</option><option value="30">Last 30 observations</option><option value="90">Last 90 observations</option></select>
+      <button id="refresh" type="button">Refresh prices</button>
+    </div>
+    <section class="stats" aria-label="Market summary">
+      <div class="stat"><small>Selected price</small><strong id="currentPrice">—</strong></div>
+      <div class="stat"><small>Change vs previous</small><strong id="change">—</strong></div>
+      <div class="stat"><small>Historical range</small><strong id="range">—</strong></div>
+      <div class="stat"><small>Volatility</small><strong id="volatility">—</strong></div>
+    </section>
+    <div class="layout">
+      <section class="panel"><h2 id="chartTitle">Price history</h2><p class="panel-sub" id="chartSub">Historical logs plus the latest API snapshots</p><div class="chart-box"><canvas id="trendChart"></canvas></div><div class="footer-note" id="dataNote"></div></section>
+      <aside class="panel"><h2>Market read</h2><p class="panel-sub">Signals from the selected resource</p><div class="analysis" id="analysis"></div></aside>
+    </div>
+    <section class="panel" style="margin-top:18px"><h2>Current market board</h2><p class="panel-sub">Latest available API snapshot, refreshed automatically every minute.</p><div class="table-wrap"><table class="prices"><thead><tr><th>Resource</th><th>Current</th><th>Previous</th><th>Change</th><th>Historical average</th><th>Signal</th></tr></thead><tbody id="priceBody"><tr><td colspan="6">Loading...</td></tr></tbody></table></div></section>
+  </main>
+  <script>
+    const API_KEY='731a391e2f41251b8bcc';
+    const RESOURCES=['food','coal','oil','uranium','iron','bauxite','lead','gasoline','munitions','steel','aluminum'];
+    const HISTORY_FILES=['MARKET TRENDS JUNE 12-AUG 1/Market Trend JUNE.txt','MARKET TRENDS JUNE 12-AUG 1/MarketTrend JULY.txt','MARKET TRENDS JUNE 12-AUG 1/Market Trend AUGUST.txt'];
+    let history=[], liveRows=[], chart;
+    const $=id=>document.getElementById(id);
+    const money=value=>Number.isFinite(Number(value))?'$'+Number(value).toLocaleString(undefined,{maximumFractionDigits:2}):'—';
+    const label=value=>value.charAt(0).toUpperCase()+value.slice(1);
+    function parseHistory(text){return text.split(/\r?\n/).map(line=>{const parts=line.trim().split(/\t+/);if(parts.length<3)return null;const row={date:parts[0]};for(let i=1;i<parts.length-1;i+=2){const key=String(parts[i]).toLowerCase();const value=Number(parts[i+1]);if(RESOURCES.includes(key)&&Number.isFinite(value))row[key]=value}return Object.keys(row).length>1?row:null}).filter(Boolean)}
+    async function loadHistory(){const responses=await Promise.all(HISTORY_FILES.map(file=>fetch(encodeURI(file)).then(r=>r.ok?r.text():'').catch(()=>'')));history=responses.flatMap(parseHistory).sort((a,b)=>new Date(a.date)-new Date(b.date));}
+    async function loadLive(){const query='{ tradeprices(first: 20) { data { date food coal oil uranium iron bauxite lead gasoline munitions steel aluminum } } }';const response=await fetch('https://api.politicsandwar.com/graphql?api_key='+API_KEY,{method:'POST',cache:'no-store',headers:{'Content-Type':'application/json'},body:JSON.stringify({query})});const json=await response.json();liveRows=(json?.data?.tradeprices?.data||[]).sort((a,b)=>new Date(a.date)-new Date(b.date));}
+    function series(resource){return [...history,...liveRows].filter(row=>Number.isFinite(Number(row[resource]))).sort((a,b)=>new Date(a.date)-new Date(b.date)).map(row=>({date:row.date,value:Number(row[resource])})).filter((row,index,rows)=>index===0||row.date!==rows[index-1].date)}
+    function draw(){const resource=$('resourceSelect').value;const rows=series(resource);const range=$('rangeSelect').value;const visible=range==='all'?rows:rows.slice(-Number(range));const values=visible.map(row=>row.value);const current=values.at(-1);const previous=values.at(-2);const change=previous?((current-previous)/Math.abs(previous))*100:0;const min=Math.min(...values),max=Math.max(...values),avg=values.reduce((sum,value)=>sum+value,0)/Math.max(values.length,1);const variance=values.reduce((sum,value)=>sum+(value-avg)**2,0)/Math.max(values.length,1);const volatility=avg?Math.sqrt(variance)/avg*100:0; $('currentPrice').textContent=money(current);$('change').textContent=(change>=0?'+':'')+change.toFixed(2)+'%';$('change').className=change>=0?'positive':'negative';$('range').textContent=money(min)+' – '+money(max);$('volatility').textContent=volatility.toFixed(2)+'%';$('chartTitle').textContent=label(resource)+' price history';$('chartSub').textContent=visible.length+' observations across historical logs and live API snapshots';$('analysis').innerHTML=makeAnalysis(resource,current,change,avg,volatility,min,max);if(chart)chart.destroy();chart=new Chart($('trendChart'),{type:'line',data:{labels:visible.map(row=>new Date(row.date).toLocaleDateString(undefined,{month:'short',day:'numeric'})),datasets:[{label:label(resource),data:visible.map(row=>row.value),borderColor:'#77e0b5',backgroundColor:'rgba(119,224,181,.12)',fill:true,tension:.25,pointRadius:visible.length>100?0:2,pointHoverRadius:5}]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{display:false},tooltip:{callbacks:{label:context=>money(context.parsed.y)}}},scales:{x:{ticks:{color:'#91a7a8',maxTicksLimit:8},grid:{color:'rgba(145,167,168,.08)'}},y:{ticks:{color:'#91a7a8',callback:value=>money(value)},grid:{color:'rgba(145,167,168,.12)'}}}}});$('dataNote').textContent='Historical rows loaded: '+history.length+'. Live API rows loaded: '+liveRows.length+'. Prices are snapshots, not live order-book quotes.'}
+    function makeAnalysis(resource,current,change,avg,volatility,min,max){const mode=resource==='gasoline'||resource==='aluminum'?'alliance supply priority':resource==='steel'?'cash-generation and industrial input':'general market';const direction=change>1?'rising':change<-1?'falling':'stable';const distance=avg?((current-avg)/avg*100):0;return `<div class="insight"><strong>Momentum:</strong> ${label(resource)} is ${direction}, changing ${change>=0?'+':''}${change.toFixed(2)}% from the previous snapshot.</div><div class="insight"><strong>Position:</strong> Current price is ${distance>=0?'+':''}${distance.toFixed(2)}% versus the selected history average.</div><div class="insight"><strong>Risk:</strong> Observed volatility is ${volatility.toFixed(2)}%; the recorded range is ${money(min)} to ${money(max)}.</div><div class="insight"><strong>Policy lens:</strong> Evaluate this resource under ${mode}; use the chart with current inventory and alliance commitments before trading.</div>`}
+    function drawBoard(){const body=$('priceBody');body.innerHTML=RESOURCES.map(resource=>{const rows=series(resource);const current=rows.at(-1)?.value;const previous=rows.at(-2)?.value;const values=rows.map(row=>row.value);const avg=values.reduce((sum,value)=>sum+value,0)/Math.max(values.length,1);const change=previous?((current-previous)/Math.abs(previous))*100:0;const signal=change>1?'Rising':change<-1?'Falling':'Stable';return `<tr><td class="resource">${label(resource)}</td><td>${money(current)}</td><td>${money(previous)}</td><td class="${change>=0?'positive':'negative'}">${change>=0?'+':''}${change.toFixed(2)}%</td><td>${money(avg)}</td><td>${signal}</td></tr>`}).join('')}
+    async function refresh(){try{$('liveStatus').textContent='Refreshing';await Promise.all([loadHistory(),loadLive()]);const select=$('resourceSelect');if(!select.options.length)select.innerHTML=RESOURCES.map(resource=>`<option value="${resource}">${label(resource)}</option>`).join('');draw();drawBoard();$('liveStatus').textContent='Live · '+new Date().toLocaleTimeString()}catch(error){$('liveStatus').textContent='Update failed';$('analysis').innerHTML='<div class="error">Market data could not be loaded. Check the API connection and confirm this page is being served over HTTP.</div>'}}
+    $('resourceSelect').addEventListener('change',draw);$('rangeSelect').addEventListener('change',draw);$('refresh').addEventListener('click',refresh);refresh();setInterval(refresh,60000);
+  </script>
+</body>
+</html>

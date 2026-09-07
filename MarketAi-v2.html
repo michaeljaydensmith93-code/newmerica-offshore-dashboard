@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>NewMerica! - Market Model</title>
+    <style>
+        :root { --bg-deep: #090b0f; --clay-base: #10131a; --blue-glow: #60a5fa; --text-main: #f8fafc; --accent: #22d3ee; --border: 2px solid #0f172a; }
+        body { font-family: 'Outfit', sans-serif; background: radial-gradient(circle at top, rgba(34,211,238,0.12), transparent 35%), linear-gradient(180deg, #020617 0%, #070b12 100%); color: var(--text-main); min-height: 100vh; margin: 0; padding: 28px; display: flex; justify-content: center; align-items: flex-start; }
+        .container { width: min(1200px, 100%); background: rgba(10, 14, 25, 0.95); border: var(--border); border-radius: 16px; box-shadow: 0 0 40px rgba(34, 211, 238, 0.12); padding: 28px; }
+        .headline { font-size: 2rem; letter-spacing: 1px; margin: 0 0 18px 0; color: var(--accent); text-transform: uppercase; }
+        .nav { display: flex; gap: 10px; margin-bottom: 24px; flex-wrap: wrap; }
+        .nav a { color: var(--text-main); text-decoration: none; padding: 10px 14px; border: 1px solid rgba(34,211,238,0.25); border-radius: 8px; background: rgba(15, 23, 42, 0.65); transition: 0.2s ease; }
+        .nav a:hover { border-color: var(--accent); color: var(--accent); }
+        .panel { background: rgba(15, 23, 42, 0.9); border: 1px solid rgba(34, 211, 238, 0.15); border-radius: 14px; padding: 22px; margin-bottom: 18px; }
+        .panel h2 { margin: 0 0 10px; color: var(--blue-glow); font-size: 1.25rem; }
+        .panel p { margin: 0; line-height: 1.6; color: #cbd5e1; }
+        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-top: 18px; }
+        .stat { padding: 16px; border: 1px solid rgba(96, 165, 250, 0.15); border-radius: 12px; background: rgba(15, 23, 42, 0.8); }
+        .stat strong { display: block; font-size: 1rem; color: var(--accent); margin-bottom: 8px; }
+        .stat span { color: #e2e8f0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="headline">Market Model — NewMerica Next-Gen</div>
+        <div class="nav">
+            <a href="MarketAi.html">Back to Market Trading</a>
+            <a href="DASHBOARD.HTML">Dashboard</a>
+        </div>
+        <div class="panel">
+            <h2>Model Overview</h2>
+            <p>The market model evaluates shocks, arbitrage timing, and high-level strategy with a progressive risk profile tuned to live price movement.</p>
+        </div>
+        <div class="panel">
+            <h2>Current Status</h2>
+            <p>Active and integrated as a secondary decision source alongside the primary strategy layer and live market tracking.</p>
+        </div>
+        <div class="stats">
+            <div class="stat"><strong>Version</strong><span>Market Model</span></div>
+            <div class="stat"><strong>Priority</strong><span>Secondary</span></div>
+            <div class="stat"><strong>Mode</strong><span>Analytical</span></div>
+            <div class="stat"><strong>Signal Type</strong><span>Adaptive / Trend-based</span></div>
+            <div class="stat"><strong>Connection</strong><span>Google Sheets + local UI</span></div>
+            <div class="stat"><strong>Last Sync</strong><span>Live</span></div>
+        </div>
+    </div>
+</body>
+</html>

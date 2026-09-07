@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>City HUD — Profit Suggestions</title>
+  <style>
+    :root{color-scheme:dark;--bg:#050816;--panel:#0e1428;--cyan:#00f0ff;--text:#f5f7ff;--muted:#7d8ca8;--green:#4ade80}
+    body{margin:0;font-family:Segoe UI,Arial,sans-serif;background:radial-gradient(circle at top, rgba(0,240,255,0.06), transparent 32%),var(--bg);color:var(--text);padding:18px}
+    .panel{background:var(--panel);border:1px solid rgba(94,234,212,0.12);padding:16px;border-radius:12px}
+    h1{color:var(--cyan);margin:0 0 8px}
+    table{width:100%;border-collapse:collapse;margin-top:12px}
+    th,td{padding:8px;border-bottom:1px solid rgba(255,255,255,0.03);text-align:left}
+    th{color:var(--muted);font-size:0.85rem}
+    .positive{color:var(--green);font-weight:700}
+    .neutral{color:var(--muted)}
+    .btn{padding:8px 10px;border-radius:8px;border:1px solid rgba(0,240,255,0.18);background:rgba(0,240,255,0.06);color:var(--cyan);cursor:pointer}
+    .controls{display:flex;gap:8px;align-items:center;margin-bottom:10px}
+    .note{color:var(--muted);font-size:0.9rem}
+    #marketBanner{width:100%;box-sizing:border-box;padding:8px 12px;border:2px solid #4ade80;color:#ffeb3b;font-weight:700;border-radius:6px;background:rgba(0,0,0,0.12);margin-bottom:10px}
+  </style>
+  <script src="common.js"></script>
+  <script>
+    // CSP-safe guard: replace eval/Function with explicit throwers to prevent runtime use.
+    (function(){
+      try{
+        const blockedEval = function(){ throw new Error('eval is blocked by Content Security Policy'); };
+        const blockedFunc = function(){ throw new Error('Function constructor is blocked by Content Security Policy'); };
+        try{ Object.defineProperty(window, 'eval', { value: blockedEval, configurable: true, writable: true }); }catch(e){ window.eval = blockedEval; }
+        try{ Object.defineProperty(window, 'Function', { value: blockedFunc, configurable: true, writable: true }); }catch(e){ window.Function = blockedFunc; }
+      }catch(e){}
+    })();
+  </script>
+</head>
+<body>
+  <div class="panel">
+    <div id="marketBanner">Loading market prices…</div>
+    <h1>City HUD — Temporary Profit Suggestions</h1>
+    <div class="controls">
+      <button id="refreshBtn" class="btn">Refresh Data</button>
+      <div style="margin-left:auto"><button id="openCitiesHud" class="btn">Open Cities HUD</button></div>
+    </div>
+    <div style="margin-top:8px;display:flex;gap:8px;align-items:center">
+      <div style="display:flex;flex-direction:column;gap:6px;margin-left:8px">
+        <button id="quickShortages" class="btn" title="Quick: what will we run out of?">Shortages</button>
+        <button id="quickExports" class="btn" title="Quick: what should we export?">Exports</button>
+        <button id="quickSummary" class="btn" title="Quick: economy summary">Summary</button>
+      </div>
+    </div>
+    <div style="margin-top:8px;display:flex;gap:8px;align-items:start">
+      <div style="flex:0 0 50%;max-width:50%">
+        <div style="font-size:0.9rem;color:var(--muted);margin-bottom:6px">Task controls:</div>
+        <div id="aiTaskControls" class="panel" style="padding:8px;height:220px;overflow:auto;background:rgba(255,255,255,0.02)">
+          <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+            <label class="note">Horizon (days): <input id="aiHorizonDays" type="number" min="1" max="30" value="7" style="width:72px;margin-left:6px"/></label>
+            <label class="note">Target resource: <select id="aiTargetResource" style="margin-left:6px"><option value="food">food</option><option value="oil">oil</option><option value="coal">coal</option><option value="iron">iron</option><option value="steel">steel</option></select></label>
+                <button id="exportAiCsv" class="btn">Export CSV</button>
+                <button id="downloadRawJson" class="btn">Download Raw JSON</button>
+                <button id="showRawResponses" class="btn" style="margin-left:auto">Show Raw Responses</button>
+          </div>
+            <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+              <label class="note">Profit window (hrs): <input id="profitWindowHours" type="number" min="1" max="168" value="2" style="width:72px;margin-left:6px"/></label>
+                <label class="note">Use projected prices: <input id="useProjection" type="checkbox" style="margin-left:6px"/></label>
+                <label class="note">Projection minutes: <input id="projectionMinutes" type="number" min="5" max="15" step="5" value="10" style="width:72px;margin-left:6px"/></label>
+              <div style="margin-left:auto;color:var(--muted)" id="aiTaskStatus">Idle</div>
+            </div>
+          <div style="border-top:1px solid rgba(255,255,255,0.03);padding-top:8px">
+            <div style="display:flex;gap:8px;margin-bottom:8px">
+              <button class="btn" id="aiTabSummary">Summary</button>
+              <button class="btn" id="aiTabCities">Cities</button>
+              <button class="btn" id="aiTabRaw">Raw JSON</button>
+            </div>
+            <div id="aiTabContent" style="height:120px;overflow:auto;color:var(--muted)">Select a task and run the market check</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- market snapshot removed per user request -->
+    <div id="content">Loading suggestions…</div>
+  </div>
+  <script>
+    const API_KEY = '5bc5a81f4c67e52b148c';
+    const NATION_ID = 768640;
+    function formatMoney(v){const n=Number(v||0);return Number.isFinite(n)?`$${n.toLocaleString(undefined,{maximumFractionDigits:2})}`:'—'}
+    function formatNumber(v){const n=Number(v||0);return Number.isFinite(n)?n.toLocaleString():'—'}
+
+    // Minimal facility profiles reused from cities-hud
+    function getFacilityProfiles(){
+      return getFacilityProfilesFull();
+    }
+
+    function renderMarketDetails(priceMap, priceRows, nation){
+      const marketEl = document.getElementById('marketDetails');
+      if(!marketEl) return;
+      const lastRow = getLatestMarketRow(priceRows);
+      const dateLabel = lastRow && lastRow.date ? lastRow.date : (lastRow && lastRow.Date ? lastRow.Date : 'latest');
+      const prices = Object.keys(priceMap||{}).map(k=>`<tr><td>${k}</td><td style="text-align:right">${Number(priceMap[k]||0).toLocaleString()}</td></tr>`).join('');
+      const nationRows = [];
+      if(nation){
+        // show common stockpile resources if present on nation object
+        ['food','coal','oil','uranium','iron','bauxite','lead','steel','aluminum','munitions','gasoline'].forEach(r=>{ if(nation[r]!==undefined) nationRows.push(`<tr><td>${r}</td><td style="text-align:right">${Number(nation[r]||0).toLocaleString()}</td><td style="text-align:right">${formatMoney((Number(nation[r]||0) * Number(priceMap[r]||0)).toFixed(2))}</td></tr>`); });
+      }
+      const marketTable = `<div style="margin-top:6px"><strong>Market snapshot (${dateLabel})</strong><table style="width:320px;display:inline-block;margin-right:12px"><thead><tr><th>Resource</th><th style="text-align:right">Price</th></tr></thead><tbody>${prices}</tbody></table>`;
+      const nationTable = nationRows.length?`<div style="display:inline-block;vertical-align:top"><strong>Nation stockpiles</strong><table style="width:320px"><thead><tr><th>Resource</th><th style="text-align:right">Qty</th><th style="text-align:right">Value</th></tr></thead><tbody>${nationRows.join('')}</tbody></table></div>`:'';
+      marketEl.innerHTML = marketTable + nationTable + '</div>';
+      // if prices look invalid (all zeros), show a warning and load cached values if available
+      const allZero = Object.values(priceMap||{}).every(v=>!v);
+      if(allZero){
+        const cached = localStorage.getItem('lastPriceMap');
+        if(cached){ try{ const pm = JSON.parse(cached); marketEl.innerHTML += `<div class="note">Warning: API returned zero prices — using cached values.</div>`; marketEl.innerHTML += `<div style="margin-top:6px">Cached prices loaded.</div>`; }catch(e){} }
+      }
+    }
+
+    // Simplified calculation functions based on cities-hud logic
+    function getCappedBonusOutput(baseOutput, count, maxCount, maxBonus=0.5){const safeCount=Math.min(Math.max(Number(count)||0,0),maxCount);if(!Number.isFinite(safeCount)||maxCount<=0) return Number(baseOutput);return Number(baseOutput)*(1+(safeCount/maxCount)*maxBonus)}
+    function getDailyOutput(baseOutput,count,maxCount,maxBonus=0.5){return getCappedBonusOutput(baseOutput,count,maxCount,maxBonus)*12}
+    function safeNumber(v, fallback=0){const n=Number(v);return Number.isFinite(n)?n:fallback}
+    function getSupermarketDailyProfit(population,count=1){const referencePopulation=169454;const referenceRevenue=19656.63;const safePopulation=Math.max(safeNumber(population,0),0);const revenuePerBuilding=referenceRevenue*(safePopulation/referencePopulation);const profitPerBuilding=revenuePerBuilding-600;return Number(count||0)*profitPerBuilding}
+
+    function getCityPopulation(city,nation){
+      const raw = city?.city_population || city?.population || city?.population_estimate || 0;
+      const parsed = safeNumber(raw,0);
+      if(parsed > 0) return parsed;
+      const nationPop = safeNumber(nation?.population,0);
+      const nationCities = Math.max(1, Number(nation?.num_cities) || 1);
+      return Math.max(Math.floor(nationPop / nationCities), Math.floor(safeNumber(city.infrastructure,0) * 100));
+    }
+
+    function getFacilityOutput(city,profile){
+      if(profile===undefined) return 0;
+      // approximate outputs similar to original file
+      if(profile.label==='Farm') return safeNumber(city.land,0)/500;
+      if(profile.label==='Iron Mine') return 0.25;
+      return profile.output||0;
+    }
+
+    function getFacilityProfilesFull(){
+      // minimal set used in simulation
+      return {
+        farm:{label:'Farm',outputPerTurn:city=>Number(city.land||0)/500,operatingCost:300,resource:'food',inputs:{}},
+        supermarket:{label:'Supermarket',outputPerTurn:()=>0,operatingCost:600,resource:null,inputs:{}},
+        iron_mine:{label:'Iron Mine',outputPerTurn:()=>0.25,operatingCost:1600,resource:'iron',inputs:{}},
+        coal_mine:{label:'Coal Mine',outputPerTurn:()=>0.25,operatingCost:400,resource:'coal',inputs:{}},
+        lead_mine:{label:'Lead Mine',outputPerTurn:()=>0.25,operatingCost:1200,resource:'lead',inputs:{}},
+        bauxite_mine:{label:'Bauxite Mine',outputPerTurn:()=>0.25,operatingCost:1000,resource:'bauxite',inputs:{}},
+        oil_well:{label:'Oil Well',outputPerTurn:()=>0.25,operatingCost:0,resource:'oil',inputs:{}},
+        uranium_mine:{label:'Uranium Mine',outputPerTurn:()=>0.25,operatingCost:5000,resource:'uranium',inputs:{}},
+        oil_refinery:{label:'Oil Refinery',outputPerTurn:()=>0.5,operatingCost:4000,resource:'gasoline',inputs:{oil:0.5}},
+        aluminum_refinery:{label:'Aluminum Refinery',outputPerTurn:()=>0.75,operatingCost:2500,resource:'aluminum',inputs:{bauxite:0.75}},
+        steel_mill:{label:'Steel Mill',outputPerTurn:()=>0.75,operatingCost:4000,resource:'steel',inputs:{iron:0.75,coal:0.75}},
+        munitions_factory:{label:'Munitions Factory',outputPerTurn:()=>1.5,operatingCost:3500,resource:'munitions',inputs:{lead:1.5}},
+        recycling_center:{label:'Recycling Center',outputPerTurn:()=>0,operatingCost:2500,resource:null,inputs:{}}
+      };
+    }
+    function applyOverridesToProfiles(profiles){
+      try{
+        const raw = localStorage.getItem('aiFacilityOverrides');
+        if(!raw) return profiles;
+        const overrides = JSON.parse(raw);
+        Object.keys(overrides || {}).forEach(k=>{ if(profiles[k]) Object.assign(profiles[k], overrides[k]); });
+      }catch(e){ /* ignore parse errors */ }
+      return profiles;
+    }
+    // per-building maximums (enforced per city)
+    const BUILDING_MAX = {
+      farm: 20,
+      supermarket: 4,
+      iron_mine: 10,
+      coal_mine: 10,
+      lead_mine: 10,
+      bauxite_mine: 10,
+      oil_well: 10,
+      uranium_mine: 5,
+      oil_refinery: 5,
+      aluminum_refinery: 5,
+      steel_mill: 5,
+      munitions_factory: 5,
+      recycling_center: 3,
+      police_station: 5,
+      hospital: 5,
+      supermarket_remap:4
+    };
+
+    function calculateNetProfit(city,priceMap,population=0){
+      const profiles = getFacilityProfilesFull();
+      const facilityKeys = Object.keys(profiles);
+      let totalRevenue = 0;
+      let totalInputCost = 0;
+      let totalUpkeep = 0;
+      const productionByResource = {};
+      const inputCostByResource = {};
+      facilityKeys.forEach((key)=>{
+        const profile = profiles[key];
+        const count = Number(city[key]||0);
+        if(count <= 0) return;
+        const perTurn = typeof profile.outputPerTurn === 'function' ? Number(profile.outputPerTurn(city) || 0) : Number(profile.outputPerTurn || 0);
+        const dailyProduction = perTurn * 12 * count;
+        if(profile.resource){
+          const revenue = dailyProduction * (Number(priceMap[profile.resource]) || 0);
+          totalRevenue += revenue;
+          productionByResource[profile.resource] = (productionByResource[profile.resource] || 0) + dailyProduction;
+        }
+        // inputs
+        if(profile.inputs){
+          Object.keys(profile.inputs).forEach((inRes)=>{
+            const ratio = Number(profile.inputs[inRes] || 0);
+            const qty = dailyProduction * ratio / (perTurn || 1) ;
+            const cost = qty * (Number(priceMap[inRes]) || 0);
+            totalInputCost += cost;
+            inputCostByResource[inRes] = (inputCostByResource[inRes] || 0) + cost;
+          });
+        }
+        totalUpkeep += count * (Number(profile.operatingCost || 0));
+      });
+      const supermarketProfit = getSupermarketDailyProfit(population,Number(city.supermarket||0));
+      const net = totalRevenue - totalInputCost - totalUpkeep + supermarketProfit;
+      return { net, breakdown: { totalRevenue, totalInputCost, totalUpkeep, supermarketProfit, productionByResource, inputCostByResource } };
+    }
+
+    async function fetchData(){
+      try {
+        const query = `query { nations(id: [${NATION_ID}], first: 1) { data { nation_name population num_cities cities { id name infrastructure land powered barracks farm police_station hospital recycling_center subway supermarket bank shopping_mall stadium lead_mine iron_mine bauxite_mine oil_refinery aluminum_refinery steel_mill munitions_factory factory hangar drydock coal_mine oil_well uranium_mine oil_power wind_power coal_power nuclear_power } } } }`;
+        const resp = await fetch(`https://api.politicsandwar.com/graphql?api_key=${API_KEY}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query})});
+        if(!resp.ok){
+          const txt = await resp.text().catch(()=>'<no-body>');
+          throw new Error(`Nation query failed: ${resp.status} ${resp.statusText} - ${txt}`);
+        }
+        let json;
+        try{ json = await resp.json(); }catch(e){ throw new Error('Failed to parse nation JSON response: '+e.message); }
+
+        const marketQuery = `query { tradeprices(first: 10) { data { date food coal oil uranium iron bauxite lead gasoline munitions steel aluminum } } }`;
+        const mResp = await fetch(`https://api.politicsandwar.com/graphql?api_key=${API_KEY}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:marketQuery})});
+        if(!mResp.ok){ const txt=await mResp.text().catch(()=>'<no-body>'); throw new Error(`Market query failed: ${mResp.status} ${mResp.statusText} - ${txt}`); }
+        let marketJson;
+        try{ marketJson = await mResp.json(); }catch(e){ throw new Error('Failed to parse market JSON response: '+e.message); }
+
+        const priceRows = sortMarketRowsNewestFirst(marketJson?.data?.tradeprices?.data);
+        const latestPrices = getLatestMarketRow(priceRows);
+        const priceMap={iron:Number(latestPrices.iron)||0,bauxite:Number(latestPrices.bauxite)||0,lead:Number(latestPrices.lead)||0,coal:Number(latestPrices.coal)||0,oil:Number(latestPrices.oil)||0,uranium:Number(latestPrices.uranium)||0,steel:Number(latestPrices.steel)||0,aluminum:Number(latestPrices.aluminum)||0,munitions:Number(latestPrices.munitions)||0,gasoline:Number(latestPrices.gasoline)||0,food:Number(latestPrices.food)||0};
+        const nation = json.data?.nations?.data?.[0];
+        const cities = Array.isArray(nation?.cities)?nation.cities:[];
+        return {priceMap,priceRows,nation,cities,nationJson:json, marketJson:marketJson};
+      } catch (err) {
+        console.error('fetchData error', err);
+        // surface helpful message to the UI (if present)
+        const mn = document.getElementById('marketNote'); if(mn) mn.textContent = `Data fetch error: ${err.message}`;
+        // rethrow so callers can handle
+        throw err;
+      }
+    }
+
+    function determineOverallTrend(historyArray){
+      if(!Array.isArray(historyArray) || historyArray.length<2) return {direction:'neutral',pct:0,label:'—'};
+      const first=historyArray[0].grossProfit||0;const last=historyArray[historyArray.length-1].grossProfit||0; if(first===0) return {direction:'neutral',pct:0,label:'—'}; const pct=((last-first)/Math.abs(first))*100; const direction = pct>0.5?'up':pct<-0.5?'down':'flat'; return {direction,pct,label:`${pct>=0?'+':''}${pct.toFixed(2)}%`};
+    }
+
+    function projectPriceMap(priceMap, priceRows, hours){
+      if(!priceRows || priceRows.length < 2) return priceMap;
+      // tradeprices are daily; compute per-day slope then scale to hours
+      const first = priceRows[0] || {};
+      const last = getLatestMarketRow(priceRows);
+      const projected = {};
+      Object.keys(priceMap).forEach((k)=>{
+        const vFirst = Number(first[k]||0);
+        const vLast = Number(last[k]||0);
+        if(!Number.isFinite(vFirst) || !Number.isFinite(vLast) || vFirst === 0){ projected[k] = priceMap[k]; return; }
+        const days = Math.max(1, priceRows.length - 1);
+        const dailyChange = (vLast - vFirst) / days; // units per day
+        const hoursFactor = hours / 24;
+        const projectedValue = vLast + dailyChange * hoursFactor;
+        projected[k] = projectedValue;
+      });
+      return projected;
+    }
+
+    function compareCitiesEqual(a, b){
+      if(!a || !b) return false;
+      const keys = ['farm','supermarket','bank','stadium','iron_mine','coal_mine','lead_mine','bauxite_mine','oil_well','uranium_mine','oil_refinery','aluminum_refinery','steel_mill','munitions_factory','factory','shopping_mall','subway','recycling_center','police_station','hospital'];
+      return keys.every(k => Number(a[k]||0) === Number(b[k]||0));
+    }
+
+    // Candidate actions to simulate per-city, considering infrastructure slots
+    function sumUsedSlots(city){
+      const keys = ['farm','supermarket','bank','stadium','iron_mine','coal_mine','lead_mine','bauxite_mine','oil_well','uranium_mine','oil_refinery','aluminum_refinery','steel_mill','munitions_factory','factory','shopping_mall','subway','recycling_center','police_station','hospital'];
+      return keys.reduce((s,k)=>s+Math.max(0,Number(city[k]||0)),0);
+    }
+
+    function getCandidateActions(city){
+      const actions = [];
+      const slotsTotal = Math.floor((Number(city.infrastructure) || 0) / 50);
+      const availableSlots = Math.max(0, slotsTotal - sumUsedSlots(city));
+      // simple adds allowed only if there's a free slot
+      if(availableSlots > 0){
+        if((Number(city.supermarket||0) + 1) <= (BUILDING_MAX.supermarket || Infinity)){
+          actions.push({ id:'add_supermarket', label:'Add 1 Supermarket', apply:c=>({...c,supermarket:(Number(c.supermarket||0)+1)}) });
+        }
+        if((Number(city.farm||0) + 1) <= (BUILDING_MAX.farm || Infinity)){
+          actions.push({ id:'add_farm', label:'Add 1 Farm', apply:c=>({...c,farm:(Number(c.farm||0)+1)}) });
+        }
+        if((Number(city.recycling_center||0) + 1) <= (BUILDING_MAX.recycling_center || Infinity)){
+          actions.push({ id:'add_recycling', label:'Add 1 Recycling Center', apply:c=>({...c,recycling_center:(Number(c.recycling_center||0)+1)}) });
+        }
+      } else {
+        // if no slots available, propose swaps: remove one of an existing, add one desired
+        const removableKeys = ['oil_refinery','steel_mill','munitions_factory','aluminum_refinery','iron_mine','coal_mine','lead_mine','bauxite_mine'];
+        removableKeys.forEach((remKey)=>{
+          if(Number(city[remKey]||0) > 0){
+            if((Number(city.supermarket||0) + 1) <= (BUILDING_MAX.supermarket || Infinity)){
+              actions.push({ id:`swap_${remKey}_to_supermarket`, label:`Replace 1 ${remKey.replace(/_/g,' ')} → Supermarket`, apply:c=>{ const copy={...c}; copy[remKey]=Math.max(0,Number(copy[remKey]||0)-1); copy.supermarket=(Number(copy.supermarket||0)+1); return copy; } });
+            }
+            if((Number(city.farm||0) + 1) <= (BUILDING_MAX.farm || Infinity)){
+              actions.push({ id:`swap_${remKey}_to_farm`, label:`Replace 1 ${remKey.replace(/_/g,' ')} → Farm`, apply:c=>{ const copy={...c}; copy[remKey]=Math.max(0,Number(copy[remKey]||0)-1); copy.farm=(Number(copy.farm||0)+1); return copy; } });
+            }
+          }
+        });
+      }
+      // allow removals always (useful if you want to shed costly buildings)
+      ['oil_refinery','steel_mill','munitions_factory','aluminum_refinery'].forEach((k)=>{
+        if(Number(city[k]||0) > 0) actions.push({ id:`remove_${k}`, label:`Remove 1 ${k.replace(/_/g,' ')}`, apply:c=>{ const copy={...c}; copy[k]=Math.max(0,Number(copy[k]||0)-1); return copy; } });
+      });
+      return actions;
+    }
+
+    async function refreshMarket(){
+      // intentionally do not modify main content to avoid transient status messages
+      try{
+        const {priceMap,priceRows,nation,nationJson,marketJson} = await fetchData();
+        window.lastFetchRaw = { nationJson, marketJson };
+        try{ localStorage.setItem('lastPriceMap', JSON.stringify(priceMap)); localStorage.setItem('lastMarketRows', JSON.stringify(priceRows)); localStorage.setItem('lastNation', JSON.stringify(nation)); }catch(e){}
+        renderMarketDetails(priceMap, priceRows, nation);
+        // compute and store projected prices automatically (do not replace live banner)
+        const projMinutes = getInputNumber('projectionMinutes', 10);
+        const projHours = Math.max(0.001, projMinutes/60);
+        try{ window.projectedPriceMap = projectPriceMap(priceMap, priceRows, projHours); }catch(e){ window.projectedPriceMap = priceMap; }
+        renderMarketBanner(priceMap, priceRows);
+      }catch(err){ console.error('refresh failed',err); const banner = document.getElementById('marketBanner'); if(banner) banner.textContent = 'Market refresh failed'; }
+    }
+    document.getElementById('refreshBtn').addEventListener('click', ()=>{ refreshMarket(); });
+
+    function renderMarketBanner(priceMap, priceRows){
+      const banner = document.getElementById('marketBanner'); if(!banner) return;
+      try{
+        // pick a handful of important resources to show prominently
+        const keys = ['food','oil','coal','iron','steel','aluminum','munitions'];
+        const parts = [];
+        for(const k of keys){ if(priceMap && priceMap[k]!==undefined){ parts.push(`${k.toUpperCase()}: ${Number(priceMap[k]||0).toLocaleString()}`); } }
+        if(parts.length===0){ // fallback to first 5 entries
+          const ks = Object.keys(priceMap||{}).slice(0,5);
+          for(const k of ks) parts.push(`${k.toUpperCase()}: ${Number(priceMap[k]||0).toLocaleString()}`);
+        }
+        // include projected values if available
+        const proj = window.projectedPriceMap || {};
+        const projParts = parts.map((p)=>{
+          // p looks like 'FOOD: 90' -> extract key
+          const m = p.match(/^([A-Z0-9_]+):\s*(.*)$/);
+          if(!m) return p;
+          const key = m[1].toLowerCase();
+          const liveVal = m[2];
+          const projVal = proj && proj[key] !== undefined ? Number(proj[key]||0).toLocaleString() : null;
+          return projVal ? `${key.toUpperCase()}: ${liveVal} (proj ${projVal})` : `${key.toUpperCase()}: ${liveVal}`;
+        });
+        const projectionMinutes = getInputNumber('projectionMinutes', 10);
+        banner.textContent = projParts.join('  •  ') + `  •  (proj ${projectionMinutes}min)`;
+      }catch(e){ banner.textContent = 'Market prices unavailable'; }
+    }
+    document.getElementById('openCitiesHud').addEventListener('click', ()=>window.open('cities-hud.html','_blank'));
+    // (Facility overrides UI removed.)
+    // task runner wiring
+    function renderForecastShortages(result){
+      const summary = result.summary||{};
+      const perCity = result.perCity||[];
+      const horizon = result.horizonDays || 7;
+      // build resource shortages list
+      const resources = Object.keys(summary).map(k=>({resource:k, ...summary[k]}));
+      const shortages = resources.filter(r=>r.projectedShortfall>0).sort((a,b)=>b.projectedShortfall - a.projectedShortfall);
+      const topRes = shortages.slice(0,10);
+      let summaryHtml = `<div><h3 style="margin-top:0">Forecast shortages — ${horizon} days</h3>`;
+      if(topRes.length===0){ summaryHtml += `<p class="note">No projected shortages for the configured horizon.</p>`; }
+      else{
+        summaryHtml += `<table id="shortagesTable" style="width:100%;margin-bottom:8px"><thead><tr><th data-col="resource">Resource</th><th data-col="netDaily">Net daily</th><th data-col="shortfall">${horizon}-day shortfall</th><th data-col="cost">Estimated cost</th><th data-col="action">Recommended action</th></tr></thead><tbody>`;
+        topRes.forEach(r=>{
+          const rName = r.resource;
+          const net = Number(r.netDaily||0);
+          const shortfall = Number(r.projectedShortfall||0);
+          const cost = Number(r.recommendedBuyCost||0);
+          const action = shortfall>0 ? `Import ${Math.round(shortfall).toLocaleString()} units over ${horizon} days` : '—';
+          summaryHtml += `<tr data-resource="${rName}"><td>${rName}</td><td style="color:${net<0?'#ffb86b':'var(--green)'}">${net.toFixed(2)}</td><td data-value="${shortfall}">${Math.round(shortfall).toLocaleString()}</td><td data-value="${cost}">${cost>0?('$'+Number(cost).toLocaleString()):'—'}</td><td>${action}</td></tr>`;
+        });
+        summaryHtml += `</tbody></table>`;
+      }
+      summaryHtml += `</div>`;
+
+      // Cities tab HTML
+      let citiesHtml = `<div><h4 style="margin-top:0">Per-city contributions</h4><table style="width:100%"><thead><tr><th>City</th><th>Pop</th><th>Top production</th><th>Top consumption</th></tr></thead><tbody>`;
+      perCity.slice(0,200).forEach(c=>{
+        const prodKeys = Object.keys(c.production||{}).sort((a,b)=> (c.production[b]||0)-(c.production[a]||0));
+        const consKeys = Object.keys(c.consumption||{}).sort((a,b)=> (c.consumption[b]||0)-(c.consumption[a]||0));
+        const prodTop = prodKeys.slice(0,3).map(k=>`${k}:${Math.round(c.production[k]||0)}`).join(', ');
+        const consTop = consKeys.slice(0,3).map(k=>`${k}:${Math.round(c.consumption[k]||0)}`).join(', ');
+        citiesHtml += `<tr><td>${c.name}</td><td>${Math.round(c.population)}</td><td>${prodTop || '—'}</td><td>${consTop || '—'}</td></tr>`;
+      });
+      citiesHtml += `</tbody></table></div>`;
+
+      // Raw JSON
+      const rawHtml = `<pre style="white-space:pre-wrap;color:var(--muted)">${JSON.stringify(result,null,2)}</pre>`;
+
+      // place into tab content (we have aiTabContent)
+      window.latestAiRendered = { summaryHtml, citiesHtml, rawHtml };
+      const active = document.getElementById('aiTabContent');
+      if(active){ active.innerHTML = summaryHtml; makeShortagesSortable(); }
+    }
+
+      function renderOptimizeProduction(result){
+        const rows = (result.results||[]).map(r=>`<tr><td>${r.name}</td><td>${Math.round(r.baseOutput)}</td><td>${Math.round(r.bestOutput)}</td><td>${Math.round(r.netIncrease)}</td><td>${(r.actions||[]).map(a=>a.building+' x1').join(', ')||'—'}</td></tr>`).join('');
+        const html = `<div><h3 style="margin-top:0">Optimize Production — target ${result.target||'resource'}</h3><table><thead><tr><th>City</th><th>Base</th><th>After</th><th>Δ</th><th>Actions</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+        window.latestAiRendered = { summaryHtml: html, citiesHtml: html, rawHtml: `<pre style="white-space:pre-wrap;color:var(--muted)">${JSON.stringify(result,null,2)}</pre>` };
+        document.getElementById('aiTabContent').innerHTML = html;
+      }
+
+      function renderRecommendExport(result){
+        const list = (result.summary && result.summary.candidates)||[];
+        const rows = list.map(c=>`<tr><td>${c.resource}</td><td>${Math.round(c.netDaily)}</td><td>${Math.round(c.weeklySurplus)}</td><td>${c.estRevenue?formatMoney(c.estRevenue):'—'}</td></tr>`).join('');
+        const html = `<div><h3 style="margin-top:0">Recommend Export Strategy</h3><table><thead><tr><th>Resource</th><th>Net daily</th><th>Weekly surplus</th><th>Est revenue</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+        window.latestAiRendered = { summaryHtml: html, citiesHtml: result.perCity ? `<pre style="white-space:pre-wrap;color:var(--muted)">${JSON.stringify(result.perCity.slice(0,50),null,2)}</pre>` : '', rawHtml:`<pre style="white-space:pre-wrap;color:var(--muted)">${JSON.stringify(result,null,2)}</pre>` };
+        document.getElementById('aiTabContent').innerHTML = html;
+      }
+
+      function renderBuildOrder(result){
+        const top = (result.summary && result.summary.topCities) || [];
+        const rows = top.map(c=>`<tr><td>${c.name}</td><td>${Math.round(c.production)}</td></tr>`).join('');
+        const html = `<div><h3 style="margin-top:0">Build Order Planner — target ${result.opts && result.opts.target}</h3><table><thead><tr><th>City</th><th>Daily production</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+        window.latestAiRendered = { summaryHtml: html, citiesHtml: html, rawHtml:`<pre style="white-space:pre-wrap;color:var(--muted)">${JSON.stringify(result,null,2)}</pre>` };
+        document.getElementById('aiTabContent').innerHTML = html;
+      }
+
+      function renderBalanceConsumption(result){
+        const primary = result.summary && result.summary.primary;
+        const rows = (result.perCity||[]).slice(0,50).map(c=>`<tr><td>${c.name}</td><td>${Math.round(c.consumption||0)}</td><td>${Math.round(c.production||0)}</td></tr>`).join('');
+        const html = `<div><h3 style="margin-top:0">Balance Consumption — primary: ${primary || 'N/A'}</h3><table><thead><tr><th>City</th><th>Consumption</th><th>Production</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+        window.latestAiRendered = { summaryHtml: html, citiesHtml: html, rawHtml:`<pre style="white-space:pre-wrap;color:var(--muted)">${JSON.stringify(result,null,2)}</pre>` };
+        document.getElementById('aiTabContent').innerHTML = html;
+      }
+
+      function renderRankUpgrades(result){
+        const rows = (result.perCity||[]).slice(0,100).map(c=>`<tr><td>${c.name}</td><td>${Math.round(c.totalDeficit||0)}</td><td>${Math.round(c.population||0)}</td></tr>`).join('');
+        const html = `<div><h3 style="margin-top:0">Rank Upgrade Priorities</h3><table><thead><tr><th>City</th><th>Total deficit</th><th>Population</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+        window.latestAiRendered = { summaryHtml: html, citiesHtml: html, rawHtml:`<pre style="white-space:pre-wrap;color:var(--muted)">${JSON.stringify(result,null,2)}</pre>` };
+        document.getElementById('aiTabContent').innerHTML = html;
+      }
+
+    function getInputValue(id, fallback=''){
+      const el = document.getElementById(id);
+      return el ? el.value : fallback;
+    }
+    function getInputNumber(id, fallback=0){ const v = getInputValue(id); const n = Number(v); return Number.isFinite(n) ? n : fallback; }
+
+    document.getElementById('runAiTask').addEventListener('click', async ()=>{
+      const task = 'forecastShortages';
+      const statusEl = document.getElementById('aiTaskStatus'); if(statusEl) statusEl.textContent = 'Running AI...';
+      try{
+        // ensure latest data
+        const {priceMap,priceRows,nation,cities} = await fetchData();
+        // compute projected prices automatically for forecasts (projectionMinutes -> hours)
+        const projMinutes = getInputNumber('projectionMinutes', 10);
+        const projHours = Math.max(0.001, projMinutes/60);
+        try{ const projected = projectPriceMap(priceMap, priceRows, projHours); window.projectedPriceMap = projected; }catch(e){ window.projectedPriceMap = priceMap; }
+        // call into AI module (defined in external script)
+        if(window.aiCityTasks && typeof window.aiCityTasks.runTask === 'function'){
+          // build opts from UI (safe)
+          const opts = { horizonDays: getInputNumber('aiHorizonDays',7), target: getInputValue('aiTargetResource','food') };
+          // use projected prices automatically
+          const priceMapToUse = window.projectedPriceMap || priceMap;
+          const result = await window.aiCityTasks.runTask(task,{priceMap:priceMapToUse,priceRows,nation,cities}, opts);
+          // store for CSV/export along with priceMap
+          window.lastAiResult = { result, priceMap, opts };
+          // route to task-specific renderer
+          window.lastAiResult = { result, priceMap, opts };
+          const taskName = result && result.task;
+          if(taskName === 'forecastShortages'){
+            renderForecastShortages(result);
+            document.getElementById('aiTabContent').innerHTML = window.latestAiRendered.summaryHtml;
+            makeShortagesSortable();
+          } else if(taskName === 'optimizeProductionMix'){
+            renderOptimizeProduction(result);
+          } else if(taskName === 'recommendExportStrategy'){
+            renderRecommendExport(result);
+          } else if(taskName === 'buildOrderPlanner'){
+            renderBuildOrder(result);
+          } else if(taskName === 'balanceConsumption'){
+            renderBalanceConsumption(result);
+          } else if(taskName === 'rankUpgradePriorities'){
+            renderRankUpgrades(result);
+          } else {
+            const active = document.getElementById('aiTabContent'); if(active) active.innerHTML = `<pre style="white-space:pre-wrap;color:var(--muted)">${JSON.stringify(result,null,2)}</pre>`;
+          }
+          const doneStatus = document.getElementById('aiTaskStatus'); if(doneStatus) doneStatus.textContent = 'Done';
+          // persist AI control settings
+          try{ localStorage.setItem('aiProfitWindowHours', String(Number(document.getElementById('profitWindowHours').value || 2))); localStorage.setItem('aiUseProjection', document.getElementById('useProjection').checked ? 'true' : 'false'); localStorage.setItem('aiProjectionMinutes', String(Number(document.getElementById('projectionMinutes').value || 10))); }catch(e){}
+        } else {
+          const statusEl2 = document.getElementById('aiTaskStatus'); if(statusEl2) statusEl2.textContent = 'AI module not loaded.';
+        }
+      }catch(e){
+        console.error('AI run failed',e);
+        const statusEl3 = document.getElementById('aiTaskStatus'); if(statusEl3) statusEl3.textContent = `AI run error: ${e && e.message ? e.message : String(e)}`;
+      }
+    });
+
+    // Ask-AI handler (freeform questions)
+    document.getElementById('askAiBtn').addEventListener('click', async ()=>{
+      const q = getInputValue('askAiInput','').trim();
+      if(!q){ alert('Please enter a question for the AI.'); return; }
+      const statusEl = document.getElementById('aiTaskStatus'); if(statusEl) statusEl.textContent = 'Thinking...';
+      try{
+        const {priceMap,priceRows,nation,cities} = await fetchData();
+        if(window.aiCityTasks && typeof window.aiCityTasks.answerQuestion === 'function'){
+          const prev = window.lastAiAnswer || null;
+          const res = await window.aiCityTasks.answerQuestion(q,{priceMap,priceRows,nation,cities}, { horizonDays: getInputNumber('aiHorizonDays',7), prev });
+          window.lastAiAnswer = res || null;
+          const active = document.getElementById('aiTabContent'); if(active) active.innerHTML = res && res.html ? res.html : `<pre style="white-space:pre-wrap;color:var(--muted)">${String(res && res.text ? res.text : res)}</pre>`;
+          // add rationale toggle
+          if(res && res.rationale){
+            const activeEl = document.getElementById('aiTabContent');
+            const btn = document.createElement('button'); btn.textContent = 'Show Rationale'; btn.className='btn'; btn.style.marginTop='8px';
+            const box = document.createElement('pre'); box.style.whiteSpace='pre-wrap'; box.style.display='none'; box.style.color='var(--muted)'; box.textContent = JSON.stringify(res.rationale,null,2);
+            btn.addEventListener('click', ()=>{ if(box.style.display==='none'){ box.style.display='block'; btn.textContent='Hide Rationale'; } else { box.style.display='none'; btn.textContent='Show Rationale'; } });
+            activeEl.appendChild(btn); activeEl.appendChild(box);
+          }
+        } else { alert('AI module not available'); }
+      }catch(err){ console.error('ask failed', err); const active = document.getElementById('aiTabContent'); if(active) active.innerHTML = `<div class="note">Ask failed: ${err && err.message?err.message:String(err)}</div>`; }
+      finally{ const statusEl2 = document.getElementById('aiTaskStatus'); if(statusEl2) statusEl2.textContent = 'Idle'; }
+    });
+
+    // Quick-query buttons
+    document.getElementById('quickShortages').addEventListener('click', ()=>{ document.getElementById('askAiInput').value = 'what will we run out of?'; document.getElementById('askAiBtn').click(); });
+    document.getElementById('quickExports').addEventListener('click', ()=>{ document.getElementById('askAiInput').value = 'what should we export?'; document.getElementById('askAiBtn').click(); });
+    document.getElementById('quickSummary').addEventListener('click', ()=>{ document.getElementById('askAiInput').value = 'give me a summary of the economy'; document.getElementById('askAiBtn').click(); });
+    // tab switching
+    document.getElementById('aiTabSummary').addEventListener('click', ()=>{ const c=document.getElementById('aiTabContent'); if(window.latestAiRendered && c) c.innerHTML = window.latestAiRendered.summaryHtml || 'No data'; });
+    document.getElementById('aiTabCities').addEventListener('click', ()=>{ const c=document.getElementById('aiTabContent'); if(window.latestAiRendered && c) c.innerHTML = window.latestAiRendered.citiesHtml || 'No data'; });
+    document.getElementById('aiTabRaw').addEventListener('click', ()=>{ const c=document.getElementById('aiTabContent'); if(window.latestAiRendered && c) c.innerHTML = window.latestAiRendered.rawHtml || 'No data'; });
+    // export CSV for forecastShortages summary
+    document.getElementById('exportAiCsv').addEventListener('click', ()=>{
+      const wrapper = window.lastAiResult;
+      if(!wrapper || !wrapper.result || wrapper.result.task!=='forecastShortages'){ alert('No forecast data to export'); return; }
+      const res = wrapper.result;
+      const priceMapLocal = wrapper.priceMap || {};
+      const rows = [['resource','production','inputsConsumed','consumption','netDaily','projectedShortfall','recommendedBuyCost']];
+      Object.keys(res.summary||{}).forEach(k=>{ const s=res.summary[k]; rows.push([k, s.production||0, s.inputsConsumed||0, s.consumption||0, s.netDaily||0, s.projectedShortfall||0, Number(s.recommendedBuyCost||0)]); });
+      const csv = rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+      const blob = new Blob([csv],{type:'text/csv'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = 'forecast_shortages.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    });
+    document.getElementById('showRawResponses').addEventListener('click', ()=>{
+      const raw = window.lastFetchRaw;
+      const active = document.getElementById('aiTabContent');
+      if(!active) return;
+      if(!raw){ active.innerHTML = '<div class="note">No raw fetch data available. Try Refresh Data.</div>'; return; }
+      const html = `<div style="white-space:pre-wrap;color:var(--muted);"><h4>Nation JSON</h4><pre>${JSON.stringify(raw.nationJson,null,2)}</pre><h4>Market JSON</h4><pre>${JSON.stringify(raw.marketJson,null,2)}</pre></div>`;
+      active.innerHTML = html;
+    });
+    document.getElementById('downloadRawJson').addEventListener('click', ()=>{
+      const raw = window.lastFetchRaw;
+      if(!raw){ alert('No raw fetch data available. Run Refresh Data first.'); return; }
+      try{
+        const nationBlob = new Blob([JSON.stringify(raw.nationJson,null,2)],{type:'application/json'});
+        const marketBlob = new Blob([JSON.stringify(raw.marketJson,null,2)],{type:'application/json'});
+        const a = document.createElement('a'); a.href = URL.createObjectURL(nationBlob); a.download = 'nation.json'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(a.href);
+        const b = document.createElement('a'); b.href = URL.createObjectURL(marketBlob); b.download = 'market.json'; document.body.appendChild(b); b.click(); b.remove(); URL.revokeObjectURL(b.href);
+      }catch(e){ alert('Failed to prepare download: '+(e && e.message?e.message:String(e))); }
+    });
+    // make shortages table sortable by header click
+    function makeShortagesSortable(){
+      const tbl = document.getElementById('shortagesTable');
+      if(!tbl) return;
+      const ths = tbl.querySelectorAll('thead th');
+      ths.forEach(th=>{
+        th.style.cursor = 'pointer';
+        th.addEventListener('click', ()=>{
+          const col = th.getAttribute('data-col');
+          const tbody = tbl.querySelector('tbody');
+          const rows = Array.from(tbody.querySelectorAll('tr'));
+          const asc = !th._asc; th._asc = asc;
+          rows.sort((a,b)=>{
+            let va=0,vb=0;
+            if(col==='resource'){ va=a.cells[0].textContent.toLowerCase(); vb=b.cells[0].textContent.toLowerCase(); return asc? va.localeCompare(vb): vb.localeCompare(va); }
+            if(col==='netDaily'){ va=parseFloat(a.cells[1].textContent)||0; vb=parseFloat(b.cells[1].textContent)||0; return asc? va-vb: vb-va; }
+            if(col==='shortfall'){ va=parseFloat(a.querySelector('[data-value]')?.getAttribute('data-value')||a.cells[2].textContent)||0; vb=parseFloat(b.querySelector('[data-value]')?.getAttribute('data-value')||b.cells[2].textContent)||0; return asc? va-vb: vb-va; }
+            if(col==='cost'){ va=parseFloat(a.querySelector('[data-value]')?.getAttribute('data-value')||0)||0; vb=parseFloat(b.querySelector('[data-value]')?.getAttribute('data-value')||0)||0; return asc? va-vb: vb-va; }
+            return 0;
+          });
+          // reattach
+          rows.forEach(r=>tbody.appendChild(r));
+        });
+      });
+    }
+    // initial load: restore saved AI controls then refresh market banner/details
+    (async ()=>{
+      try{
+        const savedWindow = Number(localStorage.getItem('aiProfitWindowHours') || 2);
+        const profitEl = document.getElementById('profitWindowHours'); if(profitEl) profitEl.value = savedWindow;
+        const savedUseProj = localStorage.getItem('aiUseProjection') === 'true'; const useProjEl = document.getElementById('useProjection'); if(useProjEl) useProjEl.checked = savedUseProj;
+        const savedProjMinutes = Number(localStorage.getItem('aiProjectionMinutes') || 10); const projEl = document.getElementById('projectionMinutes'); if(projEl) projEl.value = savedProjMinutes;
+        await refreshMarket();
+      }catch(err){ console.error('initial refresh failed', err); const content = document.getElementById('content'); if(content) content.innerHTML = `<div style="color:#ffb86b"><strong>Data load error:</strong></div><pre style="white-space:pre-wrap;color:var(--muted)">${(err && err.stack) ? err.stack : (err && err.message) ? err.message : String(err)}</pre>`; }
+    })();
+    // Refresh only while visible; avoid competing with other dashboard tabs.
+    if(!window.aiHudAutoRefreshId){
+      window.aiHudAutoRefreshId = setInterval(()=>{ if(document.visibilityState === 'visible') refreshMarket().catch(()=>{}); }, 120000);
+    }
+  </script>
+  <script>
+    // Quiet noisy extension console messages that originate from contentscript.js
+    (function(){
+      const oldWarn = console.warn.bind(console);
+      const oldError = console.error.bind(console);
+      const filters = ['MaxListenersExceededWarning','ObjectMultiplex - orphaned data','ObjectMultiplex - orphaned','orphaned data for stream'];
+      console.warn = function(...args){ try{ const text = args.map(a=>String(a)).join(' '); if(filters.some(f=>text.includes(f))) return; }catch(e){}; oldWarn(...args); };
+      console.error = function(...args){ try{ const text = args.map(a=>String(a)).join(' '); if(filters.some(f=>text.includes(f))) return; }catch(e){}; oldError(...args); };
+    })();
+  </script>
+  <script src="scripts/ai-city-ai-tasks.js"></script>
+</body>
+</html>

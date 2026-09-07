@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NewMerica | Live Trade Stream</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-deep: #03040a;
+            --surface: rgba(9, 12, 25, 0.7);
+            --surface-strong: rgba(6, 10, 25, 0.95);
+            --green-glow: #4ade80;
+            --red-glow: #f87171;
+            --purple-accent: #a855f7;
+            --text-main: #e2e8f0;
+            --text-muted: #64748b;
+            --cyan-accent: #00f0ff;
+            --accent-soft: rgba(0, 240, 255, 0.1);
+            --border-light: rgba(0, 240, 255, 0.25);
+            --amber: #fbbf24;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            color: var(--text-main);
+            padding: 20px;
+            margin: 0;
+            min-height: 100vh;
+            background: radial-gradient(circle at top, #10182f 0%, var(--bg-deep) 70%);
+        }
+
+        .scanlines {
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(rgba(255,255,255,0.02) 50%, rgba(0,0,0,0.16) 50%), linear-gradient(90deg, rgba(255,0,0,0.03), rgba(0,255,0,0.01), rgba(0,0,255,0.03));
+            background-size: 100% 4px, 3px 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .site-content {
+            position: relative;
+            z-index: 1;
+            width: min(1400px, 100%);
+            margin: 0 auto;
+            padding: 24px;
+            background: var(--surface);
+            border: 1px solid var(--border-light);
+            border-radius: 16px;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.7);
+        }
+
+        .nav-menu {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 24px;
+            padding: 12px;
+            background: rgba(0,0,0,0.55);
+            border: 1px solid var(--border-light);
+            border-radius: 10px;
+        }
+
+        .nav-link {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 8px 16px;
+            border: 1px solid transparent;
+            border-radius: 999px;
+            transition: all 0.2s ease;
+        }
+
+        .nav-link:hover { color: var(--cyan-accent); background: rgba(0,240,255,0.05); }
+        .nav-link.active { color: var(--cyan-accent); border-color: rgba(0,240,255,0.35); background: var(--accent-soft); }
+
+        .header-box { text-align: center; margin-bottom: 24px; }
+        .header-box h1 {
+            margin: 0;
+            font-size: 2.2rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: #fff;
+            text-shadow: 0 0 12px rgba(0,240,255,0.35);
+        }
+        .header-box p {
+            max-width: 780px;
+            margin: 10px auto 0;
+            color: var(--text-muted);
+            line-height: 1.55;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.92rem;
+        }
+
+        .live-banner {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 14px;
+            padding: 16px 18px;
+            border-radius: 14px;
+            background: rgba(0,0,0,0.45);
+            border: 1px solid rgba(0,240,255,0.2);
+            margin-bottom: 18px;
+        }
+
+        .live-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--green-glow);
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            font-size: 0.82rem;
+        }
+
+        .pulse {
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            background: var(--green-glow);
+            box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.8);
+            animation: pulse 1.6s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.7); }
+            70% { box-shadow: 0 0 0 8px rgba(74, 222, 128, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0); }
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 14px;
+            margin-bottom: 18px;
+        }
+
+        .stat-card {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 16px;
+        }
+
+        .stat-label {
+            display: block;
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.16em;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            display: block;
+            font-size: 1.35rem;
+            font-weight: 800;
+            color: #fff;
+        }
+
+        .feed-list {
+            display: grid;
+            gap: 12px;
+        }
+
+        .trade-card {
+            display: grid;
+            grid-template-columns: 1.1fr 0.8fr auto;
+            gap: 14px;
+            align-items: center;
+            padding: 16px 18px;
+            border-radius: 14px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+
+        .trade-card:hover { transform: translateY(-1px); border-color: rgba(0,240,255,0.25); }
+        .trade-card.new { border-color: var(--cyan-accent); animation: slideIn 0.35s ease; }
+
+        @keyframes slideIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+        .trade-meta strong {
+            display: block;
+            color: #fff;
+            font-size: 1rem;
+            margin-bottom: 4px;
+        }
+
+        .trade-meta span {
+            display: block;
+            color: var(--text-muted);
+            font-size: 0.84rem;
+            font-family: 'Share Tech Mono', monospace;
+        }
+
+        .trade-value {
+            text-align: right;
+            font-size: 1.05rem;
+            font-weight: 800;
+        }
+
+        .trade-status {
+            padding: 7px 10px;
+            border-radius: 999px;
+            font-size: 0.74rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .status-executed { color: var(--green-glow); background: rgba(74, 222, 128, 0.12); }
+        .status-pending { color: var(--amber); background: rgba(251, 191, 36, 0.14); }
+
+        .empty-state {
+            padding: 26px;
+            text-align: center;
+            color: var(--text-muted);
+            border: 1px dashed rgba(255,255,255,0.14);
+            border-radius: 12px;
+            background: rgba(255,255,255,0.03);
+        }
+
+        @media (max-width: 760px) {
+            .trade-card { grid-template-columns: 1fr; }
+            .trade-value { text-align: left; }
+        }
+    </style>
+</head>
+<body>
+    <div class="scanlines"></div>
+    <div class="site-content">
+        <div class="nav-menu">
+            <a href="DASHBOARD.HTML" class="nav-link">Home</a>
+            <a href="MarketAi.HTML" class="nav-link">Market Trends</a>
+            <a href="ALLIANCE.HTML" class="nav-link">Alliance Intel</a>
+            <a href="MILITARY.HTML" class="nav-link">Military Command</a>
+            <a href="LIVE_TRADES.HTML" class="nav-link active">Live Trade Feed</a>
+        </div>
+
+        <div class="header-box">
+            <h1>Live Trade Stream</h1>
+            <p>Real-time market activity flowing through the NewMerica command lattice. New trades appear as soon as the latest API snapshot refreshes.</p>
+        </div>
+
+        <div class="live-banner">
+            <div class="live-pill"><span class="pulse"></span> Feed Status: Live</div>
+            <div style="color: var(--text-muted); font-family: 'Share Tech Mono', monospace; font-size: 0.9rem;" id="feed-clock">Syncing...</div>
+        </div>
+
+        <div style="margin-bottom: 16px; padding: 12px 14px; border-radius: 12px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); color: var(--text-muted); font-family: 'Share Tech Mono', monospace; font-size: 0.85rem;" id="logger-status">Logger: waiting for first executed trade...</div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <span class="stat-label">Observed Trades</span>
+                <span class="stat-value" id="trade-count">0</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Executed</span>
+                <span class="stat-value" id="executed-count">0</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Hot Resource</span>
+                <span class="stat-value" id="hot-resource">—</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Last Price</span>
+                <span class="stat-value" id="last-price">—</span>
+            </div>
+        </div>
+
+        <div id="feed-list" class="feed-list"></div>
+    </div>
+
+    <script src="common.js"></script>
+    <script>
+        const feedList = document.getElementById('feed-list');
+        const tradeCountEl = document.getElementById('trade-count');
+        const executedCountEl = document.getElementById('executed-count');
+        const hotResourceEl = document.getElementById('hot-resource');
+        const lastPriceEl = document.getElementById('last-price');
+        const feedClockEl = document.getElementById('feed-clock');
+        const loggerStatusEl = document.getElementById('logger-status');
+
+        let knownTradeIds = new Set();
+        let tradeHistory = [];
+
+        function formatCurrency(value) {
+            const num = Number(value || 0);
+            return `$${num.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+        }
+
+        function getTradeStatus(trade) {
+            return trade.accepted ? { label: 'Executed', className: 'status-executed' } : { label: 'Pending', className: 'status-pending' };
+        }
+
+        function getTradeDirection(trade) {
+            const entityId = 768640;
+            if (trade.sender_id === entityId) return 'Outgoing';
+            if (trade.receiver_id === entityId) return 'Incoming';
+            return 'System';
+        }
+
+        function renderFeed(trades) {
+            if (!trades.length) {
+                feedList.innerHTML = '<div class="empty-state">Waiting on the next trade pulse...</div>';
+                return;
+            }
+
+            const html = trades.map((trade, index) => {
+                const status = getTradeStatus(trade);
+                const direction = getTradeDirection(trade);
+                const totalValue = (Number(trade.offer_amount) || 0) * (Number(trade.price) || 0);
+                const isNew = index < Math.min(3, trades.length) && !knownTradeIds.has(String(trade.id));
+                const resIcon = typeof getResourceIconHtml === 'function' ? getResourceIconHtml(trade.offer_resource,18) : '';
+                return `
+                    <div class="trade-card ${isNew ? 'new' : ''}">
+                        <div class="trade-meta">
+                            <strong>${resIcon}${trade.offer_resource || 'Resource'} • ${direction}</strong>
+                            <span>${new Date(trade.date).toLocaleString()} • ID #${trade.id}</span>
+                            <span>Qty ${Number(trade.offer_amount || 0).toLocaleString()} • ${formatCurrency(trade.price)}</span>
+                        </div>
+                        <div class="trade-value">${formatCurrency(totalValue)}</div>
+                        <div class="trade-status ${status.className}">${status.label}</div>
+                    </div>`;
+            }).join('');
+
+            feedList.innerHTML = html;
+        }
+
+        function updateStats(trades) {
+            tradeCountEl.textContent = trades.length.toLocaleString();
+            const executed = trades.filter(t => t.accepted).length;
+            executedCountEl.textContent = executed.toLocaleString();
+
+            const resourceCounts = trades.reduce((acc, trade) => {
+                const resource = trade.offer_resource || 'Unknown';
+                acc[resource] = (acc[resource] || 0) + 1;
+                return acc;
+            }, {});
+
+            const hotResource = Object.entries(resourceCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || '—';
+            hotResourceEl.innerHTML = typeof getResourceIconHtml === 'function' ? `${getResourceIconHtml(hotResource,16)}${hotResource}` : hotResource;
+
+            const latestTrade = trades[0];
+            lastPriceEl.textContent = latestTrade ? formatCurrency(latestTrade.price) : '—';
+        }
+
+        async function logExecutedTrades(trades) {
+            loggerStatusEl.textContent = 'Logger: sending executed trade(s) to Apps Script...';
+            for (const trade of trades) {
+                if (!trade.accepted) continue;
+                try {
+                    const response = await fetch('https://script.google.com/macros/s/AKfycbyUAVvGGrN_IhWDauT98ZLEoA-1CdIwsN7sG8l_4RkAxoH9gakiDQB_CIc6zCPTRBso/exec', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            trade,
+                            spreadsheetId: '1KlXsnU_OEzTpefr3bPHqs8YAT3MlqaT3X-ITxrIE6ys',
+                            entityId: 768640
+                        }),
+                        cache: 'no-store'
+                    });
+
+                    let bodyText = '';
+                    try {
+                        bodyText = await response.text();
+                    } catch (ignored) {
+                        bodyText = '';
+                    }
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}${bodyText ? ` — ${bodyText}` : ''}`);
+                    }
+
+                    loggerStatusEl.textContent = `Logger: logged trade #${trade.id} successfully.`;
+                } catch (error) {
+                    loggerStatusEl.textContent = `Logger: failed for trade #${trade.id} — ${error.message}. Re-publish the Apps Script web app after this update.`;
+                    console.warn('Failed to log trade', trade.id, error);
+                }
+            }
+        }
+
+        let liveTradeRequest = null;
+        async function fetchLiveTrades() {
+            if (liveTradeRequest) return liveTradeRequest;
+            liveTradeRequest = (async () => {
+            try {
+                const query = `{ trades(first: 30) { data { id offer_resource offer_amount price accepted sender_id receiver_id date type } } }`;
+                const response = await fetch(`https://api.politicsandwar.com/graphql?api_key=${API_KEY}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query })
+                });
+
+                const json = await response.json();
+                if (json.errors) throw new Error(json.errors[0].message);
+
+                const trades = (json.data?.trades?.data || []).sort((a, b) => new Date(b.date) - new Date(a.date));
+                const seenNow = new Set(trades.map(t => String(t.id)));
+
+                if (tradeHistory.length === 0) {
+                    tradeHistory = trades;
+                    knownTradeIds = seenNow;
+                } else {
+                    const newTrades = trades.filter(t => !knownTradeIds.has(String(t.id)));
+                    tradeHistory = [...newTrades, ...tradeHistory].slice(0, 24);
+                    newTrades.forEach(t => knownTradeIds.add(String(t.id)));
+                }
+
+                if (tradeHistory.length) {
+                    const executedTrades = tradeHistory.filter(t => t.accepted);
+                    if (executedTrades.length) {
+                        await logExecutedTrades(executedTrades);
+                    }
+                }
+
+                renderFeed(tradeHistory);
+                updateStats(tradeHistory);
+                feedClockEl.textContent = `Last sync: ${new Date().toLocaleTimeString()}`;
+            } catch (error) {
+                console.error('Trade feed error', error);
+                feedClockEl.textContent = `Feed degraded: ${error.message}`;
+            } finally {
+                liveTradeRequest = null;
+            }
+            })();
+            return liveTradeRequest;
+        }
+
+        fetchLiveTrades();
+        setInterval(() => {
+            if (document.visibilityState === 'visible') fetchLiveTrades();
+        }, 60000);
+    </script>
+</body>
+</html>

@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Trade Partners | NewMerica</title>
+    <style>
+        :root {
+            --bg: #040816;
+            --panel: rgba(10, 16, 30, 0.96);
+            --panel-alt: rgba(15, 22, 37, 0.95);
+            --border: rgba(34, 211, 238, 0.18);
+            --cyan: #22d3ee;
+            --text: #f8fafc;
+            --muted: #94a3b8;
+            --green: #34d399;
+            --amber: #fbbf24;
+            --red: #fb7185;
+        }
+        body { margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: radial-gradient(circle at top, #11213f 0%, var(--bg) 60%, #02050b 100%); color: var(--text); }
+        a { color: inherit; text-decoration: none; }
+        .page { max-width: 1320px; margin: 0 auto; padding: 24px; }
+        .hero { background: var(--panel); border: 1px solid var(--border); border-radius: 24px; padding: 22px; margin-bottom: 16px; }
+        .hero h1 { margin: 0 0 8px; font-size: 1.7rem; letter-spacing: 0.08em; text-transform: uppercase; }
+        .hero p { margin: 0; color: var(--muted); }
+        .card { background: var(--panel-alt); border: 1px solid var(--border); border-radius: 18px; padding: 16px; margin-bottom: 16px; }
+        .grid { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 16px; }
+        .pill { display: inline-block; padding: 6px 10px; border-radius: 999px; font-size: 0.78rem; font-weight: 800; margin-left: 8px; }
+        .pill.good { background: rgba(52, 211, 153, 0.16); color: var(--green); }
+        .pill.warn { background: rgba(251, 191, 36, 0.16); color: var(--amber); }
+        .pill.bad { background: rgba(251, 113, 133, 0.16); color: var(--red); }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+        th { color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.74rem; }
+        .kpi { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 10px; }
+        .kpi-box { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 14px; padding: 10px; }
+        .kpi-box span { display: block; font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
+        .kpi-box strong { font-size: 1rem; }
+        @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } .kpi { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <div class="hero">
+            <h1>Trade Partner Dossier</h1>
+            <p>Sheet-backed trade partner activity, recurring relationships, and timing intelligence.</p>
+        </div>
+        <div class="grid">
+            <div class="card">
+                <h3 style="margin-top:0;">Partner ledger</h3>
+                <div id="kpi-row" class="kpi"></div>
+                <table>
+                    <thead><tr><th>Partner</th><th>Trades</th><th>Volume</th><th>Pattern</th></tr></thead>
+                    <tbody id="partner-body"></tbody>
+                </table>
+            </div>
+            <div class="card">
+                <h3 style="margin-top:0;">Behavior notes</h3>
+                <div id="notes-body" style="color: var(--muted); line-height: 1.7;"></div>
+            </div>
+        </div>
+    </div>
+    <script>
+        const SHEET_ID = '1KlXsnU_OEzTpefr3bPHqs8YAT3MlqaT3X-ITxrIE6ys';
+
+        function normalizeHeader(label) {
+            return String(label || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+        }
+
+        function getSheetRows(data) {
+            const rows = data?.table?.rows || [];
+            return (rows || []).map((row) => {
+                const values = (row?.c || []).map((cell) => {
+                    if (!cell) return '';
+                    if (typeof cell.v === 'number') return cell.v;
+                    if (typeof cell.v === 'string') return cell.v;
+                    if (cell.f) return cell.f;
+                    return cell.v || '';
+                });
+                return { values };
+            }).filter((row) => row.values.some((value) => String(value).trim().length > 0));
+        }
+
+        function getValueByCandidates(row, candidates) {
+            const headers = row?.headerTitles || [];
+            const indexMap = {};
+            headers.forEach((header, index) => {
+                indexMap[normalizeHeader(header)] = index;
+            });
+            const match = candidates.map((candidate) => indexMap[normalizeHeader(candidate)]).find((index) => index !== undefined);
+            return match === undefined ? '' : row.values[match];
+        }
+
+        async function loadPartnerSheet() {
+            const encoded = encodeURIComponent('TRADE PARTNERS');
+            const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encoded}&range=A1:K50`;
+            const response = await fetch(url);
+            const text = await response.text();
+            const match = text.match(/google\.visualization\.Query\.setResponse\(([^]+)\);?/);
+            if (!match) throw new Error('No payload');
+            const json = JSON.parse(match[1]);
+            const rows = getSheetRows(json);
+            const headerTitles = (json?.table?.cols || []).map((col) => String(col.label || '').trim()).filter(Boolean);
+            const parsedRows = rows.map((row) => ({ ...row, headerTitles }));
+
+            const kpiRow = document.getElementById('kpi-row');
+            const tbody = document.getElementById('partner-body');
+            const notes = document.getElementById('notes-body');
+
+            const ledgerRows = parsedRows.slice(1).map((row) => ({
+                partner: getValueByCandidates(row, ['partner', 'counterparty', 'name']) || 'Unknown',
+                trades: getValueByCandidates(row, ['trades', 'count', 'activity']) || '0',
+                volume: getValueByCandidates(row, ['volume', 'total', 'value']) || '0',
+                pattern: getValueByCandidates(row, ['pattern', 'timing', 'behavior']) || 'Monitoring'
+            })).filter((row) => row.partner && row.partner !== 'Unknown');
+
+            kpiRow.innerHTML = `
+                <div class="kpi-box"><span>Partners</span><strong>${ledgerRows.length}</strong></div>
+                <div class="kpi-box"><span>Highest activity</span><strong>${ledgerRows[0]?.partner || '—'}</strong></div>
+                <div class="kpi-box"><span>Most frequent pattern</span><strong>${ledgerRows[0]?.pattern || '—'}</strong></div>
+            `;
+
+            tbody.innerHTML = ledgerRows.map((row) => `
+                <tr>
+                    <td>${row.partner}</td>
+                    <td>${row.trades}</td>
+                    <td>${row.volume}</td>
+                    <td>${row.pattern}</td>
+                </tr>
+            `).join('');
+
+            notes.innerHTML = ledgerRows.slice(0, 5).map((row) => `• ${row.partner} is showing ${row.pattern.toLowerCase()} with ${row.trades} recorded trade touches and ${row.volume} volume.`).join('<br/>');
+        }
+
+        document.addEventListener('DOMContentLoaded', loadPartnerSheet);
+    </script>
+</body>
+</html>

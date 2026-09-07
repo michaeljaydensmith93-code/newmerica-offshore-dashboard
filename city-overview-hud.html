@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>City Overview HUD</title>
+	<style>
+		body{font-family:Arial,Helvetica,sans-serif;background:#050816;color:#e6f7fb;margin:0;padding:24px}
+		a.back{color:#00f0ff;text-decoration:none;display:inline-block;margin-bottom:12px}
+		.panel{background:#0e1428;padding:18px;border-radius:10px;border:1px solid rgba(0,240,255,0.08)}
+		table{width:100%;border-collapse:collapse;margin-top:12px}
+		th,td{padding:8px;border-bottom:1px solid rgba(255,255,255,0.03)}
+	</style>
+</head>
+<body>
+	<a class="back" href="DASHBOARD.HTML">← Back to Dashboard</a>
+	<div class="panel">
+		<h1>City Overview HUD</h1>
+		<div id="content">Loading cities…</div>
+	</div>
+	<script src="common.js"></script>
+	<script>
+		const NATION_ID = 768640;
+		async function loadCities(){
+			try{
+				const q = `query { nations(id: [${NATION_ID}], first:1) { data { cities { id name infrastructure land powered } nation_name } } }`;
+				const r = await fetch(`https://api.politicsandwar.com/graphql?api_key=${window.API_KEY}`, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({query:q})});
+				const j = await r.json();
+				const nation = j?.data?.nations?.data?.[0];
+				if(!nation) throw new Error('No nation/city data');
+				const cities = Array.isArray(nation.cities)?nation.cities:[];
+				if(!cities.length){ document.getElementById('content').textContent = 'No cities returned.'; return; }
+				const rows = cities.map(c=>`<tr><td>${c.name||'Unknown'}</td><td>${Number(c.infrastructure||0).toLocaleString()}</td><td>${Number(c.land||0).toLocaleString()}</td><td>${c.powered? 'Online':'Offline'}</td></tr>`).join('');
+				document.getElementById('content').innerHTML = `<div><strong>Nation:</strong> ${nation.nation_name||'Unknown'}</div><table><thead><tr><th>City</th><th>Infrastructure</th><th>Land</th><th>Power</th></tr></thead><tbody>${rows}</tbody></table>`;
+			}catch(e){document.getElementById('content').textContent='Error: '+e.message}
+		}
+		loadCities();
+	</script>
+</body>
+</html>

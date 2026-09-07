@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Market Status - NewMerica</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body{font-family:Space Grotesk, sans-serif;background:#041026;color:#eef3f9;margin:0;padding:28px}
+        .container{max-width:1200px;margin:0 auto}
+        h1{letter-spacing:0.14em}
+        .hero-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin:18px 0}
+        .hero{padding:20px;border-radius:18px;background:rgba(12,18,30,0.96);border:1px solid rgba(255,255,255,0.03)}
+        .hero h2{margin:0;color:#d1ad4a}
+        .hero .value{font-family:Space Mono, monospace;font-size:1.4rem;margin-top:8px}
+        .table-wrapper{margin-top:18px;background:rgba(8,12,18,0.6);padding:12px;border-radius:12px}
+        table{width:100%;border-collapse:collapse}
+        th,td{padding:10px;border-bottom:1px solid rgba(255,255,255,0.04);font-size:14px}
+        th{color:#9aa8bd;text-transform:uppercase;font-size:12px}
+        .stat-label{color:#99a7c0}
+        .stat-value{color:#f9fbff;font-family:Space Mono, monospace}
+        .link{color:#a9d1ff;text-decoration:underline;cursor:pointer}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="DASHBOARD.HTML">← Back to Strategic Command</a>
+        <h1>Market Status</h1>
+        <p style="color:#99a7c0;max-width:900px">Standalone view showing reserve shortfalls, market value of deficits, price trends, and per-resource recommendations. Uses the same local reserve targets and persisted sample nets as the Finance Hub.</p>
+
+        <div class="hero-grid">
+            <div class="hero" id="hero-liquid">
+                <h2>Liquid funds</h2>
+                <div class="value" id="ms-liquid">$0</div>
+            </div>
+            <div class="hero" id="hero-deficit">
+                <h2>Total deficit</h2>
+                <div class="value" id="ms-deficit">$0</div>
+            </div>
+            <div class="hero" id="hero-oper">
+                <h2>Operability</h2>
+                <div class="value" id="ms-oper">Checking…</div>
+            </div>
+        </div>
+
+        <div class="table-wrapper">
+            <table>
+                <thead><tr><th>Resource</th><th>Target</th><th>Current</th><th>Shortfall</th><th>Shortfall value</th></tr></thead>
+                <tbody id="ms-body"></tbody>
+            </table>
+        </div>
+
+        <div id="ms-insights" class="table-wrapper" style="display:none;margin-top:14px">
+            <h3 style="margin:0 0 8px;color:#d1ad4a">Insights</h3>
+            <div id="ms-trends" style="color:#99a7c0;margin-bottom:8px"></div>
+            <div id="ms-detail"></div>
+        </div>
+
+    </div>
+    <script src="common.js"></script>
+    <script src="market-utils.js"></script>
+    <script src="market-status.js"></script>
+</body>
+</html>

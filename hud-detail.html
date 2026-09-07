@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>HUD Detail</title>
+	<style>body{font-family:Arial,Helvetica,sans-serif;background:#050816;color:#e6f7fb;margin:0;padding:24px}a.back{color:#00f0ff;text-decoration:none;display:inline-block;margin-bottom:12px}.panel{background:#0e1428;padding:18px;border-radius:10px;border:1px solid rgba(0,240,255,0.08)}</style>
+</head>
+<body>
+	<a class="back" href="DASHBOARD.HTML">← Back to Dashboard</a>
+	<div class="panel">
+		<h1>HUD Detail (Drawer)</h1>
+		<div id="content">This page can act as a deep-link target for the dashboard detail drawer.</div>
+	</div>
+	<script src="common.js"></script>
+	<script>
+		// If opened directly, show basic help
+		document.getElementById('content').innerHTML += '<div style="margin-top:8px;color:#94a3b8">Open from the dashboard to populate context automatically.</div>';
+	</script>
+</body>
+</html>

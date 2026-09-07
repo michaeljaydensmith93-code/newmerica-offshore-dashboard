@@ -1,0 +1,460 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NewMerica Finance Hub</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #06121f;
+            --surface: rgba(13, 22, 38, 0.94);
+            --surface-soft: rgba(18, 30, 50, 0.92);
+            --surface-strong: rgba(9, 16, 27, 0.98);
+            --border: rgba(209, 173, 74, 0.22);
+            --accent: #d1ad4a;
+            --accent-soft: #f5d98b;
+            --positive: #6dd0ad;
+            --negative: #ff8b7d;
+            --text: #eef3f9;
+            --muted: #99a7c0;
+            --shadow: 0 40px 130px rgba(0, 0, 0, 0.35);
+            --transition: 260ms ease;
+        }
+        *, *::before, *::after { box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: 'Space Grotesk', sans-serif;
+            color: var(--text);
+            background: radial-gradient(circle at top left, rgba(209, 173, 74, 0.08), transparent 18%),
+                        radial-gradient(circle at bottom right, rgba(255, 255, 255, 0.04), transparent 22%),
+                        linear-gradient(180deg, #091428 0%, #061020 54%, #020814 100%);
+            overflow-x: hidden;
+        }
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(circle at 50% 10%, rgba(255,255,255,0.08), transparent 16%);
+            pointer-events: none;
+            z-index: -1;
+        }
+        .page {
+            position: relative;
+            max-width: 1320px;
+            margin: 0 auto;
+            padding: 40px;
+            background: rgba(11, 18, 31, 0.96);
+            border: 1px solid rgba(209, 173, 74, 0.14);
+            border-radius: 36px;
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(24px);
+            overflow: hidden;
+        }
+        .page::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg, rgba(255,255,255,0.04), transparent 22%);
+            pointer-events: none;
+        }
+        .topbar {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            gap: 24px;
+            margin-bottom: 34px;
+        }
+        .title-section { max-width: 740px; }
+        .title-section h1 {
+            margin: 0 0 12px;
+            font-size: clamp(2.5rem, 4vw, 3.6rem);
+            letter-spacing: 0.16em;
+            line-height: 1.02;
+            text-transform: uppercase;
+            color: #f8f8f8;
+        }
+        .title-section p {
+            margin: 0;
+            color: var(--muted);
+            line-height: 1.8;
+            max-width: 720px;
+            font-size: 1rem;
+        }
+        .hero-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 22px;
+            margin-bottom: 38px;
+            opacity: 0;
+            transform: translateY(28px);
+            transition: opacity 0.9s ease, transform 0.9s ease;
+        }
+        .hero-card {
+            position: relative;
+            padding: 34px 28px;
+            min-height: 210px;
+            border-radius: 28px;
+            background: linear-gradient(180deg, rgba(18, 28, 46, 0.92), rgba(12, 16, 28, 0.96));
+            border: 1px solid rgba(209, 173, 74, 0.16);
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.03), 0 24px 80px rgba(0,0,0,0.24);
+            overflow: hidden;
+            opacity: 0;
+            transform: translateY(12px);
+            transition: transform var(--transition), opacity var(--transition), box-shadow var(--transition), border-color var(--transition);
+        }
+        .hero-card::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            opacity: 0.18;
+            pointer-events: none;
+            background-size: cover;
+            background-repeat: no-repeat;
+            background-position: center center;
+            filter: saturate(1.1) brightness(0.95);
+        }
+        .hero-card.cash-card::after {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='320' height='320' viewBox='0 0 320 320'%3E%3Crect width='320' height='320' fill='%230b1e0f'/%3E%3Cpattern id='p' x='0' y='0' width='80' height='80' patternUnits='userSpaceOnUse'%3E%3Crect width='80' height='80' fill='%231d3f1f'/%3E%3Cpath d='M12 18h56M12 40h56M12 62h56' stroke='%2396d0a0' stroke-width='6' stroke-linecap='round'/%3E%3Ccircle cx='40' cy='40' r='12' fill='%23d1f6cc'/%3E%3C/pattern%3E%3Crect width='320' height='320' fill='url(%23p)' opacity='0.82'/%3E%3C/svg%3E");
+        }
+        .hero-card.credit-card::after {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='320' height='320' viewBox='0 0 320 320'%3E%3Crect width='320' height='320' fill='%230d192d'/%3E%3Crect x='22' y='82' width='276' height='158' rx='28' fill='%233f5d8f'/%3E%3Crect x='38' y='110' width='112' height='30' rx='8' fill='%23c7e0ff'/%3E%3Crect x='38' y='160' width='192' height='18' rx='8' fill='%239bb4d3'/%3E%3Ccircle cx='231' cy='170' r='22' fill='%23ffd36b'/%3E%3Cpath d='M60 96h190' stroke='%23f4f9ff' stroke-width='6' stroke-linecap='round'/%3E%3C/svg%3E");
+        }
+        .hero-card.stockpile-card::after {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='320' height='320' viewBox='0 0 320 320'%3E%3Crect width='320' height='320' fill='%23061119'/%3E%3Crect x='28' y='52' width='264' height='220' rx='30' fill='%233a4a5f'/%3E%3Cpath d='M52 88h216M52 128h216M52 168h216M52 208h216' stroke='%23b1c0cf' stroke-width='10' stroke-linecap='round'/%3E%3Cpath d='M85 54v212M155 54v212M225 54v212' stroke='%2397aab9' stroke-width='10'/%3E%3C/svg%3E");
+        }
+        .hero-card.cash-card {
+            border-color: rgba(104, 183, 108, 0.26);
+        }
+        .hero-card.credit-card {
+            border-color: rgba(108, 150, 214, 0.24);
+        }
+        .hero-card.stockpile-card {
+            border-color: rgba(141, 162, 184, 0.2);
+        }
+        .page-ready .hero-card { opacity: 1; transform: none; }
+        .hero-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at 20% 10%, rgba(209, 173, 74, 0.12), transparent 25%);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity var(--transition);
+        }
+        .hero-card:hover {
+            cursor: pointer;
+            transform: translateY(-4px);
+            border-color: rgba(209, 173, 74, 0.28);
+            box-shadow: 0 34px 110px rgba(0,0,0,0.35);
+        }
+        .hero-card:hover::before { opacity: 1; }
+        .hero-card h2 {
+            margin: 0;
+            font-size: 0.95rem;
+            letter-spacing: 0.22em;
+            text-transform: uppercase;
+            color: var(--accent-soft);
+        }
+        .hero-value {
+            margin: 20px 0 0;
+            font-family: 'Space Mono', monospace;
+            font-size: clamp(1.4rem, 1.9vw, 2.15rem);
+            line-height: 1.1;
+            color: #ffffff;
+            letter-spacing: 0.02em;
+        }
+        .hero-card p {
+            margin: 18px 0 0;
+            color: var(--muted);
+            font-size: 0.95rem;
+            line-height: 1.75;
+            max-width: 100%;
+        }
+        .hero-note {
+            display: inline-flex;
+            margin-top: 14px;
+            align-items: center;
+            gap: 8px;
+            color: var(--accent-soft);
+            font-size: 0.85rem;
+            letter-spacing: 0.08em;
+        }
+        .section {
+            margin-bottom: 36px;
+            opacity: 0;
+            transform: translateY(28px);
+            transition: opacity 0.9s ease, transform 0.9s ease;
+        }
+        .section h3 {
+            margin: 0 0 12px;
+            font-size: 0.95rem;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            color: var(--accent);
+        }
+        .section p {
+            margin: 0 0 18px;
+            color: var(--muted);
+            line-height: 1.8;
+            max-width: 980px;
+            font-size: 0.99rem;
+        }
+        .page-ready .hero-grid,
+        .page-ready .section { opacity: 1; transform: none; }
+        .table-wrapper {
+            overflow-x: auto;
+            border-radius: 28px;
+            background: rgba(12, 18, 30, 0.88);
+            border: 1px solid rgba(209, 173, 74, 0.12);
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.02);
+            backdrop-filter: blur(22px);
+        }
+        .stat-list {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            min-width: 620px;
+        }
+        .stat-list th,
+        .stat-list td {
+            padding: 18px 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            font-size: 0.95rem;
+            vertical-align: middle;
+        }
+        .stat-list th {
+            text-align: left;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            font-size: 0.78rem;
+            background: rgba(255,255,255,0.02);
+        }
+        .stat-list tbody tr {
+            opacity: 0;
+            transform: translateY(8px);
+            transition: opacity 0.55s ease, transform 0.55s ease, background 0.25s ease;
+        }
+        .page-ready .stat-list tbody tr { opacity: 1; transform: none; }
+        .stat-list tbody tr:nth-child(odd) { background: rgba(255,255,255,0.02); }
+        .stat-list tbody tr:hover {
+            transform: translateX(4px);
+            background: rgba(209, 173, 74, 0.08);
+        }
+        .stat-label {
+            color: var(--muted);
+            font-size: 0.92rem;
+            line-height: 1.7;
+        }
+        .stat-value {
+            color: #f9fbff;
+            font-family: 'Space Mono', monospace;
+            word-break: break-word;
+        }
+        .holding-quantity {
+            color: #f9fbff;
+            font-family: 'Space Mono', monospace;
+            font-size: 1.18rem;
+            font-weight: 700;
+            line-height: 1.35;
+            white-space: nowrap;
+        }
+        .holding-market-value {
+            color: var(--muted);
+            font-family: 'Space Mono', monospace;
+            font-size: 0.85rem;
+            white-space: nowrap;
+        }
+        .income-summary { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:12px; margin-bottom:18px; }
+        .income-kpi { padding:16px; border:1px solid rgba(109,208,173,.2); background:rgba(109,208,173,.06); border-radius:12px; }
+        .income-kpi strong { display:block; margin-top:7px; color:var(--positive); font-family:'Space Mono',monospace; font-size:1.2rem; }
+        .income-table { min-width:760px; }
+        #hero-growth-card {
+            animation: heartbeat 3.2s ease-in-out infinite;
+        }
+        @keyframes heartbeat {
+            0%, 100% { transform: translateY(0) scale(1); }
+            12%, 28% { transform: translateY(-2px) scale(1.006); }
+            20% { transform: translateY(-1px) scale(1.008); }
+            40%, 60%, 80% { transform: translateY(0) scale(1); }
+        }
+        .footer {
+            color: var(--muted);
+            font-size: 0.88rem;
+            padding-top: 16px;
+            letter-spacing: 0.02em;
+            text-align: center;
+        }
+        .update-timestamps {
+            position: absolute;
+            right: 24px;
+            bottom: 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 4px;
+            color: var(--muted);
+            font-size: 8pt;
+            opacity: 0.9;
+            text-align: right;
+        }
+        .update-timestamp { position: static; }
+        @media (max-width: 1140px) {
+            .hero-grid { grid-template-columns: 1fr 1fr; }
+            .topbar { align-items: stretch; }
+        }
+        @media (max-width: 840px) {
+            .hero-grid { grid-template-columns: 1fr; }
+            .title-section h1 { font-size: clamp(2.2rem, 5vw, 3rem); }
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <div class="topbar">
+            <div class="title-section">
+                <h1>NewMerica Financial Command</h1>
+                <p>Executive finance dashboard for cash, credit exposure, and stockpile valuation with continuous update telemetry.</p>
+            </div>
+            <a class="page-link" href="DASHBOARD.HTML">← Back to Strategic Command</a>
+        </div>
+
+        <div class="hero-grid">
+            <div class="hero-card cash-card" data-group="cash">
+                <h2>Cash balance</h2>
+                <div class="hero-value" id="finance-cash">$0</div>
+                <p>Liquid cash holdings available for immediate spending.</p>
+            </div>
+            <div class="hero-card credit-card" data-group="credits">
+                <h2>Credits</h2>
+                <div class="hero-value" id="finance-credits">0</div>
+                <p>Current credits balance translated into currency value.</p>
+            </div>
+            <div class="hero-card stockpile-card" data-group="stockpile">
+                <h2>Stockpile market value</h2>
+                <div class="hero-value" id="finance-stockpile">$0</div>
+                <p>Total market value of all stockpiles using latest trade prices.</p>
+            </div>
+            <div class="hero-card" data-group="loan">
+                <h2>Alliance loan debt</h2>
+                <div class="hero-value" id="finance-loan-debt">$0</div>
+                <p>Outstanding TCO loan balance after verified repayments.</p>
+            </div>
+            <div class="hero-card" id="market-hero-card">
+                <h2>Market Status</h2>
+                <div class="hero-value" id="market-hero-value">$0</div>
+                <p id="market-hero-note" style="color:var(--muted);margin-top:14px;">Operability summary will appear here.</p>
+            </div>
+        </div>
+
+        <div class="section" id="income-section" style="display:none;">
+            <h3>Daily Gross Income</h3>
+            <p>Live city commerce estimate using the Nation Formula: (((Commerce / 50) × 0.725) + 0.725) × Population. Tax rate is not applied because it cancels in the published formula.</p>
+            <div class="income-summary">
+                <div class="income-kpi"><span class="stat-label">Nation gross income / day</span><strong id="income-total">—</strong></div>
+                <div class="income-kpi"><span class="stat-label">Average / city / day</span><strong id="income-average">—</strong></div>
+                <div class="income-kpi"><span class="stat-label">Commerce input</span><strong id="income-commerce">—</strong></div>
+            </div>
+            <div class="table-wrapper"><table class="stat-list income-table"><thead><tr><th>City</th><th>Population</th><th>Commerce</th><th>Gross income / day</th><th>Formula source</th></tr></thead><tbody id="income-body"></tbody></table></div>
+        </div>
+
+        <div class="section" id="reserves-section" style="display:none;">
+            <h3>Reserves</h3>
+            <p>Configure target reserves per resource. Click "Apply 10-day defaults" to populate targets using per-capita estimates (editable).
+            Targets persist locally and are used to compute met/shortfall status.</p>
+            <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px;">
+                <label style="color:var(--muted);">Reserve horizon (days): <input id="reserve-days" type="number" min="1" value="10" style="width:72px;margin-left:8px;padding:6px;border-radius:6px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:var(--text);"/></label>
+                <button id="apply-10day" style="padding:8px 12px;border-radius:8px;border:1px solid rgba(209,173,74,0.12);background:transparent;color:var(--accent);">Apply 10-day defaults</button>
+                <button id="reset-reserves" style="padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:var(--muted);">Reset custom targets</button>
+                <button id="apply-prodcons-1day" style="padding:8px 12px;border-radius:8px;border:1px solid rgba(209,173,74,0.12);background:transparent;color:var(--accent);">Use live production/consumption totals</button>
+                <label style="color:var(--muted);margin-left:12px;display:flex;align-items:center;gap:6px;"><input id="auto-use-netincome" type="checkbox" checked/> Auto-apply 'Net Income' values</label>
+            </div>
+            <div class="table-wrapper">
+                <table class="stat-list">
+                    <thead>
+                        <tr><th>Resource</th><th>Current</th><th>Target (units)</th><th>Met %</th><th>Days covered</th><th>Shortfall / Status</th></tr>
+                    </thead>
+                    <tbody id="reserves-body"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Computation Debug panel removed -->
+
+        <div class="section" id="transaction-log-section" style="display:none;">
+            <h3>Subgroup transaction log</h3>
+            <p id="transaction-log-intro">Select cash, credits, or stockpile to reveal the latest subgroup transaction log and activity summary.</p>
+            <div class="table-wrapper">
+                <table class="stat-list">
+                    <thead>
+                        <tr><th>Date</th><th>Event</th><th>Details</th><th>Value</th></tr>
+                    </thead>
+                    <tbody id="transaction-log-body"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="section">
+            <h3>Market breakdown</h3>
+            <p>Exact unit holdings are shown prominently alongside live market prices and values.</p>
+            <div class="table-wrapper">
+                <table class="stat-list">
+                    <thead>
+                        <tr><th>Asset</th><th>Unit holdings</th><th>Live price / unit</th><th>Live market value</th></tr>
+                    </thead>
+                    <tbody id="stockpile-breakdown-body"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="section" id="market-status-section" style="display:none;">
+            <h3>Market Status</h3>
+            <p>Shows reserve shortfalls, their market value, and whether liquid funds can cover purchases to meet reserve targets.</p>
+            <div style="display:flex;gap:18px;align-items:center;margin-bottom:12px;flex-wrap:wrap;">
+                <div style="min-width:240px;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,0.04);background:rgba(8,12,18,0.6);">
+                    <div style="color:var(--muted);font-size:12px;">Liquid funds</div>
+                    <div id="market-liquid-cash" style="font-family: 'Space Mono', monospace;font-size:1.15rem;color:var(--accent);"></div>
+                </div>
+                <div style="min-width:240px;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,0.04);background:rgba(8,12,18,0.6);">
+                    <div style="color:var(--muted);font-size:12px;">Total deficit value</div>
+                    <div id="market-total-deficit" style="font-family: 'Space Mono', monospace;font-size:1.15rem;color:var(--negative);"></div>
+                </div>
+                <div style="min-width:300px;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,0.04);background:rgba(8,12,18,0.6);">
+                    <div style="color:var(--muted);font-size:12px;">Market operability</div>
+                    <div id="market-operability" style="font-family: 'Space Mono', monospace;font-size:1.05rem;color:var(--text);"></div>
+                </div>
+            </div>
+            <div class="table-wrapper">
+                <table class="stat-list">
+                    <thead>
+                        <tr><th>Resource</th><th>Target</th><th>Current</th><th>Shortfall</th><th>Shortfall value</th></tr>
+                    </thead>
+                    <tbody id="market-status-body"></tbody>
+                </table>
+            </div>
+            <div id="market-insights" style="margin-top:14px;padding:14px;border-radius:12px;border:1px solid rgba(255,255,255,0.03);background:rgba(6,8,12,0.55);display:none;">
+                <h4 style="margin:0 0 8px;color:var(--accent);">Market Insights</h4>
+                <div id="market-trends" style="color:var(--muted);margin-bottom:8px;"></div>
+                <div id="market-detail" style="color:var(--text);"></div>
+            </div>
+        </div>
+
+        <div class="footer">NewMerica Finance Hub • Live nation asset value updated from GraphQL trade prices.</div>
+        <div style="position: absolute; left: 36px; bottom: 22px;">
+            <button id="toggle-raw-data" style="background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted);padding:8px 12px;border-radius:8px;">Show raw nation data</button>
+        </div>
+        <pre id="raw-nation-json" style="display:none;position:fixed;left:12px;right:12px;bottom:80px;max-height:40%;overflow:auto;background:rgba(2,6,12,0.96);color:#cfe8ff;border:1px solid rgba(209,173,74,0.12);padding:12px;border-radius:10px;z-index:1200;font-family:monospace;font-size:12px;white-space:pre-wrap;"></pre>
+        <div class="update-timestamps">
+            <div class="update-timestamp" id="last-update">Last update: pending</div>
+            <div class="update-timestamp" id="next-update">Next update: pending</div>
+        </div>
+    </div>
+
+    <script src="common.js"></script>
+    <script src="market-utils.js"></script>
+    <script src="finance-hub.js"></script>
+</body>
+</html>

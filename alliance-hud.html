@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Alliance HUD</title>
+  <style>body{font-family:Arial,Helvetica,sans-serif;background:#050816;color:#e6f7fb;margin:0;padding:24px}a.back{color:#00f0ff;text-decoration:none;display:inline-block;margin-bottom:12px} .panel{background:#0e1428;padding:18px;border-radius:10px;border:1px solid rgba(0,240,255,0.08)}</style>
+</head>
+<body>
+  <a class="back" href="DASHBOARD.HTML">← Back to Dashboard</a>
+  <div class="panel">
+    <h1>Alliance HUD</h1>
+    <div id="content">Loading alliance info…</div>
+  </div>
+  <script src="common.js"></script>
+  <script>
+    const NATION_ID = 768640;
+    async function loadAlliance(){
+      try{
+        const q = `query { nations(id: [${NATION_ID}], first:1) { data { nation_name alliance { id name acronym } alliance_id alliance_position alliance_name } } }`;
+        const r = await fetch(`https://api.politicsandwar.com/graphql?api_key=${window.API_KEY}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:q})});
+        const j = await r.json();
+        const n = j?.data?.nations?.data?.[0];
+        if(!n) throw new Error('No nation data');
+        const alliance = n.alliance || (n.alliance_name?{id:n.alliance_id,name:n.alliance_name}:null);
+        document.getElementById('content').innerHTML = `
+          <div><strong>Nation:</strong> ${n.nation_name||'Unknown'}</div>
+          <div><strong>Alliance:</strong> ${alliance? `${alliance.name} (ID ${alliance.id})` : 'Independent'}</div>
+          <div><strong>Position:</strong> ${n.alliance_position||'N/A'}</div>
+        `;
+      }catch(e){document.getElementById('content').textContent='Error: '+e.message}
+    }
+    loadAlliance();
+  </script>
+</body>
+</html>

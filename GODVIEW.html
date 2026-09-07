@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Land of the lost - Strategic God View</title>
+    <style>
+        :root {
+            --bg: #080a12;
+            --panel: rgba(15, 20, 35, .92);
+            --panel-alt: rgba(22, 29, 49, .82);
+            --line: rgba(79, 209, 255, .26);
+            --cyan: #50d9ff;
+            --green: #54e38e;
+            --amber: #ffc857;
+            --red: #ff7185;
+            --muted: #8190aa;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            padding: 18px;
+            color: #e7eefc;
+            font: 14px/1.45 "Segoe UI", sans-serif;
+            background: radial-gradient(circle at 20% 0%, #172544 0, var(--bg) 48%);
+        }
+        button, input { font: inherit; }
+        .shell { width: min(1500px, 100%); margin: auto; }
+        .nav-menu {
+            display: flex; flex-wrap: wrap; justify-content: center; gap: 8px;
+            padding: 12px; margin-bottom: 18px; background: #05070d;
+            border: 1px solid var(--line); border-radius: 10px;
+        }
+        .nav-link {
+            padding: 8px 14px; color: var(--muted); text-decoration: none;
+            border: 1px solid transparent; border-radius: 6px; font-size: .78rem;
+            font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+        }
+        .nav-link:hover, .nav-link.active { color: var(--cyan); border-color: var(--cyan); background: rgba(80,217,255,.08); }
+        .protected { color: var(--amber); border-color: rgba(255,200,87,.45); }
+        header { display: flex; justify-content: space-between; gap: 18px; align-items: end; margin: 24px 0 18px; }
+        h1, h2 { margin: 0; letter-spacing: .06em; text-transform: uppercase; }
+        h1 { font-size: clamp(1.45rem, 3vw, 2.3rem); }
+        h2 { font-size: 1rem; color: var(--cyan); }
+        .eyebrow { color: var(--amber); font-size: .74rem; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; }
+        .subtitle, .muted { color: var(--muted); }
+        .controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: end; }
+        .status { color: var(--green); font-family: Consolas, monospace; font-size: .8rem; }
+        .button {
+            border: 1px solid var(--line); border-radius: 6px; padding: 8px 12px;
+            color: var(--cyan); background: rgba(80,217,255,.07); cursor: pointer;
+        }
+        .button:hover { background: rgba(80,217,255,.18); }
+        .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 18px; }
+        .card, .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 12px 35px rgba(0,0,0,.24); }
+        .card { padding: 14px; }
+        .card-label { color: var(--muted); font-size: .7rem; letter-spacing: .11em; text-transform: uppercase; }
+        .card-value { display: block; margin-top: 5px; color: #fff; font-size: 1.35rem; font-weight: 700; }
+        .layout { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(320px, .8fr); gap: 14px; }
+        .panel { padding: 16px; min-width: 0; }
+        .dossier { margin-top: 14px; }
+        .detail-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 8px; }
+        .detail { padding: 10px; background: var(--panel-alt); border: 1px solid rgba(255,255,255,.08); border-radius: 7px; }
+        .detail-label { display: block; color: var(--muted); font-size: .68rem; letter-spacing: .1em; text-transform: uppercase; }
+        .detail-value { display: block; margin-top: 4px; color: #fff; font-weight: 700; overflow-wrap: anywhere; }
+        .panel-title { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+        .feed { display: grid; gap: 8px; max-height: 590px; overflow: auto; }
+        .event {
+            display: grid; grid-template-columns: 92px 88px minmax(0, 1fr); gap: 10px;
+            padding: 10px; background: var(--panel-alt); border: 1px solid rgba(255,255,255,.07); border-radius: 7px;
+        }
+        .event-time, .event-kind { color: var(--muted); font: .73rem Consolas, monospace; }
+        .event-kind { color: var(--cyan); text-transform: uppercase; }
+        .event-detail { min-width: 0; overflow-wrap: anywhere; }
+        .table-wrap { overflow: auto; max-height: 590px; }
+        table { width: 100%; border-collapse: collapse; white-space: nowrap; }
+        th, td { padding: 8px; border-bottom: 1px solid rgba(255,255,255,.08); text-align: left; }
+        th { color: var(--amber); font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; }
+        td { color: #d5def0; font-size: .82rem; }
+        .period-row { cursor: pointer; }
+        .period-row:hover { background: rgba(80,217,255,.1); }
+        .audit { margin-top: 14px; border-top: 1px solid var(--line); padding-top: 12px; }
+        .empty, .error { padding: 22px; color: var(--muted); text-align: center; }
+        .error { color: var(--red); }
+        .gate {
+            position: fixed; inset: 0; z-index: 5; display: grid; place-items: center;
+            padding: 20px; background: rgba(3, 5, 10, .93); backdrop-filter: blur(8px);
+        }
+        .gate[hidden] { display: none; }
+        .gate-card { width: min(410px, 100%); padding: 24px; background: #0d1425; border: 1px solid var(--amber); border-radius: 12px; box-shadow: 0 20px 70px #000; }
+        .gate-card h2 { color: var(--amber); margin-bottom: 8px; }
+        .gate-card input { width: 100%; margin: 16px 0 10px; padding: 11px; color: #fff; background: #070b15; border: 1px solid var(--line); border-radius: 6px; }
+        .gate-card .button { width: 100%; }
+        .gate-error { min-height: 1.4em; color: var(--red); font-size: .82rem; }
+        @media (max-width: 900px) { header { align-items: start; flex-direction: column; } .controls { justify-content: start; } .layout { grid-template-columns: 1fr; } }
+        @media (max-width: 560px) { body { padding: 10px; } .event { grid-template-columns: 1fr; gap: 3px; } }
+    </style>
+</head>
+<body>
+    <div id="gate" class="gate">
+        <form id="gate-form" class="gate-card">
+            <div class="eyebrow">Restricted navigation</div>
+            <h2>Strategic God View</h2>
+            <p class="muted">Enter the access code to open the live national and transaction monitor.</p>
+            <input id="access-code" type="password" inputmode="numeric" autocomplete="off" placeholder="Access code" aria-label="Access code" autofocus>
+            <div id="gate-error" class="gate-error" role="alert"></div>
+            <button class="button" type="submit">Unlock command center</button>
+        </form>
+    </div>
+
+    <main class="shell">
+        <nav class="nav-menu" aria-label="Primary navigation">
+            <a href="DASHBOARD.HTML" class="nav-link">Oversight</a>
+            <a href="MarketAi.HTML" class="nav-link">Market Trends</a>
+            <a href="ALLIANCE.HTML" class="nav-link">Alliance Intel</a>
+            <a href="MILITARY.HTML" class="nav-link">Military Command</a>
+        </nav>
+
+        <header>
+            <div>
+                <div class="eyebrow">NewMerica strategic command</div>
+                <h1>Land of the lost activity monitor</h1>
+                <div class="subtitle">Live snapshots of nations, cities, military, wars, commerce, taxes, and treasury movement.</div>
+            </div>
+            <div class="controls">
+                <span id="status" class="status">Locked</span>
+                <button id="refresh" class="button" type="button">Refresh now</button>
+            </div>
+        </header>
+
+        <section class="cards" aria-label="Live totals">
+            <div class="card"><span class="card-label">Nations</span><strong id="nations-total" class="card-value">-</strong></div>
+            <div class="card"><span class="card-label">Cities</span><strong id="cities-total" class="card-value">-</strong></div>
+            <div class="card"><span class="card-label">Open wars</span><strong id="wars-total" class="card-value">-</strong></div>
+            <div class="card"><span class="card-label">Trades</span><strong id="trades-total" class="card-value">-</strong></div>
+            <div class="card"><span class="card-label">Transfers</span><strong id="bank-total" class="card-value">-</strong></div>
+            <div class="card"><span class="card-label">Tax records</span><strong id="tax-total" class="card-value">-</strong></div>
+        </section>
+
+        <section class="layout">
+            <article class="panel">
+                <div class="panel-title"><h2>Unified live activity</h2><span class="muted">latest 100 events</span></div>
+                <div id="activity" class="feed"><div class="empty">Unlock to begin monitoring.</div></div>
+            </article>
+            <aside class="panel">
+                <div class="panel-title"><h2>National readiness</h2><span class="muted">current snapshot</span></div>
+                <div id="nations" class="table-wrap"><div class="empty">No snapshot loaded.</div></div>
+            </aside>
+        </section>
+        <section class="dossier">
+            <article class="panel">
+                <div class="panel-title"><h2>Income, production &amp; consumption</h2><span class="muted">nation snapshot</span></div>
+                <div id="economy" class="detail-grid"><div class="empty">No economic snapshot loaded.</div></div>
+            </article>
+            <article class="panel dossier">
+                <div class="panel-title"><h2>Military, wars &amp; loot</h2><span class="muted">nation snapshot</span></div>
+                <div id="military" class="detail-grid"><div class="empty">No military snapshot loaded.</div></div>
+            </article>
+            <article class="panel dossier">
+                <div class="panel-title"><h2>City infrastructure &amp; buildings</h2><span class="muted">all Land of the Lost cities</span></div>
+                <div id="city-dossier" class="table-wrap"><div class="empty">No city snapshot loaded.</div></div>
+            </article>
+            <article class="panel dossier">
+                <div class="panel-title"><h2>Deposits, transfers &amp; resource flow</h2><span class="muted">nation-linked records</span></div>
+                <div id="transfer-dossier" class="table-wrap"><div class="empty">No transfer records loaded.</div></div>
+            </article>
+            <article class="panel dossier">
+                <div class="panel-title"><h2>Tax collection breakdown</h2><span class="muted">cash taxes grouped by UTC period</span></div>
+                <div id="tax-dossier" class="table-wrap"><div class="empty">No tax records loaded.</div></div>
+                <div id="tax-audit" class="audit"><div class="empty">Select a week, month, or year to audit its records.</div></div>
+            </article>
+        </section>
+    </main>
+
+    <script>window.API_KEY = 'fe67f74557734d95abc9';</script>
+    <script src="common.js"></script>
+    <script>
+        const ACCESS_HASH = 'b71785ce065356285bc30712e0a682cfcad16368e9cc10815a64f83c220c3070';
+        const NATION_ID = 795401;
+        const UNLOCK_STORAGE_KEY = `godViewUnlocked:${NATION_ID}`;
+        const REFRESH_MS = 30000;
+        let refreshTimer;
+        let taxRecordsForAudit = [];
+        let unlocked = sessionStorage.getItem(UNLOCK_STORAGE_KEY) === '1';
+
+        const $ = (id) => document.getElementById(id);
+        const number = (value) => Number(value || 0).toLocaleString();
+        const date = (value) => value ? new Date(value).toLocaleString() : 'Unknown';
+        const escapeHtml = (value) => String(value ?? '-').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
+
+        async function hash(value) {
+            const bytes = new TextEncoder().encode(value);
+            const digest = await crypto.subtle.digest('SHA-256', bytes);
+            return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
+        }
+
+        function api(query) {
+            const key = window.API_KEY || sessionStorage.getItem('newmericaApiKey');
+            if (!key) throw new Error('No API key configured. Set window.API_KEY before unlocking.');
+            return fetch(`https://api.politicsandwar.com/graphql?api_key=${encodeURIComponent(key)}`, {
+                method: 'POST', cache: 'no-store', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query })
+            }).then(async (response) => {
+                const payload = await response.json();
+                if (!response.ok || payload.errors?.length) throw new Error(payload.errors?.map((item) => item.message).join('; ') || `HTTP ${response.status}`);
+                return payload.data || {};
+            });
+        }
+
+        function setStatus(message, isError = false) {
+            $('status').textContent = message;
+            $('status').style.color = isError ? 'var(--red)' : 'var(--green)';
+        }
+
+        function renderNations(rows) {
+            $('nations').innerHTML = rows.length ? `<table><thead><tr><th>Nation</th><th>Cities</th><th>Score</th><th>Army</th><th>Money</th></tr></thead><tbody>${rows.map((nation) => `<tr><td>${escapeHtml(nation.nation_name)}</td><td>${number(nation.num_cities)}</td><td>${number(nation.score)}</td><td>${number(nation.soldiers)}</td><td>${number(nation.money)}</td></tr>`).join('')}</tbody></table>` : '<div class="empty">No nation rows returned.</div>';
+        }
+
+        function renderActivity(events) {
+            events.sort((a, b) => (Date.parse(b.date) || 0) - (Date.parse(a.date) || 0));
+            $('activity').innerHTML = events.length ? events.slice(0, 100).map((event) => `<div class="event"><span class="event-time">${escapeHtml(date(event.date))}</span><span class="event-kind">${escapeHtml(event.kind)}</span><span class="event-detail">${escapeHtml(event.detail)}</span></div>`).join('') : '<div class="empty">No activity returned.</div>';
+        }
+
+        function taxPeriod(dateValue, period) {
+            const current = new Date(dateValue);
+            if (Number.isNaN(current.getTime())) return 'Unknown';
+            if (period === 'year') return String(current.getUTCFullYear());
+            if (period === 'month') return `${current.getUTCFullYear()}-${String(current.getUTCMonth() + 1).padStart(2, '0')}`;
+            const day = new Date(Date.UTC(current.getUTCFullYear(), current.getUTCMonth(), current.getUTCDate()));
+            const dayNumber = day.getUTCDay() || 7;
+            day.setUTCDate(day.getUTCDate() + 4 - dayNumber);
+            const yearStart = new Date(Date.UTC(day.getUTCFullYear(), 0, 1));
+            const week = Math.ceil((((day - yearStart) / 86400000) + 1) / 7);
+            return `${day.getUTCFullYear()}-W${String(week).padStart(2, '0')}`;
+        }
+
+        function auditTaxPeriod(period, key) {
+            const records = taxRecordsForAudit.filter((record) => taxPeriod(record.date, period) === key);
+            $('tax-audit').innerHTML = records.length ? `<h3>${escapeHtml(period.charAt(0).toUpperCase() + period.slice(1))} audit · ${escapeHtml(key)}</h3><div class="table-wrap"><table><thead><tr><th>Date</th><th>From</th><th>To</th><th>Cash</th><th>Resources</th><th>Tax ID / Note</th></tr></thead><tbody>${records.sort((a, b) => (Date.parse(b.date) || 0) - (Date.parse(a.date) || 0)).map((record) => {
+                const resources = ['coal', 'oil', 'uranium', 'iron', 'bauxite', 'lead', 'gasoline', 'munitions', 'steel', 'aluminum', 'food'].filter((resource) => Number(record[resource]) !== 0).map((resource) => `${resource}: ${number(record[resource])}`).join(', ');
+                return `<tr><td>${escapeHtml(date(record.date))}</td><td>${escapeHtml(record.sender_id)}</td><td>${escapeHtml(record.receiver_id)}</td><td>$${number(record.money)}</td><td>${escapeHtml(resources || '-')}</td><td>${escapeHtml(record.tax_id || record.note || '-')}</td></tr>`;
+            }).join('')}</tbody></table></div>` : '<div class="empty">No records found for that period.</div>';
+        }
+
+        function renderTaxBreakdown(records) {
+            const taxRecords = records.filter((record) => record.tax_id);
+            taxRecordsForAudit = taxRecords;
+            const periods = ['week', 'month', 'year'].flatMap((period) => {
+                const grouped = new Map();
+                taxRecords.forEach((record) => {
+                    const key = taxPeriod(record.date, period);
+                    const item = grouped.get(key) || { period, key, count: 0, money: 0, resources: 0 };
+                    item.count += 1;
+                    item.money += Number(record.money || 0);
+                    ['coal', 'oil', 'uranium', 'iron', 'bauxite', 'lead', 'gasoline', 'munitions', 'steel', 'aluminum', 'food'].forEach((resource) => {
+                        item.resources += Number(record[resource] || 0);
+                    });
+                    grouped.set(key, item);
+                });
+                return [...grouped.values()].sort((a, b) => b.key.localeCompare(a.key)).map((item) => ({
+                    ...item, label: `${item.period.charAt(0).toUpperCase()}${item.period.slice(1)} · ${item.key}`
+                }));
+            });
+            $('tax-dossier').innerHTML = periods.length ? `<table><thead><tr><th>Period</th><th>Records</th><th>Cash collected</th><th>Resource units</th></tr></thead><tbody>${periods.map((item) => `<tr class="period-row" tabindex="0" data-period="${item.period}" data-key="${item.key}" title="Open audit details"><td>${escapeHtml(item.label)}</td><td>${number(item.count)}</td><td>$${number(item.money)}</td><td>${number(item.resources)}</td></tr>`).join('')}</tbody></table>` : '<div class="empty">No tax records returned for this nation.</div>';
+            $('tax-dossier').querySelectorAll('.period-row').forEach((row) => {
+                const open = () => auditTaxPeriod(row.dataset.period, row.dataset.key);
+                row.addEventListener('click', open);
+                row.addEventListener('keydown', (event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); open(); } });
+            });
+        }
+
+        async function refreshData() {
+            setStatus('Syncing...');
+            try {
+                const [nationData, warData, tradeData, bankData] = await Promise.all([
+                    api(`{ nations(id: [${NATION_ID}], first: 1) { data { id nation_name leader_name population num_cities score soldiers tanks aircraft ships missiles nukes spies soldiers_today tanks_today aircraft_today ships_today missiles_today nukes_today spies_today money coal oil uranium iron bauxite lead gasoline munitions steel aluminum food credits gross_national_income gross_domestic_product money_looted total_infrastructure_destroyed total_infrastructure_lost wars_won wars_lost offensive_wars_count defensive_wars_count soldier_casualties soldier_kills tank_casualties tank_kills aircraft_casualties aircraft_kills ship_casualties ship_kills missile_casualties missile_kills nuke_casualties nuke_kills spy_casualties spy_kills war_policy domestic_policy economic_policy social_policy government_type projects project_bits cities { id name infrastructure land powered oil_power wind_power coal_power nuclear_power coal_mine oil_well uranium_mine barracks farm police_station hospital recycling_center subway supermarket bank shopping_mall stadium lead_mine iron_mine bauxite_mine oil_refinery aluminum_refinery steel_mill munitions_factory factory hangar drydock } } } }`),
+                    api(`{ wars(first: 100) { data { id date reason war_type turns_left att_id def_id } } }`),
+                    api(`{ trades(first: 100) { data { id type date offer_resource offer_amount price accepted sender_id receiver_id } } }`),
+                    api(`{ bankrecs(first: 100, or_id: [${NATION_ID}]) { data { id date sender_id receiver_id money coal oil uranium iron bauxite lead gasoline munitions steel aluminum food note tax_id } } }`)
+                ]);
+                const nations = nationData.nations?.data || [];
+                const nation = nations[0] || {};
+                const cities = nation.cities || [];
+                const wars = (warData.wars?.data || []).filter((item) => Number(item.att_id) === NATION_ID || Number(item.def_id) === NATION_ID);
+                const trades = (tradeData.trades?.data || []).filter((item) => Number(item.sender_id) === NATION_ID || Number(item.receiver_id) === NATION_ID);
+                const bank = bankData.bankrecs?.data || [];
+                $('nations-total').textContent = number(nations.length);
+                $('cities-total').textContent = number(cities.length);
+                $('wars-total').textContent = number(wars.length);
+                $('trades-total').textContent = number(trades.length);
+                $('bank-total').textContent = number(bank.length);
+                $('tax-total').textContent = number(bank.filter((record) => record.tax_id).length);
+                renderNations(nations);
+                const economy = [
+                    ['Gross national income', `$${number(nation.gross_national_income)}`], ['Gross domestic product', `$${number(nation.gross_domestic_product)}`],
+                    ['Cash balance', `$${number(nation.money)}`], ['Population', number(nation.population)], ['Credits', number(nation.credits)],
+                    ...['coal', 'oil', 'uranium', 'iron', 'bauxite', 'lead', 'gasoline', 'munitions', 'steel', 'aluminum', 'food'].map((resource) => [resource, number(nation[resource])]),
+                    ['Production / consumption', 'API snapshot; city/building output below']
+                ];
+                $('economy').innerHTML = economy.map(([label, value]) => `<div class="detail"><span class="detail-label">${escapeHtml(label)}</span><span class="detail-value">${escapeHtml(value)}</span></div>`).join('');
+                const military = [
+                    ['Soldiers', number(nation.soldiers)], ['Tanks', number(nation.tanks)], ['Aircraft', number(nation.aircraft)], ['Ships', number(nation.ships)],
+                    ['Missiles', number(nation.missiles)], ['Nukes', number(nation.nukes)], ['Spies', number(nation.spies)],
+                    ['Wars won / lost', `${number(nation.wars_won)} / ${number(nation.wars_lost)}`], ['Offensive / defensive', `${number(nation.offensive_wars_count)} / ${number(nation.defensive_wars_count)}`],
+                    ['Soldier kills / losses', `${number(nation.soldier_kills)} / ${number(nation.soldier_casualties)}`], ['Tank kills / losses', `${number(nation.tank_kills)} / ${number(nation.tank_casualties)}`],
+                    ['Aircraft kills / losses', `${number(nation.aircraft_kills)} / ${number(nation.aircraft_casualties)}`], ['Ship kills / losses', `${number(nation.ship_kills)} / ${number(nation.ship_casualties)}`],
+                    ['Looted money', `$${number(nation.money_looted)}`], ['Infra destroyed / lost', `${number(nation.total_infrastructure_destroyed)} / ${number(nation.total_infrastructure_lost)}`],
+                    ['Policies', `${nation.war_policy || '-'} / ${nation.domestic_policy || '-'}`]
+                ];
+                $('military').innerHTML = military.map(([label, value]) => `<div class="detail"><span class="detail-label">${escapeHtml(label)}</span><span class="detail-value">${escapeHtml(value)}</span></div>`).join('');
+                const buildingFields = ['barracks', 'farm', 'police_station', 'hospital', 'recycling_center', 'subway', 'supermarket', 'bank', 'shopping_mall', 'stadium', 'coal_mine', 'oil_well', 'uranium_mine', 'lead_mine', 'iron_mine', 'bauxite_mine', 'oil_refinery', 'aluminum_refinery', 'steel_mill', 'munitions_factory', 'factory', 'hangar', 'drydock'];
+                $('city-dossier').innerHTML = cities.length ? `<table><thead><tr><th>City</th><th>Infra</th><th>Land</th><th>Power</th><th>Buildings</th></tr></thead><tbody>${cities.map((city) => `<tr><td>${escapeHtml(city.name)}</td><td>${number(city.infrastructure)}</td><td>${number(city.land)}</td><td>${city.powered ? 'Powered' : 'Unpowered'}</td><td>${buildingFields.filter((field) => Number(city[field]) > 0).map((field) => `${field.replaceAll('_', ' ')} x${city[field]}`).join(', ') || 'None reported'}</td></tr>`).join('')}</tbody></table>` : '<div class="empty">No cities returned.</div>';
+                $('transfer-dossier').innerHTML = bank.length ? `<table><thead><tr><th>Date</th><th>Type</th><th>From</th><th>To</th><th>Money</th><th>Resources</th><th>Note</th></tr></thead><tbody>${bank.map((record) => {
+                    const resources = ['coal', 'oil', 'uranium', 'iron', 'bauxite', 'lead', 'gasoline', 'munitions', 'steel', 'aluminum', 'food'].filter((resource) => Number(record[resource]) !== 0).map((resource) => `${resource}: ${number(record[resource])}`).join(', ');
+                    return `<tr><td>${escapeHtml(date(record.date))}</td><td>${record.tax_id ? 'Tax' : 'Transfer'}</td><td>${escapeHtml(record.sender_id)}</td><td>${escapeHtml(record.receiver_id)}</td><td>$${number(record.money)}</td><td>${escapeHtml(resources || '-')}</td><td>${escapeHtml(record.note || '-')}</td></tr>`;
+                }).join('')}</tbody></table>` : '<div class="empty">No nation-linked transfers returned.</div>';
+                renderTaxBreakdown(bank);
+                renderActivity([
+                    ...nations.map((item) => ({ date: new Date().toISOString(), kind: 'FORCE', detail: `${item.nation_name || 'Nation'} · ${number(item.soldiers)} soldiers · ${number(item.tanks)} tanks · ${number(item.aircraft)} aircraft · ${number(item.ships)} ships` })),
+                    ...cities.map((item) => {
+                        const buildings = ['barracks', 'factory', 'hangar', 'drydock'].filter((name) => Number(item[name]) > 0).map((name) => `${name} x${item[name]}`).join(', ');
+                        return { date: item.date, kind: 'CITY', detail: `${item.name || 'City'} · nation ${item.nation_id} · ${number(item.infrastructure)} infra / ${number(item.land)} land${buildings ? ` · ${buildings}` : ''}` };
+                    }),
+                    ...wars.map((item) => ({ date: item.date, kind: 'WAR', detail: `#${item.id} · ${item.war_type || 'war'} · ${item.reason || 'no reason'} · ${number(item.turns_left)} turns left` })),
+                    ...trades.map((item) => ({ date: item.date, kind: 'TRADE', detail: `${item.type || 'market'} · ${number(item.offer_amount)} ${item.offer_resource || 'resource'} at ${number(item.price)} · ${item.accepted ? 'accepted' : 'open'}` })),
+                    ...bank.map((item) => ({ date: item.date, kind: item.tax_id ? 'TAX' : 'TREASURY', detail: `${item.sender_id || '?'} → ${item.receiver_id || '?'} · $${number(item.money)}${item.note ? ` · ${item.note}` : ''}` }))
+                ]);
+                setStatus(`Live · updated ${new Date().toLocaleTimeString()}`);
+            } catch (error) {
+                setStatus(`Sync failed: ${error.message}`, true);
+            }
+        }
+
+        async function unlock(event) {
+            event.preventDefault();
+            $('gate-error').textContent = '';
+            if (await hash($('access-code').value) !== ACCESS_HASH) {
+                $('gate-error').textContent = 'Access code rejected.';
+                return;
+            }
+            sessionStorage.setItem(UNLOCK_STORAGE_KEY, '1');
+            $('gate').hidden = true;
+            await refreshData();
+            refreshTimer = setInterval(refreshData, REFRESH_MS);
+        }
+
+        $('gate-form').addEventListener('submit', unlock);
+        $('refresh').addEventListener('click', () => { if (unlocked) refreshData(); });
+        if (unlocked) {
+            $('gate').hidden = true;
+            refreshData();
+            refreshTimer = setInterval(refreshData, REFRESH_MS);
+        }
+    </script>
+</body>
+</html>
