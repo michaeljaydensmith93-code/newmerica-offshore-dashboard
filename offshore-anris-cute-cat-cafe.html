@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Offshore Café Tracker</title>
+	<style>
+		:root{--bg:#07110f;--panel:#0d1d19;--line:#285344;--text:#edf7ef;--muted:#91b2a1;--gold:#e8c878;--green:#62d39b;--red:#f28b7d}
+		*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(circle at 12% 0%,#183b2f 0,transparent 35%),linear-gradient(135deg,#07110f,#0b1715 55%,#101e18);color:var(--text);font:15px/1.5 Georgia,serif}.wrap{width:min(1180px,100%);margin:auto;padding:28px 20px 48px}.masthead{display:flex;justify-content:space-between;align-items:end;gap:20px;padding-bottom:22px;border-bottom:1px solid var(--line)}.eyebrow{color:var(--gold);font:700 11px/1.2 monospace;letter-spacing:.18em;text-transform:uppercase}.masthead h1{margin:8px 0 0;font-size:clamp(2rem,5vw,4rem);font-weight:400}.subtitle{margin:8px 0 0;color:var(--muted)}.actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:flex-end}.button,.back{border:1px solid var(--gold);background:transparent;color:var(--gold);padding:9px 14px;border-radius:4px;cursor:pointer;font:700 12px monospace;text-transform:uppercase;letter-spacing:.08em;text-decoration:none}.button:hover,.back:hover{background:rgba(232,200,120,.12)}.status{margin:20px 0;padding:10px 14px;border-left:3px solid var(--green);background:rgba(98,211,155,.08);color:var(--muted)}.status.error{border-color:var(--red);color:var(--red)}.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:14px;margin-top:14px}.card{grid-column:span 4;background:linear-gradient(145deg,rgba(16,40,32,.95),rgba(10,27,23,.95));border:1px solid var(--line);padding:18px;border-radius:6px}.card.wide{grid-column:span 8}.card.full{grid-column:1/-1}.card h2{margin:0 0 14px;color:var(--gold);font-size:1rem;font-weight:400;letter-spacing:.08em;text-transform:uppercase}.facts{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.fact label{display:block;color:var(--muted);font:11px monospace;text-transform:uppercase}.fact strong{display:block;margin-top:3px;font-size:1.15rem;font-weight:400;overflow-wrap:anywhere}.money{color:var(--green)}.table-wrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:760px}th,td{text-align:left;padding:11px 10px;border-bottom:1px solid rgba(40,83,68,.6)}th{color:var(--gold);font:700 11px monospace;text-transform:uppercase;letter-spacing:.08em}td{color:#d7e8da}tbody tr:hover{background:rgba(98,211,155,.06)}.empty{color:var(--muted);padding:16px 0}.foot{margin-top:18px;color:var(--muted);font:11px monospace;text-align:right}@media(max-width:760px){.masthead{align-items:start;flex-direction:column}.actions{justify-content:flex-start}.card,.card.wide{grid-column:1/-1}.facts{grid-template-columns:1fr 1fr}}
+		.chart{min-height:210px;overflow:auto}.chart svg{display:block;width:100%;min-width:520px;height:210px}.chart text{fill:var(--muted);font:11px monospace}.chart .axis{stroke:var(--line)}.chart .in{fill:var(--green)}.chart .out{fill:var(--red)}.chart .line{fill:none;stroke:var(--gold);stroke-width:3}.chart .dot{fill:var(--gold)}details.compact-panel{border:1px solid var(--line);border-radius:4px;padding:10px 12px}details.compact-panel summary{cursor:pointer;color:var(--gold);font:700 12px monospace;text-transform:uppercase;letter-spacing:.08em}details.compact-panel[open] summary{margin-bottom:14px}.tax-account-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px}.tax-account{display:block;padding:13px;background:rgba(0,0,0,.16);border:1px solid rgba(40,83,68,.7);border-radius:4px;color:var(--text);text-decoration:none}.tax-account:hover{border-color:var(--gold);background:rgba(232,200,120,.08)}.tax-account strong{display:block;color:var(--gold);font:700 1.15rem monospace}.tax-account small{display:block;margin-top:5px;color:var(--muted);font:11px monospace}.holding-resources{grid-column:1/-1;display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:4px}.holding-resource{padding:8px;background:rgba(0,0,0,.14);border:1px solid rgba(40,83,68,.7);border-radius:4px}.holding-resource label{display:block;color:var(--muted);font:10px monospace;text-transform:uppercase}.holding-resource strong{display:block;color:var(--text);font:700 1rem monospace}@media(max-width:760px){.holding-resources{grid-template-columns:repeat(2,1fr)}}
+	</style>
+</head>
+<body>
+	<main class="wrap">
+		<header class="masthead"><div><div class="eyebrow">BE&amp;T offshore monitoring // guild 1544023383572750416</div><h1>Anri's Cute Cat Cafe</h1><p class="subtitle">Barrows Estate &amp; Trust bank 15572 → Anri's Cute Cat Cafe bank 15086. Resources sent in that direction are recorded as BE&amp;T offshoring.</p></div><div class="actions"><span class="eyebrow" id="updated">Awaiting sync</span><button class="button" id="refresh" type="button">Refresh ledger</button><button class="button" id="exportCsv" type="button">Export CSV</button></div></header>
+		<p><a class="back" href="BARROWS%20ESTATE%20%26%20TRUST.HTML">Back to Barrows Estate &amp; Trust</a></p>
+		<div class="status"><label for="fromDate">From</label> <input id="fromDate" type="date"> <label for="toDate">To</label> <input id="toDate" type="date"> <button class="button" id="applyDates" type="button">Apply dates</button> <button class="button" id="clearDates" type="button">Clear</button></div>
+		<div class="status" id="status" role="status">Connecting to the transaction ledger...</div>
+		<section class="grid">
+			<article class="card"><h2>Tracker identity</h2><div class="facts"><div class="fact"><label>Offshore bank</label><strong>Anri's Cute Cat Cafe</strong></div><div class="fact"><label>Offshore nation ID</label><strong>15086</strong></div><div class="fact"><label>Main bank</label><strong>Barrows Estate &amp; Trust</strong></div><div class="fact"><label>Main bank ID</label><strong>15572</strong></div><div class="fact"><label>Guild ID</label><strong>1544023383572750416</strong></div><div class="fact"><label>Records loaded</label><strong id="recordCount">--</strong></div></div></article>
+			<article class="card"><h2>Offshore holdings</h2><div class="facts"><div class="fact"><label>Anri cash balance</label><strong class="money" id="holdingCash">$0</strong></div><div class="fact"><label>Resource value</label><strong class="money" id="holdingResourceValue">$0</strong></div><div class="fact"><label>Total offshore value</label><strong class="money" id="holdingTotalValue">$0</strong></div><div class="fact"><label>Reconciliation</label><strong id="reconciliation">Unavailable</strong></div><div class="holding-resources" id="holdingResources"><div class="empty">Loading resource units...</div></div></div></article>
+			<article class="card full"><h2>Cash flow timeline</h2><div class="chart" id="cashChart"><div class="empty">Loading chart...</div></div></article>
+			<article class="card full"><h2>Offshore balance growth</h2><div class="chart" id="balanceChart"><div class="empty">Loading balance history...</div></div></article>
+			<article class="card wide"><h2>Tax accounts</h2><div class="tax-account-grid" id="taxAccounts"><div class="empty">Loading tax IDs...</div></div></article>
+			<article class="card"><h2>Transfer activity</h2><div class="facts"><div class="fact"><label>Average cash transfer</label><strong class="money" id="averageTransfer">$0</strong></div><div class="fact"><label>Active days</label><strong id="activeDays">0</strong></div><div class="fact"><label>Incoming count</label><strong id="incomingCount">0</strong></div><div class="fact"><label>Outgoing count</label><strong id="outgoingCount">0</strong></div></div></article>
+			<article class="card full"><details class="compact-panel"><summary>Resource flow and market value</summary><div class="facts"><div class="fact"><label>Received resource value</label><strong class="money" id="resourceInValue">$0</strong></div><div class="fact"><label>Sent resource value</label><strong class="money" id="resourceOutValue">$0</strong></div><div class="fact"><label>Net resource value</label><strong class="money" id="resourceNetValue">$0</strong></div><div class="fact"><label>Price source</label><strong>Latest trade price</strong></div></div><div class="table-wrap"><table><thead><tr><th>Resource</th><th>Price / unit</th><th>Received</th><th>Received value</th><th>Sent</th><th>Sent value</th><th>Net value</th></tr></thead><tbody id="resourceTotals"><tr><td colspan="7" class="empty">Loading resource totals...</td></tr></tbody></table></div></details></article>
+			<article class="card full"><details class="compact-panel"><summary>Café transaction ledger</summary><div class="table-wrap"><table><thead><tr><th>Date</th><th>Direction</th><th>From</th><th>To</th><th>Cash</th><th>Resources</th><th>Note</th></tr></thead><tbody id="ledger"><tr><td colspan="7" class="empty">Loading transactions...</td></tr></table></div></details></article>
+		</section>
+		<div class="foot">Source: Politics &amp; War GraphQL API // Barrows 15572 → Anri 15086 // guild 1544023383572750416</div>
+	</main>
+	<script>
+		const API_KEY = '6d6a8d4c6138245a70b4', OFFSHORE_NATION_ID = 15086, BARROWS_BANK_ID = 15572, GUILD_ID = '1544023383572750416', API_URL = `https://api.politicsandwar.com/graphql?api_key=${API_KEY}`;
+		let allRecords = [], latestPrices = {}, offshoreHoldings = {}, allMemberTaxIds = [];
+		const RESOURCES = ['food','coal','oil','uranium','iron','bauxite','lead','gasoline','munitions','steel','aluminum'];
+		const LABELS = {food:'Food',coal:'Coal',oil:'Oil',uranium:'Uranium',iron:'Iron',bauxite:'Bauxite',lead:'Lead',gasoline:'Gasoline',munitions:'Munitions',steel:'Steel',aluminum:'Aluminum'};
+		const $ = id => document.getElementById(id), money = value => `$${Math.round(Number(value) || 0).toLocaleString()}`, number = value => (Number(value) || 0).toLocaleString(undefined,{maximumFractionDigits:2});
+		const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, character => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[character]));
+		const api = async query => {
+			const controller = new AbortController();
+			const timeout = setTimeout(() => controller.abort(), 20000);
+			try {
+				const response = await fetch(API_URL,{method:'POST',cache:'no-store',headers:{'Content-Type':'application/json'},body:JSON.stringify({query}),signal:controller.signal});
+				const json = await response.json();
+				if(!response.ok || json.errors?.length) throw new Error(json.errors?.[0]?.message || `HTTP ${response.status}`);
+				return json.data;
+			} catch(error) {
+				if(error?.name === 'AbortError') throw new Error('The API request timed out. Check the connection or API availability.');
+				throw error;
+			} finally {
+				clearTimeout(timeout);
+			}
+		};
+		const svgText = (x,y,text) => `<text x="${x}" y="${y}">${escapeHtml(text)}</text>`;
+		function renderTaxAccounts(records, prices, memberTaxIds = []){
+			const byTaxId = {};
+			records.forEach(record => {
+				const taxId = String(record.tax_id ?? 'unassigned');
+				const item = byTaxId[taxId] || { count: 0, cash: 0, value: 0 };
+				item.count += 1;
+				item.cash += Number(record.money) || 0;
+				RESOURCES.forEach(resource => { item.value += (Number(record[resource]) || 0) * (Number(prices[resource]) || 0); });
+				byTaxId[taxId] = item;
+			});
+			memberTaxIds.forEach(taxId => { if (!byTaxId[taxId]) byTaxId[taxId] = { count: 0, cash: 0, value: 0 }; });
+			const entries = Object.entries(byTaxId).sort(([a], [b]) => a.localeCompare(b, undefined, {numeric: true}));
+			$('taxAccounts').innerHTML = entries.map(([taxId, item]) => `<a class="tax-account" href="tax-account.html?tax_id=${encodeURIComponent(taxId)}&alliance_id=${BARROWS_BANK_ID}"><strong>Tax ID ${escapeHtml(taxId)}</strong><small>${number(item.count)} records · ${money(item.cash)} cash · ${money(item.value)} resources</small></a>`).join('') || '<div class="empty">No tax IDs found in the loaded ledger.</div>';
+		}
+		function renderCharts(records, totals, prices){
+			const days = Object.entries(records.reduce((map, record) => { const day = String(record.date || '').slice(0,10) || 'Unknown'; const incoming = Number(record.receiver_id) === OFFSHORE_NATION_ID; map[day] = map[day] || {in:0,out:0}; map[day][incoming ? 'in' : 'out'] += Number(record.money) || 0; return map; }, {})).sort((a,b) => a[0].localeCompare(b[0])).slice(-14);
+			const max = Math.max(1, ...days.flatMap(([,value]) => [value.in,value.out])), width = 760, height = 210, base = 180, bar = Math.max(8, Math.min(24, 600 / Math.max(1,days.length)));
+			const bars = days.map(([day,value], index) => { const x = 50 + index * (700 / Math.max(1,days.length)); const inH = value.in / max * 140, outH = value.out / max * 140; return `<rect class="in" x="${x}" y="${base-inH}" width="${bar}" height="${inH}"><title>${day} received ${money(value.in)}</title></rect><rect class="out" x="${x+bar+2}" y="${base-outH}" width="${bar}" height="${outH}"><title>${day} sent ${money(value.out)}</title></rect>${svgText(x,198,day.slice(5))}`; }).join('');
+			$('cashChart').innerHTML = `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Daily incoming and outgoing cash"><line class="axis" x1="40" y1="${base}" x2="750" y2="${base}"/><line class="axis" x1="40" y1="35" x2="40" y2="${base}"/>${bars}${svgText(52,20,'green received')}${svgText(150,20,'red sent')}</svg>`;
+		}
+		function renderBalanceChart(records, prices){
+			const ordered = records.slice().sort((a,b) => (Date.parse(a.date) || 0) - (Date.parse(b.date) || 0));
+			let balance = 0;
+			const points = ordered.map(record => {
+				const incoming = Number(record.receiver_id) === OFFSHORE_NATION_ID;
+				const direction = incoming ? 1 : -1;
+				balance += direction * (Number(record.money) || 0);
+				RESOURCES.forEach(resource => { balance += direction * (Number(record[resource]) || 0) * (Number(prices[resource]) || 0); });
+				return {date: String(record.date || '').slice(0,10) || 'Unknown', value: balance};
+			});
+			const width = 760, height = 230, left = 52, right = 18, top = 24, bottom = 38;
+			if(!points.length){ $('balanceChart').innerHTML = '<div class="empty">No balance history returned.</div>'; return; }
+			const values = points.map(point => point.value), min = Math.min(0, ...values), max = Math.max(1, ...values), range = Math.max(1, max - min);
+			const x = index => left + (index / Math.max(1, points.length - 1)) * (width - left - right);
+			const y = value => top + (max - value) / range * (height - top - bottom);
+			const dots = points.map((point, index) => `<circle class="dot" cx="${x(index)}" cy="${y(point.value)}" r="4"><title>${point.date}: ${money(point.value)} cumulative offshore balance</title></circle>`).join('');
+			const line = points.map((point, index) => `${x(index)},${y(point.value)}`).join(' ');
+			const labels = points.filter((point, index) => index === 0 || index === points.length - 1 || index % Math.max(1, Math.floor(points.length / 6)) === 0).map((point, index) => svgText(x(points.indexOf(point)), height - 12, point.date.slice(5))).join('');
+			$('balanceChart').innerHTML = `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Cumulative offshore balance growth"><line class="axis" x1="${left}" y1="${y(0)}" x2="${width-right}" y2="${y(0)}"/><line class="axis" x1="${left}" y1="${top}" x2="${left}" y2="${height-bottom}"/><polyline class="line" points="${line}"/>${dots}${labels}${svgText(left,16,'cumulative market value')}</svg>`;
+		}
+		function renderHoldings(holdings, prices){
+			const resourceValue = RESOURCES.reduce((sum, resource) => sum + (Number(holdings[resource]) || 0) * (Number(prices[resource]) || 0), 0), cash = Number(holdings.money) || 0;
+			$('holdingCash').textContent = money(cash); $('holdingResourceValue').textContent = money(resourceValue); $('holdingTotalValue').textContent = money(cash + resourceValue); $('reconciliation').textContent = 'Current snapshot';
+			$('holdingResources').innerHTML = RESOURCES.map(resource => `<div class="holding-resource"><label>${LABELS[resource]}</label><strong>${number(holdings[resource])}</strong></div>`).join('');
+		}
+		function buildOffshoreHoldings(records){
+			const holdings = { money: 0 };
+			RESOURCES.forEach(resource => { holdings[resource] = 0; });
+			records.forEach(record => {
+				const offshored = Number(record.sender_id) === BARROWS_BANK_ID && Number(record.receiver_id) === OFFSHORE_NATION_ID;
+				const returned = Number(record.sender_id) === OFFSHORE_NATION_ID && Number(record.receiver_id) === BARROWS_BANK_ID;
+				if (!offshored && !returned) return;
+				const direction = offshored ? 1 : -1;
+				holdings.money += direction * (Number(record.money) || 0);
+				RESOURCES.forEach(resource => { holdings[resource] += direction * (Number(record[resource]) || 0); });
+			});
+			return holdings;
+		}
+		function render(records, prices, memberTaxIds = allMemberTaxIds){
+			const totals = Object.fromEntries(RESOURCES.map(resource => [resource,{in:0,out:0}]));
+			let totalCash = 0;
+			const rows = records.map(record => {
+				const incoming = Number(record.receiver_id) === OFFSHORE_NATION_ID;
+				const direction = incoming ? 'Barrows → Anri (offshored)' : 'Anri → Barrows (returned)';
+				const cash = Number(record.money) || 0;
+				totalCash += cash;
+				RESOURCES.forEach(resource => { const amount = Number(record[resource]) || 0; totals[resource][incoming ? 'in' : 'out'] += amount; });
+				const resources = RESOURCES.filter(resource => Number(record[resource])).map(resource => `${LABELS[resource]}: ${number(record[resource])}`).join(', ') || 'None';
+				return `<tr><td>${escapeHtml(record.date ? new Date(record.date).toLocaleString() : 'Unknown')}</td><td>${direction}</td><td>${escapeHtml(record.sender?.nation_name || record.sender_id || 'Unknown')}</td><td>${escapeHtml(record.receiver?.nation_name || record.receiver_id || 'Unknown')}</td><td>${money(cash)}</td><td>${escapeHtml(resources)}</td><td>${escapeHtml(record.note || 'No note')}</td></tr>`;
+			}).join('');
+			$('ledger').innerHTML = rows || '<tr><td colspan="7" class="empty">No café transactions returned.</td></tr>';
+			let resourceInValue = 0, resourceOutValue = 0;
+			const resourceRows = RESOURCES.map(resource => {
+				const price = Number(prices[resource]) || 0, receivedValue = totals[resource].in * price, sentValue = totals[resource].out * price;
+				resourceInValue += receivedValue; resourceOutValue += sentValue;
+				return `<tr><td>${LABELS[resource]}</td><td>${money(price)}</td><td>${number(totals[resource].in)}</td><td>${money(receivedValue)}</td><td>${number(totals[resource].out)}</td><td>${money(sentValue)}</td><td>${money(receivedValue - sentValue)}</td></tr>`;
+			}).join('');
+			const incomingCount = records.filter(record => Number(record.receiver_id) === OFFSHORE_NATION_ID).length, activeDays = new Set(records.map(record => String(record.date || '').slice(0,10))).size;
+			$('recordCount').textContent = number(records.length); $('resourceInValue').textContent = money(resourceInValue); $('resourceOutValue').textContent = money(resourceOutValue); $('resourceNetValue').textContent = money(resourceInValue - resourceOutValue); $('averageTransfer').textContent = money(records.length ? totalCash / records.length : 0); $('activeDays').textContent = number(activeDays); $('incomingCount').textContent = number(incomingCount); $('outgoingCount').textContent = number(records.length - incomingCount);
+			$('resourceTotals').innerHTML = resourceRows || '<tr><td colspan="7" class="empty">No resource holdings returned.</td></tr>';
+			renderCharts(records, totals, prices);
+			renderBalanceChart(records, prices);
+			renderTaxAccounts(records, prices, memberTaxIds);
+		}
+		function applyDateFilter(){
+			const from = $('fromDate').value ? new Date(`${$('fromDate').value}T00:00:00`) : null, to = $('toDate').value ? new Date(`${$('toDate').value}T23:59:59`) : null;
+			const filtered = allRecords.filter(record => { const date = new Date(record.date); return (!from || date >= from) && (!to || date <= to); });
+			render(filtered, latestPrices);
+			$('status').textContent = `Showing ${filtered.length} of ${allRecords.length} direct café ↔ offshore transfers.`;
+		}
+		function exportCsv(){
+			const rows = [['Date','Direction','From','To','Cash','Resources','Note']];
+			const from = $('fromDate').value ? new Date(`${$('fromDate').value}T00:00:00`) : null, to = $('toDate').value ? new Date(`${$('toDate').value}T23:59:59`) : null;
+			allRecords.filter(record => { const date = new Date(record.date); return (!from || date >= from) && (!to || date <= to); }).forEach(record => { const incoming = Number(record.receiver_id) === OFFSHORE_NATION_ID; const resources = RESOURCES.filter(resource => Number(record[resource])).map(resource => `${LABELS[resource]}: ${number(record[resource])}`).join(', '); rows.push([record.date || '', incoming ? 'Barrows → Anri (offshored)' : 'Anri → Barrows (returned)', record.sender?.nation_name || record.sender_id || '', record.receiver?.nation_name || record.receiver_id || '', Number(record.money) || 0, resources, record.note || '']); });
+			const csv = rows.map(row => row.map(value => `"${String(value).replaceAll('"','""')}"`).join(',')).join('\r\n'), link = document.createElement('a'); link.href = URL.createObjectURL(new Blob([csv], {type:'text/csv;charset=utf-8'})); link.download = 'anris-cafe-barrows-offshore-ledger.csv'; link.click(); URL.revokeObjectURL(link.href);
+		}
+		async function loadLedger(){
+			$('refresh').disabled = true; $('status').textContent = `Loading Barrows ${BARROWS_BANK_ID} → Anri ${OFFSHORE_NATION_ID} offshoring ledger...`; $('status').classList.remove('error');
+			try { const records = []; for(let page = 1; page <= 10; page += 1){ const data = await api(`{ bankrecs(first: 100, page: ${page}, or_id: [${OFFSHORE_NATION_ID}, ${BARROWS_BANK_ID}]) { data { id date sender_id receiver_id sender { nation_name } receiver { nation_name } money food coal oil uranium iron bauxite lead gasoline munitions steel aluminum tax_id note } } }`); const batch = data?.bankrecs?.data || []; records.push(...batch.filter(record => { const sender = Number(record.sender_id), receiver = Number(record.receiver_id); return (sender === OFFSHORE_NATION_ID && receiver === BARROWS_BANK_ID) || (sender === BARROWS_BANK_ID && receiver === OFFSHORE_NATION_ID); })); if(batch.length < 100) break; } const taxData = await api(`{ alliances(id: [${BARROWS_BANK_ID}]) { data { taxrecs(limit: 100) { tax_id } } } }`); allMemberTaxIds = [...new Set([...((taxData?.alliances?.data?.[0]?.taxrecs || []).map(record => String(record.tax_id ?? 'unassigned'))), ...records.map(record => String(record.tax_id ?? 'unassigned'))])].filter(Boolean); const priceData = await api('{ tradeprices(first: 100) { data { date food coal oil uranium iron bauxite lead gasoline munitions steel aluminum } } }'); latestPrices = (priceData?.tradeprices?.data || []).slice().sort((a,b) => (Date.parse(b.date) || 0) - (Date.parse(a.date) || 0))[0] || {}; offshoreHoldings = buildOffshoreHoldings(records); allRecords = records; renderHoldings(offshoreHoldings, latestPrices); render(records, latestPrices); $('updated').textContent = `Synced ${new Date().toLocaleTimeString()}`; $('status').textContent = `Loaded ${records.length} Barrows → Anri transfer records and ${allMemberTaxIds.length} tax IDs from BE&T, Anri, and alliance tax records; holdings are netted from Barrows ${BARROWS_BANK_ID} → Anri ${OFFSHORE_NATION_ID}.`; } catch(error) { $('status').textContent = `Unable to load offshore ledger: ${error.message}`; $('status').classList.add('error'); } finally { $('refresh').disabled = false; }
+		}
+		$('refresh').addEventListener('click', loadLedger); $('applyDates').addEventListener('click', applyDateFilter); $('clearDates').addEventListener('click', () => { $('fromDate').value = ''; $('toDate').value = ''; applyDateFilter(); }); $('exportCsv').addEventListener('click', exportCsv); loadLedger(); setInterval(() => { if (document.visibilityState === 'visible') loadLedger(); }, 300000);
+	</script>
+</body>
+</html>
